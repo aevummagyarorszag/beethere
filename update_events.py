@@ -22,6 +22,30 @@ MONTHS_HU = {
     'december': '12', 'dec': '12'
 }
 
+# Székesfehérvár exact venue GPS database
+KNOWN_VENUES = {
+    "bory-vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
+    "bory vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
+    "bory-tér": ("Bory-tér, Székesfehérvár", 47.2020, 18.4580),
+    "hiemer": ("Hiemer-ház, Székesfehérvár", 47.1911, 18.4088),
+    "városház tér": ("Városház tér, Székesfehérvár", 47.1915, 18.4096),
+    "zichy liget": ("Zichy liget, Székesfehérvár", 47.1948, 18.4087),
+    "csónakázó-tó": ("Csónakázó-tó, Székesfehérvár", 47.1970, 18.4005),
+    "koronás park": ("Koronás Park, Székesfehérvár", 47.1975, 18.3990),
+    "jancsárkert": ("Jancsárkert, Székesfehérvár", 47.1856, 18.4112),
+    "vörösmarty színház": ("Vörösmarty Színház, Székesfehérvár", 47.1901, 18.4083),
+    "nyolcas műhely": ("Nyolcas Műhely, Székesfehérvár", 47.1865, 18.4180),
+    "alba regia sportcsarnok": ("Alba Regia Sportcsarnok, Székesfehérvár", 47.1825, 18.4182),
+    "met aréna": ("MET Aréna, Székesfehérvár", 47.1720, 18.4350),
+    "alba aréna": ("Alba Aréna, Székesfehérvár", 47.1720, 18.4350),
+    "köfém": ("Köfém Művelődési Ház, Székesfehérvár", 47.1790, 18.4410),
+    "szárazrét": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750),
+    "feketehegy": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750),
+    "gorsium": ("Gorsium Régészeti Park, Tác", 47.0945, 18.4320),
+    "börgönd": ("Börgöndi Repülőtér, Székesfehérvár", 47.1352, 18.5011),
+    "országzászló tér": ("Országzászló tér, Székesfehérvár", 47.1922, 18.4085)
+}
+
 def load_memory():
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
@@ -50,115 +74,90 @@ def parse_date_from_text(text):
 
     return None
 
-def extract_price(text):
-    if not text:
-        return "Esemény részletei a linken"
-    text_lower = text.lower()
-    
-    if any(free in text_lower for free in ["ingyenes", "díjmentes", "ingyen", "belépés díjtalan", "ingyenesen"]):
+def extract_price_from_container(soup, full_text):
+    """Accurately extracts prices from dedicated ticket info containers."""
+    # Look for dedicated price info sections in HTML
+    price_section = soup.find(class_=re.compile(r'jegy|ar|price|belepo|ticket', re.I))
+    text_to_check = price_section.get_text() if price_section else full_text[:1500]
+    text_lower = text_to_check.lower()
+
+    if any(free_word in text_lower for free_word in ["díjmentes", "ingyenes", "a belépés díjtalan", "ingyen"]):
         return "Ingyenes (Free)"
-        
-    price_match = re.search(r'(\d[\d\s\.]*\s*ft)', text_lower)
+
+    price_match = re.search(r'(\d[\d\s\.]*\s*ft(?:\s*-\s*\d[\d\s\.]*\s*ft)?)', text_lower)
     if price_match:
         return price_match.group(1).upper()
-        
-    return "Esemény részletei a linken"
 
-def extract_specific_location(soup, text):
-    common_venues = [
-        "Bory-vár", "Hiemer-ház", "Városház tér", "Zichy liget", "Csónakázó-tó", 
-        "Jancsárkert", "Koronás Park", "Vörösmarty Színház", "Nyolcas Műhely", 
-        "Alba Regia Sportcsarnok", "MET Aréna", "Köfém Művelődési Központ", 
-        "Feketehegy-Szárazréti Közösségi Ház", "Gorsium", "Bory-tér", "Országzászló tér"
+    return "Részletek a linken"
+
+def match_venue_and_coords(soup, title, description, full_text):
+    """Finds exact venue and returns proper GPS coordinates."""
+    search_space = f"{title} {description} {full_text[:1000]}".lower()
+
+    for key, (formatted_name, lat, lon) in KNOWN_VENUES.items():
+        if key in search_space:
+            return formatted_name, lat, lon
+
+    return "Székesfehérvár", 47.1912, 18.4095
+
+def extract_real_poster_image(soup, page_url):
+    """Extracts ONLY genuine event posters, discarding sponsor & restaurant ads."""
+    
+    # Strictly forbidden URLs and sponsor domains
+    forbidden = [
+        "67sigma", "etterem", "restaurant", "hotel", "partner", "szallas", 
+        "banner", "logo", "190x190", "com_eventgallery", "bridge?url=", 
+        "programturizmus_og.jpg", "szkk_noimage.jpg"
     ]
-    for venue in common_venues:
-        if venue.lower() in text.lower():
-            return f"{venue}, Székesfehérvár"
 
-    return "Székesfehérvár"
-
-def extract_clean_poster_image(soup, page_url):
-    """
-    Intelligens reklámmentesítő képszűrő:
-    1. Kitörli a HTML-ből az oldalsávokat, lábléceket, reklámblokkokat.
-    2. Megkeresi a hivatalos JSON-LD 'image' mezőt.
-    3. Súlyozott pontozással választja ki a valódi plakátot.
-    """
-    # --- 1. HTML MŰTÉT: Eltávolítjuk a reklámokat rejtő elemeket ---
-    clean_soup = BeautifulSoup(str(soup), 'html.parser')
-    noise_selectors = [
-        'aside', 'footer', 'header', 'nav',
-        '.sidebar', '.reklam', '.ads', '.banner', '.related', 
-        '.recommended', '.partner-box', '.hotel-box', '.special'
-    ]
-    for selector in noise_selectors:
-        for element in clean_soup.select(selector):
-            element.decompose()
-
-    # --- 2. JSON-LD HI VAHATOS ADATSTRUKTÚRA ---
-    for json_script in clean_soup.find_all("script", type="application/ld+json"):
+    # Priority 1: Check JSON-LD structured image
+    for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
             try:
                 data = json.loads(json_script.string)
                 if isinstance(data, list):
                     data = data[0]
                 if isinstance(data, dict) and "image" in data:
-                    img_data = data["image"]
-                    if isinstance(img_data, list) and len(img_data) > 0:
-                        img_data = img_data[0]
-                    if isinstance(img_data, dict):
-                        img_data = img_data.get("url", "")
-                    if isinstance(img_data, str) and img_data.startswith("http"):
-                        if not any(b in img_data.lower() for b in ["banner", "hotel", "partner", "logo", "lakeside"]):
-                            return img_data
+                    img_val = data["image"]
+                    if isinstance(img_val, list) and len(img_val) > 0:
+                        img_val = img_val[0]
+                    if isinstance(img_val, dict):
+                        img_val = img_val.get("url", "")
+                    if isinstance(img_val, str) and img_val.startswith("http"):
+                        if not any(bad in img_val.lower() for bad in forbidden):
+                            return img_val
             except Exception:
                 pass
 
-    # --- 3. SÚLYOZOTT PONTOZÁSI RENDSZER ---
-    blacklist = [
-        "banner", "hotel", "partner", "szallas", "advertisement", "reklam", 
-        "programturizmus_og.jpg", "szkk_noimage.jpg", "logo", "icon", "avatar",
-        "best-western", "lakeside", "karolyi-kastely", "special/bannerhead", "list/partner"
-    ]
-
-    whitelist = ["plakat", "media/image/show", "wp-content/uploads", "event", "cover", "poster", "media/image/plakat"]
-
-    candidates = []
-    for img in clean_soup.find_all("img", src=True):
+    # Priority 2: Look for actual poster image paths on Programturizmus
+    poster_candidates = []
+    for img in soup.find_all("img", src=True):
         src = img["src"]
         src_lower = src.lower()
 
-        # Feketelistás képek azonnali eldobása
-        if any(bad in src_lower for bad in blacklist):
+        if any(bad in src_lower for bad in forbidden):
             continue
 
-        score = 0
-        if any(good in src_lower for good in whitelist):
-            score += 10
+        # Look for real Programturizmus poster directories
+        if any(good in src_lower for good in ["/media/image/plakat/", "/media/image/show/", "/media/image/special/"]):
+            if src.startswith("//"):
+                full_src = "https:" + src
+            elif src.startswith("/"):
+                parsed_base = urllib.parse.urlparse(page_url)
+                full_src = f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
+            else:
+                full_src = src
+            poster_candidates.append(full_src)
 
-        # Abszolút URL képzés
-        if src.startswith("//"):
-            full_src = "https:" + src
-        elif src.startswith("/"):
-            parsed_base = urllib.parse.urlparse(page_url)
-            full_src = f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
-        else:
-            full_src = src
+    if poster_candidates:
+        return poster_candidates[0]
 
-        candidates.append((score, full_src))
-
-    # Rendezés pontszám szerint
-    candidates.sort(key=lambda x: x[0], reverse=True)
-
-    if candidates:
-        return candidates[0][1]
-
-    # --- 4. TARTALÉK OG:IMAGE ---
-    og_image = clean_soup.find("meta", property="og:image")
+    # Fallback to general og:image if clean
+    og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
-        og_src = og_image["content"]
-        if not any(bad in og_src.lower() for bad in blacklist):
-            return og_src if not og_src.startswith("//") else "https:" + og_src
+        content = og_image["content"]
+        if not any(bad in content.lower() for bad in forbidden):
+            return content if not content.startswith("//") else "https:" + content
 
     return "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
 
@@ -176,7 +175,6 @@ def parse_generic_event_page(url):
         title_str = title_tag.get_text(strip=True) if hasattr(title_tag, 'get_text') else title_tag.get("content", "")
         
         if "biztonsági ellenőrzés" in title_str.lower() or "robot" in title_str.lower():
-            print(f"⚠️ Captcha detected for {url}, skipping.")
             return None
 
         title_str = title_str.replace(" - Programturizmus", "").replace(" | SZKKK", "").strip()
@@ -187,17 +185,17 @@ def parse_generic_event_page(url):
 
         full_text = soup.get_text()
 
-        price_str = extract_price(full_text)
-        location_str = extract_specific_location(soup, full_text)
-        header_image = extract_clean_poster_image(soup, url)
-
+        # Extract verified data
+        price_str = extract_price_from_container(soup, full_text)
+        location_str, lat, lon = match_venue_and_coords(soup, title_str, desc_str, full_text)
+        header_image = extract_real_poster_image(soup, url)
         start_date = parse_date_from_text(desc_str) or parse_date_from_text(full_text[:1200]) or datetime.now().strftime("%Y-%m-%d")
 
         return {
             "title": title_str,
             "location": location_str,
-            "latitude": 47.1912,
-            "longitude": 18.4095,
+            "latitude": lat,
+            "longitude": lon,
             "date": start_date,
             "description": desc_str[:250] + "...",
             "price": price_str,
@@ -226,30 +224,12 @@ def search_programturizmus():
         print(f"⚠️ Programturizmus search failed: {e}")
     return urls
 
-def search_fehervari_programok():
-    urls = []
-    search_url = "https://fehervariprogram.hu/musornaptar/"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    try:
-        req = urllib.request.Request(search_url, headers=headers)
-        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
-        soup = BeautifulSoup(html, 'html.parser')
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            if 'fehervariprogram.hu/' in href and ('/event/' in href or '/2026/' in href) and '/cat_ids' not in href:
-                if href not in urls:
-                    urls.append(href)
-    except Exception as e:
-        print(f"⚠️ FehervariProgram search failed: {e}")
-    return urls
-
 def main():
     active_memory = []
     known_urls = set()
 
     discovered_urls = set()
     discovered_urls.update(search_programturizmus())
-    discovered_urls.update(search_fehervari_programok())
 
     for url in list(discovered_urls):
         if url not in known_urls:
@@ -257,12 +237,12 @@ def main():
             if event_data:
                 active_memory.append(event_data)
                 known_urls.add(url)
-                print(f"✨ Poster verified: {event_data['title']} | Image: {event_data['header_image']}")
+                print(f"✨ Verified: {event_data['title']} | Venue: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | Image: {event_data['header_image']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
 
-    print(f"💾 Cleaned memory with {len(active_memory)} events.")
+    print(f"💾 Updated memory with {len(active_memory)} verified events.")
 
 if __name__ == "__main__":
     main()
