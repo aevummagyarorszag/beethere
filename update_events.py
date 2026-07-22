@@ -22,12 +22,12 @@ MONTHS_HU = {
     'december': '12', 'dec': '12'
 }
 
-# Székesfehérvár exact venue GPS database
+# Székesfehérvári pontos helyszín & GPS koordináta adatbázis
 KNOWN_VENUES = {
+    "oskola": ("Székesfehérvár, Oskola u. 2-4.", 47.1911, 18.4088),
+    "hiemer": ("Hiemer-ház, Székesfehérvár", 47.1911, 18.4088),
     "bory-vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
     "bory vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
-    "bory-tér": ("Bory-tér, Székesfehérvár", 47.2020, 18.4580),
-    "hiemer": ("Hiemer-ház, Székesfehérvár", 47.1911, 18.4088),
     "városház tér": ("Városház tér, Székesfehérvár", 47.1915, 18.4096),
     "zichy liget": ("Zichy liget, Székesfehérvár", 47.1948, 18.4087),
     "csónakázó-tó": ("Csónakázó-tó, Székesfehérvár", 47.1970, 18.4005),
@@ -40,7 +40,6 @@ KNOWN_VENUES = {
     "alba aréna": ("Alba Aréna, Székesfehérvár", 47.1720, 18.4350),
     "köfém": ("Köfém Művelődési Ház, Székesfehérvár", 47.1790, 18.4410),
     "szárazrét": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750),
-    "feketehegy": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750),
     "gorsium": ("Gorsium Régészeti Park, Tác", 47.0945, 18.4320),
     "börgönd": ("Börgöndi Repülőtér, Székesfehérvár", 47.1352, 18.5011),
     "országzászló tér": ("Országzászló tér, Székesfehérvár", 47.1922, 18.4085)
@@ -53,64 +52,159 @@ def load_memory():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
-def parse_date_from_text(text):
+def parse_date_and_time(text):
+    """Dátum és pontos kezdési időpont felismerése (pl. 2026-08-14 21:00)."""
     if not text:
-        return None
-    text_lower = text.lower()
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        return date_str, f"{date_str} 00:00"
     
-    pattern1 = r'(202[4-9])[\.\s\-]+([a-zöőúüűáéóí]+)[\.\s\-]+(\d{1,2})'
-    match1 = re.search(pattern1, text_lower)
-    if match1:
-        year, month_str, day = match1.groups()
-        month = MONTHS_HU.get(month_str.strip('.'))
-        if month:
-            return f"{year}-{month}-{int(day):02d}"
-            
-    pattern2 = r'(202[4-9])[\/\-](\d{2})[\/\-](\d{2})'
-    match2 = re.search(pattern2, text_lower)
-    if match2:
-        year, month, day = match2.groups()
-        return f"{year}-{month}-{day}"
+    date_str = None
+    
+    # 1. Dátum minta: 2026.01.01
+    match_dot = re.search(r'(202[4-9])\.\s*(\d{1,2})\.\s*(\d{1,2})\.?', text)
+    if match_dot:
+        y, m, d = match_dot.groups()
+        date_str = f"{y}-{int(m):02d}-{int(d):02d}"
 
-    return None
+    # 2. Dátum minta: 2026. augusztus 14
+    if not date_str:
+        text_lower = text.lower()
+        match_hu = re.search(r'(202[4-9])[\.\s\-]+([a-zöőúüűáéóí]+)[\.\s\-]+(\d{1,2})', text_lower)
+        if match_hu:
+            y, m_str, d = match_hu.groups()
+            m = MONTHS_HU.get(m_str.strip('.'))
+            if m:
+                date_str = f"{y}-{m}-{int(d):02d}"
 
-def extract_price_from_container(soup, full_text):
-    """Accurately extracts prices from dedicated ticket info containers."""
-    # Look for dedicated price info sections in HTML
-    price_section = soup.find(class_=re.compile(r'jegy|ar|price|belepo|ticket', re.I))
-    text_to_check = price_section.get_text() if price_section else full_text[:1500]
-    text_lower = text_to_check.lower()
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
 
-    if any(free_word in text_lower for free_word in ["díjmentes", "ingyenes", "a belépés díjtalan", "ingyen"]):
+    # Időpont keresése (pl. 21:00, 18:30, 09:00)
+    time_match = re.search(r'\b([0-1]?[0-9]|2[0-3])[:\.]00\b|\b([0-1]?[0-9]|2[0-3]):([0-5][0-9])\b', text)
+    if time_match:
+        time_str = time_match.group(0).replace('.', ':')
+        if len(time_str) == 4:
+            time_str = "0" + time_str
+        date_and_time_str = f"{date_str} {time_str}"
+    else:
+        date_and_time_str = f"{date_str} 00:00"
+
+    return date_str, date_and_time_str
+
+def extract_price_advanced(soup, full_text):
+    """Kinyeri a pontos árakat vagy jelzi az ingyenességet."""
+    # JSON-LD árak
+    for json_script in soup.find_all("script", type="application/ld+json"):
+        if json_script.string:
+            try:
+                data = json.loads(json_script.string)
+                if isinstance(data, list):
+                    data = data[0]
+                offers = data.get("offers")
+                if offers:
+                    if isinstance(offers, list):
+                        offers = offers[0]
+                    if isinstance(offers, dict):
+                        price = offers.get("price") or offers.get("lowPrice")
+                        currency = offers.get("priceCurrency", "Ft")
+                        if price is not None:
+                            if str(price) in ["0", "0.00"]:
+                                return "Ingyenes (Free)"
+                            return f"{price} {currency}"
+            except Exception:
+                pass
+
+    # Keresés árblokkokban
+    price_blocks = soup.find_all(text=re.compile(r'jegyár|belépő|árak|árai|jegyek', re.I))
+    for block in price_blocks:
+        parent = block.parent.parent if block.parent else None
+        if parent:
+            block_text = parent.get_text()
+            if any(free in block_text.lower() for free in ["ingyenes", "díjmentes", "díjtalan"]):
+                return "Ingyenes (Free)"
+            price_match = re.search(r'(\d[\d\s\.]*\s*ft(?:\s*-\s*\d[\d\s\.]*\s*ft)?)', block_text, re.I)
+            if price_match:
+                return price_match.group(1).strip().upper()
+
+    text_lower = full_text.lower()
+    if any(free in text_lower for free in ["a belépés díjtalan", "belépés ingyenes", "ingyenes rendezvény"]):
         return "Ingyenes (Free)"
 
-    price_match = re.search(r'(\d[\d\s\.]*\s*ft(?:\s*-\s*\d[\d\s\.]*\s*ft)?)', text_lower)
-    if price_match:
-        return price_match.group(1).upper()
+    all_prices = re.findall(r'(\d[\d\s\.]*\s*ft)', text_lower)
+    if all_prices:
+        valid_prices = [p.upper().strip() for p in all_prices if len(p.strip()) >= 5]
+        if valid_prices:
+            return valid_prices[0]
 
     return "Részletek a linken"
 
-def match_venue_and_coords(soup, title, description, full_text):
-    """Finds exact venue and returns proper GPS coordinates."""
-    search_space = f"{title} {description} {full_text[:1000]}".lower()
+def extract_age_requirement(full_text):
+    """Kiolvassa a korhatár követelményt a szövegből."""
+    text_lower = full_text.lower()
+    
+    if any(kw in text_lower for kw in ["18+", "18 év", "18 éven felül", "kizárólag 18", "18 éven felülieknek"]):
+        return "18+"
+    elif any(kw in text_lower for kw in ["16+", "16 év", "16 éven felül"]):
+        return "16+"
+    elif any(kw in text_lower for kw in ["14+", "14 év"]):
+        return "14+"
+    elif any(kw in text_lower for kw in ["6+", "6 éves kortól"]):
+        return "6+"
+    elif any(kw in text_lower for kw in ["családi", "gyerek", "gyermek", "korhatár nélkül", "minden korosztály"]):
+        return "Korhatár nélkül (All ages)"
+    
+    return "Korhatár nélkül (All ages)"
 
+def extract_exact_address_and_coords(soup, full_text):
+    """Meghatározza a pontos helyszínt, utcát és a GPS koordinátákat."""
+    
+    # 1. JSON-LD elemzés
+    for json_script in soup.find_all("script", type="application/ld+json"):
+        if json_script.string:
+            try:
+                data = json.loads(json_script.string)
+                if isinstance(data, list):
+                    data = data[0]
+                loc = data.get("location")
+                if isinstance(loc, dict):
+                    loc_name = loc.get("name", "")
+                    addr = loc.get("address", {})
+                    street = addr.get("streetAddress", "") if isinstance(addr, dict) else ""
+                    geo = loc.get("geo", {}) if isinstance(loc, dict) else {}
+                    lat = float(geo.get("latitude", 47.1912)) if isinstance(geo, dict) and geo.get("latitude") else 47.1912
+                    lon = float(geo.get("longitude", 18.4095)) if isinstance(geo, dict) and geo.get("longitude") else 18.4095
+
+                    if loc_name and street:
+                        return f"{loc_name}, {street}", lat, lon
+                    elif street:
+                        return f"Székesfehérvár, {street}", lat, lon
+            except Exception:
+                pass
+
+    # 2. RegEx keresés: 'Székesfehérvár, Oskola u. 2-4.' mintákra
+    street_match = re.search(r'(Székesfehérvár[,\s]+[A-ZÁÉÍÓÖŐÚÜŰa-záéíóöőúüű0-9\s\.\-]+\b(?:u\.|utca|tér|út|krt\.|körtér)\s*[\d\-\/]*\.?)', full_text)
+    if street_match:
+        address_found = street_match.group(1).strip()
+        # Ha benne van az Oskola utca, adjuk meg a pontos Hiemer-ház koordinátát
+        if "oskola" in address_found.lower():
+            return address_found, 47.1911, 18.4088
+        return address_found, 47.1912, 18.4095
+
+    # 3. Adatbázis keresés
+    full_text_lower = full_text.lower()
     for key, (formatted_name, lat, lon) in KNOWN_VENUES.items():
-        if key in search_space:
+        if key in full_text_lower:
             return formatted_name, lat, lon
 
     return "Székesfehérvár", 47.1912, 18.4095
 
 def extract_real_poster_image(soup, page_url):
-    """Extracts ONLY genuine event posters, discarding sponsor & restaurant ads."""
-    
-    # Strictly forbidden URLs and sponsor domains
     forbidden = [
         "67sigma", "etterem", "restaurant", "hotel", "partner", "szallas", 
         "banner", "logo", "190x190", "com_eventgallery", "bridge?url=", 
         "programturizmus_og.jpg", "szkk_noimage.jpg"
     ]
 
-    # Priority 1: Check JSON-LD structured image
     for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
             try:
@@ -129,7 +223,6 @@ def extract_real_poster_image(soup, page_url):
             except Exception:
                 pass
 
-    # Priority 2: Look for actual poster image paths on Programturizmus
     poster_candidates = []
     for img in soup.find_all("img", src=True):
         src = img["src"]
@@ -138,7 +231,6 @@ def extract_real_poster_image(soup, page_url):
         if any(bad in src_lower for bad in forbidden):
             continue
 
-        # Look for real Programturizmus poster directories
         if any(good in src_lower for good in ["/media/image/plakat/", "/media/image/show/", "/media/image/special/"]):
             if src.startswith("//"):
                 full_src = "https:" + src
@@ -152,7 +244,6 @@ def extract_real_poster_image(soup, page_url):
     if poster_candidates:
         return poster_candidates[0]
 
-    # Fallback to general og:image if clean
     og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
         content = og_image["content"]
@@ -185,20 +276,23 @@ def parse_generic_event_page(url):
 
         full_text = soup.get_text()
 
-        # Extract verified data
-        price_str = extract_price_from_container(soup, full_text)
-        location_str, lat, lon = match_venue_and_coords(soup, title_str, desc_str, full_text)
+        # Adatok kibányászása
+        price_str = extract_price_advanced(soup, full_text)
+        location_str, lat, lon = extract_exact_address_and_coords(soup, full_text)
         header_image = extract_real_poster_image(soup, url)
-        start_date = parse_date_from_text(desc_str) or parse_date_from_text(full_text[:1200]) or datetime.now().strftime("%Y-%m-%d")
+        date_str, date_and_time_str = parse_date_and_time(desc_str + " " + full_text[:1200])
+        age_req_str = extract_age_requirement(full_text)
 
         return {
             "title": title_str,
             "location": location_str,
             "latitude": lat,
             "longitude": lon,
-            "date": start_date,
+            "date": date_str,
+            "date_and_time": date_and_time_str,
             "description": desc_str[:250] + "...",
             "price": price_str,
+            "age_requirement": age_req_str,
             "header_image": header_image,
             "ticket_link": url
         }
@@ -237,12 +331,12 @@ def main():
             if event_data:
                 active_memory.append(event_data)
                 known_urls.add(url)
-                print(f"✨ Verified: {event_data['title']} | Venue: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | Image: {event_data['header_image']}")
+                print(f"✨ Parsed: {event_data['title']} | Location: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | Date/Time: {event_data['date_and_time']} | Age: {event_data['age_requirement']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
 
-    print(f"💾 Updated memory with {len(active_memory)} verified events.")
+    print(f"💾 Updated memory with {len(active_memory)} detailed events.")
 
 if __name__ == "__main__":
     main()
