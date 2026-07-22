@@ -7,6 +7,22 @@ from bs4 import BeautifulSoup
 
 MEMORY_FILE = "events.json"
 
+# Magyar hónapok szótára a dátumkiolvasáshoz
+MONTHS_HU = {
+    'január': '01', 'januar': '01', 'jan': '01',
+    'február': '02', 'februar': '02', 'feb': '02',
+    'március': '03', 'marcius': '03', 'mar': '03',
+    'április': '04', 'aprilis': '04', 'apr': '04',
+    'május': '05', 'majus': '05', 'maj': '05',
+    'június': '06', 'junius': '06', 'jun': '06',
+    'július': '07', 'julius': '07', 'jul': '07',
+    'augusztus': '08', 'aug': '08',
+    'szeptember': '09', 'szep': '09', 'sept': '09',
+    'október': '10', 'oktober': '10', 'okt': '10',
+    'november': '11', 'nov': '11',
+    'december': '12', 'dec': '12'
+}
+
 def load_memory():
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
@@ -30,59 +46,104 @@ def purge_expired_events(events):
             
     return valid_events
 
-def extract_direct_image(soup, page_url):
-    """Kiemeli a valódi egyedi eseményképet, kiszűrve a gyűjtőoldalak általános logóit."""
+def parse_date_from_text(text):
+    """Kiolvassa a valódi dátumot a magyar szövegből (pl. 2026. augusztus 14.)."""
+    if not text:
+        return None
+    text_lower = text.lower()
     
-    # Kiszűrendő általános logók listája
+    # Minta: 2026. augusztus 14
+    pattern1 = r'(202[4-9])[\.\s\-]+([a-zöőúüűáéóí]+)[\.\s\-]+(\d{1,2})'
+    match1 = re.search(pattern1, text_lower)
+    if match1:
+        year, month_str, day = match1.groups()
+        month = MONTHS_HU.get(month_str.strip('.'))
+        if month:
+            return f"{year}-{month}-{int(day):02d}"
+            
+    # Minta: 2026-08-14 vagy 2026/08/14
+    pattern2 = r'(202[4-9])[\/\-](\d{2})[\/\-](\d{2})'
+    match2 = re.search(pattern2, text_lower)
+    if match2:
+        year, month, day = match2.groups()
+        return f"{year}-{month}-{day}"
+
+    return None
+
+def extract_title_and_image(soup, page_url):
+    """Kinyeri a pontos címet és a valódi borítóképet."""
+    # --- CÍM MEGÁLLAPÍTÁSA ---
+    title = ""
+    h1 = soup.find("h1")
+    if h1 and len(h1.get_text(strip=True)) > 2:
+        title = h1.get_text(strip=True)
+    else:
+        og_title = soup.find("meta", property="og:title")
+        if og_title and og_title.get("content"):
+            title = og_title["content"]
+            
+    # Ha a cím még mindig hiányos vagy általános, képezzünk nevet az URL-ből
+    if not title or title.lower() in ["székesfehérvári program", "műsornaptár | szkkk", "esemény"]:
+        slug_match = re.search(r'/event/([^/]+)', page_url) or re.search(r'/ajanlat-([^/]+)\.html', page_url)
+        if slug_match:
+            slug = slug_match.group(1)
+            slug = re.sub(r'-\d{6}$', '', slug)  # Dátumkódok levágása
+            words = slug.replace('-', ' ').split()
+            title = " ".join([w.capitalize() for w in words])
+            
+    # Tisztítás
+    title = title.replace(" - Programturizmus", "").replace(" | SZKKK", "").strip()
+
+    # --- KÉP MEGÁLLAPÍTÁSA ---
     generic_logos = ["programturizmus_og.jpg", "szkk_noimage.jpg", "default", "logo"]
+    image_url = ""
 
-    # 1. Próbáljuk meg megtalálni a cikk törzsében található legelső nagy képet
-    content_area = soup.find("article") or soup.find("div", class_=re.compile("content|detail|entry|post")) or soup
-    for img in content_area.find_all("img", src=True):
+    # 1. Keresés a cikk törzsében / galériájában lévő képek között
+    for img in soup.find_all("img", src=True):
         src = img["src"]
-        if not any(bad in src.lower() for bad in generic_logos) and ("upload" in src or "images" in src or "media" in src or "wp-content" in src):
-            if src.startswith("//"):
-                return "https:" + src
-            elif src.startswith("/"):
-                parsed_base = urllib.parse.urlparse(page_url)
-                return f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
-            return src
+        if not any(bad in src.lower() for bad in generic_logos):
+            if any(good in src.lower() for good in ["wp-content/uploads", "images/ajanlat", "images/partner", "/media/", "uploads"]):
+                if src.startswith("//"):
+                    image_url = "https:" + src
+                elif src.startswith("/"):
+                    parsed_base = urllib.parse.urlparse(page_url)
+                    image_url = f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
+                else:
+                    image_url = src
+                break
 
-    # 2. Ha nincs kép a cikkben, megnézzük az og:image-et (de csak ha nem az általános logó)
-    og_image = soup.find("meta", property="og:image")
-    if og_image and og_image.get("content"):
-        img_url = og_image["content"]
-        if not any(bad in img_url.lower() for bad in generic_logos):
-            if img_url.startswith("//"):
-                return "https:" + img_url
-            return img_url
+    # 2. Ha a törzsben nem volt egyedi kép, próbáljuk meg az og:image-et
+    if not image_url:
+        og_image = soup.find("meta", property="og:image")
+        if og_image and og_image.get("content"):
+            content = og_image["content"]
+            if not any(bad in content.lower() for bad in generic_logos):
+                image_url = content if not content.startswith("//") else "https:" + content
 
-    return "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
+    if not image_url:
+        image_url = "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
 
-def parse_generic_event_page(url, default_title="Székesfehérvári Program"):
+    return title, image_url
+
+def parse_generic_event_page(url):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
         req = urllib.request.Request(url, headers=headers)
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Cím letisztítása
-        title_meta = soup.find("meta", property="og:title")
-        title_str = title_meta["content"] if title_meta else default_title
-        title_str = title_str.replace(" - Programturizmus", "").strip()
-        
-        # Egyedi borítókép kinyerése
-        header_image = extract_direct_image(soup, url)
+        # Cím és Kép kinyerése
+        title_str, header_image = extract_title_and_image(soup, url)
         
         # Leírás
         desc_meta = soup.find("meta", property="og:description")
-        desc_str = desc_meta["content"] if desc_meta else "Helyi esemény Székesfehérváron."
+        desc_str = desc_meta["content"] if desc_meta else soup.get_text()[:200]
+        desc_str = re.sub(r'\s+', ' ', desc_str).strip()
+
+        # Dátum megállapítása
+        start_date = None
         
-        start_date = datetime.now().strftime("%Y-%m-%d")
-        location_name = "Székesfehérvár"
-        lat, lon = 47.1912, 18.4095
-        
-        # JSON-LD adatok beolvasása a pontos dátumokért
+        # 1. Próbálkozás JSON-LD-ből
         for json_script in soup.find_all("script", type="application/ld+json"):
             if not json_script.string:
                 continue
@@ -90,30 +151,27 @@ def parse_generic_event_page(url, default_title="Székesfehérvári Program"):
                 data = json.loads(json_script.string)
                 if isinstance(data, list):
                     data = data[0]
-                
-                if data.get("@type") in ["Event", "MusicEvent", "ExhibitionEvent", "SportsEvent"] or "startDate" in data:
-                    raw_date = data.get("startDate")
-                    if raw_date:
-                        start_date = raw_date.split("T")[0]
-                        
-                    loc_info = data.get("location", {})
-                    if isinstance(loc_info, dict):
-                        location_name = loc_info.get("name", location_name)
-                        geo = loc_info.get("geo", {})
-                        if isinstance(geo, dict):
-                            lat = float(geo.get("latitude", lat))
-                            lon = float(geo.get("longitude", lon))
+                if "startDate" in data:
+                    start_date = data["startDate"].split("T")[0]
                     break
             except Exception:
                 continue
 
+        # 2. Ha nincs JSON-LD, kiolvasás a szövegből / leírásból
+        if not start_date:
+            start_date = parse_date_from_text(desc_str) or parse_date_from_text(soup.get_text()[:1000])
+
+        # Ha így sem található, állítsuk be a mai napot
+        if not start_date:
+            start_date = datetime.now().strftime("%Y-%m-%d")
+
         return {
             "title": title_str,
-            "location": location_name,
-            "latitude": lat,
-            "longitude": lon,
+            "location": "Székesfehérvár",
+            "latitude": 47.1912,
+            "longitude": 18.4095,
             "date": start_date,
-            "description": desc_str,
+            "description": desc_str[:250] + "...",
             "price": "Esemény részletei a linken",
             "header_image": header_image,
             "ticket_link": url
@@ -126,12 +184,10 @@ def search_programturizmus():
     urls = []
     search_url = "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    
     try:
         req = urllib.request.Request(search_url, headers=headers)
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
-        
         for a_tag in soup.find_all('a', href=True):
             href = a_tag['href']
             if '/ajanlat-' in href and href != search_url:
@@ -146,12 +202,10 @@ def search_fehervari_programok():
     urls = []
     search_url = "https://fehervariprogram.hu/musornaptar/"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    
     try:
         req = urllib.request.Request(search_url, headers=headers)
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
-        
         for a_tag in soup.find_all('a', href=True):
             href = a_tag['href']
             if 'fehervariprogram.hu/' in href and ('/event/' in href or '/2026/' in href) and '/cat_ids' not in href:
@@ -162,11 +216,9 @@ def search_fehervari_programok():
     return urls
 
 def main():
-    memory = load_memory()
-    print(f"📖 Loaded {len(memory)} events from memory.")
-
-    active_memory = purge_expired_events(memory)
-    known_urls = {e["ticket_link"] for e in active_memory if "ticket_link" in e}
+    # 1. Tisztítás: Töröljük a korábbi hibás/csonkított adatsorokat a frissítéshez
+    active_memory = []
+    known_urls = set()
 
     discovered_urls = set()
     discovered_urls.update(search_programturizmus())
@@ -180,12 +232,12 @@ def main():
                 active_memory.append(event_data)
                 known_urls.add(url)
                 added_count += 1
-                print(f"✨ Event added with unique image: {event_data['title']}")
+                print(f"✨ Event added: {event_data['title']} | Date: {event_data['date']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
 
-    print(f"💾 Memory updated! Total events in database: {len(active_memory)} (+{added_count} new).")
+    print(f"💾 Finished! Cleaned and saved {len(active_memory)} detailed events to events.json.")
 
 if __name__ == "__main__":
     main()
