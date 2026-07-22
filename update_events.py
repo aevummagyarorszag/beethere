@@ -45,10 +45,6 @@ def load_memory():
         return []
 
 def geocode_address(address):
-    """
-    Térképes cím-átváltó (Geocoding): 
-    Bármilyen utca/házszám szöveget valódi GPS koordinátává alakít.
-    """
     if not address or address == "Székesfehérvár":
         return 47.1912, 18.4095
 
@@ -61,29 +57,25 @@ def geocode_address(address):
         data = json.loads(html)
 
         if data and len(data) > 0:
-            lat = float(data[0]["lat"])
-            lon = float(data[0]["lon"])
-            return lat, lon
+            return float(data[0]["lat"]), float(data[0]["lon"])
     except Exception as e:
         print(f"⚠️ Geocoding failed for '{address}': {e}")
 
     return 47.1912, 18.4095
 
 def parse_date_and_time(text):
-    """Dátum és óra/perc kinyerése. Ha nincs meg az óra, a date_and_time értéke None (kihagyva)."""
     if not text:
         date_str = datetime.now().strftime("%Y-%m-%d")
         return date_str, None
     
     date_str = None
     
-    # 1. Dátum minta: 2026.01.01
+    # 1. Dátum felismerés
     match_dot = re.search(r'(202[4-9])\.\s*(\d{1,2})\.\s*(\d{1,2})\.?', text)
     if match_dot:
         y, m, d = match_dot.groups()
         date_str = f"{y}-{int(m):02d}-{int(d):02d}"
 
-    # 2. Dátum minta: 2026. augusztus 14
     if not date_str:
         text_lower = text.lower()
         match_hu = re.search(r'(202[4-9])[\.\s\-]+([a-zöőúüűáéóí]+)[\.\s\-]+(\d{1,2})', text_lower)
@@ -96,9 +88,13 @@ def parse_date_and_time(text):
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Óra és perc keresése (pl. 19:00, 18.30, 20 óra, 20 órakor)
-    time_match = re.search(r'\b([0-1]?[0-9]|2[0-3])[:\.]([0-5][0-9])\b|\b([0-1]?[0-9]|2[0-3])\s*(?:óra|órakor)\b', text, re.IGNORECASE)
+    # 2. Időpont felismerés (A dátum karaktereket előbb kimaszkoljuk, hogy a 07-24-ből ne legyen 07:24!)
+    text_clean_for_time = re.sub(r'202[4-9][\.\/\-]\d{1,2}[\.\/\-]\d{1,2}', '', text)
+    text_clean_for_time = re.sub(r'\d{1,2}[\.\/\-]\d{1,2}\.?', '', text_clean_for_time)
+
+    time_match = re.search(r'\b([0-1]?[0-9]|2[0-3])[:\.]([0-5][0-9])\s*(?:óra|órakor|h)?\b|\b([0-1]?[0-9]|2[0-3])\s*(?:óra|órakor)\b', text_clean_for_time, re.IGNORECASE)
     
+    date_and_time_str = None
     if time_match:
         if time_match.group(1) and time_match.group(2):
             hour = int(time_match.group(1))
@@ -107,11 +103,6 @@ def parse_date_and_time(text):
         elif time_match.group(3):
             hour = int(time_match.group(3))
             date_and_time_str = f"{date_str} {hour:02d}:00"
-        else:
-            date_and_time_str = None
-    else:
-        # HA NICS ÓRA/PERC, NEM ADUNK MEG TÉVES 00:00-ÁT!
-        date_and_time_str = None
 
     return date_str, date_and_time_str
 
@@ -172,7 +163,6 @@ def extract_age_requirement(full_text):
     return "Korhatár nélkül (All ages)"
 
 def extract_exact_address_and_coords(soup, full_text):
-    # 1. JSON-LD elemzés
     for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
             try:
@@ -195,15 +185,12 @@ def extract_exact_address_and_coords(soup, full_text):
             except Exception:
                 pass
 
-    # 2. RegEx keresés: 'Székesfehérvár, Oskola u. 2-4.' mintákra
     street_match = re.search(r'(Székesfehérvár[,\s]+[A-ZÁÉÍÓÖŐÚÜŰa-záéíóöőúüű0-9\s\.\-]+\b(?:u\.|utca|tér|út|krt\.|körtér)\s*[\d\-\/]*\.?)', full_text)
     if street_match:
         address_found = street_match.group(1).strip()
-        # Átváltjuk a megtalált címet pontos GPS koordinátává Térkép API segítségével
         lat, lon = geocode_address(address_found)
         return address_found, lat, lon
 
-    # 3. Adatbázis keresés ismert helyszínekre
     full_text_lower = full_text.lower()
     for key, (formatted_name, lat, lon) in KNOWN_VENUES.items():
         if key in full_text_lower:
@@ -275,11 +262,27 @@ def parse_generic_event_page(url):
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
+        # Csalit/Gyűjtőoldal ellenőrzés:
+        # Ha a cikk belsejében 2-nél több más '/ajanlat-' link található, akkor ez egy GYŰJTŐOLDAL.
+        content_area = soup.find("article") or soup.find("div", class_=re.compile(r'content|detail|entry|main', re.I)) or soup
+        sub_event_links = []
+        for a_tag in content_area.find_all('a', href=True):
+            href = a_tag['href']
+            if '/ajanlat-' in href and href not in url:
+                full_sub_url = f"https://www.programturizmus.hu{href}" if href.startswith('/') else href
+                if full_sub_url not in sub_event_links:
+                    sub_event_links.append(full_sub_url)
+
+        # Ha gyűjtőoldalt találtunk, elmentjük az al-linkeket, de maga az összefoglaló oldal NEM kerül be!
+        if len(sub_event_links) >= 2:
+            print(f"📂 Hub/Gyűjtőoldal detektálva ({url}): {len(sub_event_links)} al-esemény kinyerve.")
+            return "HUB_PAGE", sub_event_links
+
         title_tag = soup.find("h1") or soup.find("meta", property="og:title")
         title_str = title_tag.get_text(strip=True) if hasattr(title_tag, 'get_text') else title_tag.get("content", "")
         
         if "biztonsági ellenőrzés" in title_str.lower() or "robot" in title_str.lower():
-            return None
+            return None, []
 
         title_str = title_str.replace(" - Programturizmus", "").replace(" | SZKKK", "").strip()
 
@@ -289,14 +292,13 @@ def parse_generic_event_page(url):
 
         full_text = soup.get_text()
 
-        # Adatok kinyerése
         price_str = extract_price_advanced(soup, full_text)
         location_str, lat, lon = extract_exact_address_and_coords(soup, full_text)
         header_image = extract_real_poster_image(soup, url)
         date_str, date_and_time_str = parse_date_and_time(desc_str + " " + full_text[:1200])
         age_req_str = extract_age_requirement(full_text)
 
-        return {
+        event_obj = {
             "title": title_str,
             "location": location_str,
             "latitude": lat,
@@ -309,9 +311,10 @@ def parse_generic_event_page(url):
             "header_image": header_image,
             "ticket_link": url
         }
+        return event_obj, []
     except Exception as e:
         print(f"⚠️ Could not parse {url}: {e}")
-        return None
+        return None, []
 
 def search_programturizmus():
     urls = []
@@ -335,21 +338,30 @@ def main():
     active_memory = []
     known_urls = set()
 
-    discovered_urls = set()
-    discovered_urls.update(search_programturizmus())
+    # Keresési lista összeállítása
+    urls_to_process = set(search_programturizmus())
 
-    for url in list(discovered_urls):
-        if url not in known_urls:
-            event_data = parse_generic_event_page(url)
-            if event_data:
-                active_memory.append(event_data)
-                known_urls.add(url)
-                print(f"✨ Parsed: {event_data['title']} | Address: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | DateTime: {event_data['date_and_time']}")
+    while urls_to_process:
+        url = urls_to_process.pop()
+        if url in known_urls:
+            continue
+        known_urls.add(url)
+
+        res, sub_links = parse_generic_event_page(url)
+
+        # Ha gyűjtőoldalt találtunk, hozzáadjuk az al-linkjeit a feldolgozandó sorhoz!
+        if res == "HUB_PAGE":
+            for sub_url in sub_links:
+                if sub_url not in known_urls:
+                    urls_to_process.add(sub_url)
+        elif res is not None:
+            active_memory.append(res)
+            print(f"✨ Egyedi esemény elmentve: {res['title']} | Cím: {res['location']} | Idő: {res['date_and_time']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
 
-    print(f"💾 Updated memory with {len(active_memory)} detailed events.")
+    print(f"💾 Memória frissítve! Összesen {len(active_memory)} konkrét esemény elmentve.")
 
 if __name__ == "__main__":
     main()
