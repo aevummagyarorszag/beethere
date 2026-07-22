@@ -22,27 +22,19 @@ MONTHS_HU = {
     'december': '12', 'dec': '12'
 }
 
-# Székesfehérvári pontos helyszín & GPS koordináta adatbázis
 KNOWN_VENUES = {
-    "oskola": ("Székesfehérvár, Oskola u. 2-4.", 47.1911, 18.4088),
-    "hiemer": ("Hiemer-ház, Székesfehérvár", 47.1911, 18.4088),
     "bory-vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
-    "bory vár": ("Bory-vár, Székesfehérvár", 47.2023, 18.4583),
+    "hiemer": ("Hiemer-ház, Székesfehérvár", 47.1911, 18.4088),
     "városház tér": ("Városház tér, Székesfehérvár", 47.1915, 18.4096),
     "zichy liget": ("Zichy liget, Székesfehérvár", 47.1948, 18.4087),
     "csónakázó-tó": ("Csónakázó-tó, Székesfehérvár", 47.1970, 18.4005),
-    "koronás park": ("Koronás Park, Székesfehérvár", 47.1975, 18.3990),
     "jancsárkert": ("Jancsárkert, Székesfehérvár", 47.1856, 18.4112),
     "vörösmarty színház": ("Vörösmarty Színház, Székesfehérvár", 47.1901, 18.4083),
     "nyolcas műhely": ("Nyolcas Műhely, Székesfehérvár", 47.1865, 18.4180),
     "alba regia sportcsarnok": ("Alba Regia Sportcsarnok, Székesfehérvár", 47.1825, 18.4182),
     "met aréna": ("MET Aréna, Székesfehérvár", 47.1720, 18.4350),
-    "alba aréna": ("Alba Aréna, Székesfehérvár", 47.1720, 18.4350),
     "köfém": ("Köfém Művelődési Ház, Székesfehérvár", 47.1790, 18.4410),
-    "szárazrét": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750),
-    "gorsium": ("Gorsium Régészeti Park, Tác", 47.0945, 18.4320),
-    "börgönd": ("Börgöndi Repülőtér, Székesfehérvár", 47.1352, 18.5011),
-    "országzászló tér": ("Országzászló tér, Székesfehérvár", 47.1922, 18.4085)
+    "feketehegy": ("Feketehegy-Szárazréti Közösségi Ház, Székesfehérvár", 47.2065, 18.3750)
 }
 
 def load_memory():
@@ -52,11 +44,36 @@ def load_memory():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
+def geocode_address(address):
+    """
+    Térképes cím-átváltó (Geocoding): 
+    Bármilyen utca/házszám szöveget valódi GPS koordinátává alakít.
+    """
+    if not address or address == "Székesfehérvár":
+        return 47.1912, 18.4095
+
+    try:
+        encoded_addr = urllib.parse.quote(address)
+        url = f"https://nominatim.openstreetmap.org/search?q={encoded_addr}&format=json&limit=1"
+        headers = {'User-Agent': 'BeeThereApp/1.0 (contact@beethere.local)'}
+        req = urllib.request.Request(url, headers=headers)
+        html = urllib.request.urlopen(req, timeout=5).read().decode('utf-8')
+        data = json.loads(html)
+
+        if data and len(data) > 0:
+            lat = float(data[0]["lat"])
+            lon = float(data[0]["lon"])
+            return lat, lon
+    except Exception as e:
+        print(f"⚠️ Geocoding failed for '{address}': {e}")
+
+    return 47.1912, 18.4095
+
 def parse_date_and_time(text):
-    """Dátum és pontos kezdési időpont felismerése (pl. 2026-08-14 21:00)."""
+    """Dátum és óra/perc kinyerése. Ha nincs meg az óra, a date_and_time értéke None (kihagyva)."""
     if not text:
         date_str = datetime.now().strftime("%Y-%m-%d")
-        return date_str, f"{date_str} 00:00"
+        return date_str, None
     
     date_str = None
     
@@ -79,21 +96,26 @@ def parse_date_and_time(text):
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Időpont keresése (pl. 21:00, 18:30, 09:00)
-    time_match = re.search(r'\b([0-1]?[0-9]|2[0-3])[:\.]00\b|\b([0-1]?[0-9]|2[0-3]):([0-5][0-9])\b', text)
+    # Óra és perc keresése (pl. 19:00, 18.30, 20 óra, 20 órakor)
+    time_match = re.search(r'\b([0-1]?[0-9]|2[0-3])[:\.]([0-5][0-9])\b|\b([0-1]?[0-9]|2[0-3])\s*(?:óra|órakor)\b', text, re.IGNORECASE)
+    
     if time_match:
-        time_str = time_match.group(0).replace('.', ':')
-        if len(time_str) == 4:
-            time_str = "0" + time_str
-        date_and_time_str = f"{date_str} {time_str}"
+        if time_match.group(1) and time_match.group(2):
+            hour = int(time_match.group(1))
+            minute = time_match.group(2)
+            date_and_time_str = f"{date_str} {hour:02d}:{minute}"
+        elif time_match.group(3):
+            hour = int(time_match.group(3))
+            date_and_time_str = f"{date_str} {hour:02d}:00"
+        else:
+            date_and_time_str = None
     else:
-        date_and_time_str = f"{date_str} 00:00"
+        # HA NICS ÓRA/PERC, NEM ADUNK MEG TÉVES 00:00-ÁT!
+        date_and_time_str = None
 
     return date_str, date_and_time_str
 
 def extract_price_advanced(soup, full_text):
-    """Kinyeri a pontos árakat vagy jelzi az ingyenességet."""
-    # JSON-LD árak
     for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
             try:
@@ -114,7 +136,6 @@ def extract_price_advanced(soup, full_text):
             except Exception:
                 pass
 
-    # Keresés árblokkokban
     price_blocks = soup.find_all(text=re.compile(r'jegyár|belépő|árak|árai|jegyek', re.I))
     for block in price_blocks:
         parent = block.parent.parent if block.parent else None
@@ -139,10 +160,8 @@ def extract_price_advanced(soup, full_text):
     return "Részletek a linken"
 
 def extract_age_requirement(full_text):
-    """Kiolvassa a korhatár követelményt a szövegből."""
     text_lower = full_text.lower()
-    
-    if any(kw in text_lower for kw in ["18+", "18 év", "18 éven felül", "kizárólag 18", "18 éven felülieknek"]):
+    if any(kw in text_lower for kw in ["18+", "18 év", "18 éven felül", "18 éven felülieknek"]):
         return "18+"
     elif any(kw in text_lower for kw in ["16+", "16 év", "16 éven felül"]):
         return "16+"
@@ -150,14 +169,9 @@ def extract_age_requirement(full_text):
         return "14+"
     elif any(kw in text_lower for kw in ["6+", "6 éves kortól"]):
         return "6+"
-    elif any(kw in text_lower for kw in ["családi", "gyerek", "gyermek", "korhatár nélkül", "minden korosztály"]):
-        return "Korhatár nélkül (All ages)"
-    
     return "Korhatár nélkül (All ages)"
 
 def extract_exact_address_and_coords(soup, full_text):
-    """Meghatározza a pontos helyszínt, utcát és a GPS koordinátákat."""
-    
     # 1. JSON-LD elemzés
     for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
@@ -170,14 +184,14 @@ def extract_exact_address_and_coords(soup, full_text):
                     loc_name = loc.get("name", "")
                     addr = loc.get("address", {})
                     street = addr.get("streetAddress", "") if isinstance(addr, dict) else ""
-                    geo = loc.get("geo", {}) if isinstance(loc, dict) else {}
-                    lat = float(geo.get("latitude", 47.1912)) if isinstance(geo, dict) and geo.get("latitude") else 47.1912
-                    lon = float(geo.get("longitude", 18.4095)) if isinstance(geo, dict) and geo.get("longitude") else 18.4095
-
                     if loc_name and street:
-                        return f"{loc_name}, {street}", lat, lon
+                        full_address = f"{loc_name}, {street}"
+                        lat, lon = geocode_address(full_address)
+                        return full_address, lat, lon
                     elif street:
-                        return f"Székesfehérvár, {street}", lat, lon
+                        full_address = f"Székesfehérvár, {street}"
+                        lat, lon = geocode_address(full_address)
+                        return full_address, lat, lon
             except Exception:
                 pass
 
@@ -185,12 +199,11 @@ def extract_exact_address_and_coords(soup, full_text):
     street_match = re.search(r'(Székesfehérvár[,\s]+[A-ZÁÉÍÓÖŐÚÜŰa-záéíóöőúüű0-9\s\.\-]+\b(?:u\.|utca|tér|út|krt\.|körtér)\s*[\d\-\/]*\.?)', full_text)
     if street_match:
         address_found = street_match.group(1).strip()
-        # Ha benne van az Oskola utca, adjuk meg a pontos Hiemer-ház koordinátát
-        if "oskola" in address_found.lower():
-            return address_found, 47.1911, 18.4088
-        return address_found, 47.1912, 18.4095
+        # Átváltjuk a megtalált címet pontos GPS koordinátává Térkép API segítségével
+        lat, lon = geocode_address(address_found)
+        return address_found, lat, lon
 
-    # 3. Adatbázis keresés
+    # 3. Adatbázis keresés ismert helyszínekre
     full_text_lower = full_text.lower()
     for key, (formatted_name, lat, lon) in KNOWN_VENUES.items():
         if key in full_text_lower:
@@ -276,7 +289,7 @@ def parse_generic_event_page(url):
 
         full_text = soup.get_text()
 
-        # Adatok kibányászása
+        # Adatok kinyerése
         price_str = extract_price_advanced(soup, full_text)
         location_str, lat, lon = extract_exact_address_and_coords(soup, full_text)
         header_image = extract_real_poster_image(soup, url)
@@ -331,7 +344,7 @@ def main():
             if event_data:
                 active_memory.append(event_data)
                 known_urls.add(url)
-                print(f"✨ Parsed: {event_data['title']} | Location: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | Date/Time: {event_data['date_and_time']} | Age: {event_data['age_requirement']}")
+                print(f"✨ Parsed: {event_data['title']} | Address: {event_data['location']} ({event_data['latitude']}, {event_data['longitude']}) | DateTime: {event_data['date_and_time']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
