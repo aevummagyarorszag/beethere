@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "title": "Műsornaptár | SZKKK",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "A Fehérvári Programszervező Kft. műsornaptára.",
+    "price": "Ingyenes (Free)",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/musornaptar/cat_ids~81/"
+  }
+]
