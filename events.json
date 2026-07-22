@@ -350,5 +350,104 @@
     "price": "Esemény részletei a linken",
     "header_image": "https://www.programturizmus.hu/images/programturizmus_og.jpg",
     "ticket_link": "https://www.programturizmus.hu/ajanlat-komolyzenei-koncert-szekesfehervar.html"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/emlekezeti-koordinatak/?instance_id=2733"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/fehervari-lecsofozo-vigassag-2026/?instance_id=2721"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/tnt-2026/?instance_id=2723"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/egy-iro-fejeben/?instance_id=2729"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/adatszovok/?instance_id=2732"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/grund-2026/?instance_id=2725"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/kiralyok-a-belvarosban-260725/?instance_id=2735"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/szekesfehervari-kiralyi-napok-2026/?instance_id=2736"
+  },
+  {
+    "title": "Székesfehérvári Program",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-22",
+    "description": "Helyi esemény Székesfehérváron.",
+    "price": "Esemény részletei a linken",
+    "header_image": "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg",
+    "ticket_link": "https://fehervariprogram.hu/event/randiverzum/?instance_id=2731"
   }
 ]
