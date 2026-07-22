@@ -7,8 +7,21 @@ from bs4 import BeautifulSoup
 
 MEMORY_FILE = "events.json"
 
-# Search terms for electronic/techno music
-SEARCH_KEYWORDS = ["techno", "underground", "electronic"]
+# Comprehensive Hungarian search keywords covering all event types
+SEARCH_KEYWORDS = [
+    # Music & Nightlife
+    "koncert", "zene", "buli", "fesztivál", "party", "élőzene", "akusztikus", "dj", "techno",
+    # Arts, Culture & History
+    "kiállítás", "múzeum", "színház", "galéria", "tárlat", "tánc", "irodalom", "mozi",
+    # Family, Kids & Youth
+    "gyerek", "család", "gyermekprogram", "bábszínház", "kézműves", "játszóház",
+    # Food, Drink & Markets
+    "gasztro", "vásár", "piac", "kóstoló", "bor", "sör", "főzés",
+    # Sports & Active Outdoor
+    "sport", "túra", "futás", "kerékpár", "meccs", "bajnokság", "szabadidő",
+    # Entertainment & Education
+    "standup", "duma", "előadás", "workshop", "ünnep", "városnap", "program"
+]
 
 def load_memory():
     """Loads existing event data from events.json."""
@@ -36,7 +49,7 @@ def purge_expired_events(events):
     return valid_events
 
 def extract_direct_image(soup, page_url):
-    """Extracts direct image link from OpenGraph or HTML img tags."""
+    """Extracts direct image links from OpenGraph, Twitter cards, or article tags."""
     # 1. OpenGraph image (og:image)
     og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
@@ -63,7 +76,7 @@ def extract_direct_image(soup, page_url):
     return ""
 
 def parse_generic_event_page(url, is_free_town_event=False):
-    """Parses metadata (JSON-LD / OpenGraph) from event pages."""
+    """Parses metadata (JSON-LD / OpenGraph) from any event page."""
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
         req = urllib.request.Request(url, headers=headers)
@@ -72,14 +85,14 @@ def parse_generic_event_page(url, is_free_town_event=False):
         
         # Title
         title_meta = soup.find("meta", property="og:title")
-        title_str = title_meta["content"] if title_meta else "Local Town Event"
+        title_str = title_meta["content"] if title_meta else "Esemény / Event"
         
         # Direct Image Link
         header_image = extract_direct_image(soup, url)
         
         # Description
         desc_meta = soup.find("meta", property="og:description")
-        desc_str = desc_meta["content"] if desc_meta else "Town event and cultural gathering."
+        desc_str = desc_meta["content"] if desc_meta else "Helyi esemény és program."
         
         # Price tag
         price = "Ingyenes (Free)" if is_free_town_event else "Jegyárak az oldalon"
@@ -98,7 +111,7 @@ def parse_generic_event_page(url, is_free_town_event=False):
                 if isinstance(data, list):
                     data = data[0]
                 
-                if data.get("@type") == "Event" or "startDate" in data:
+                if data.get("@type") in ["Event", "MusicEvent", "ExhibitionEvent", "SportsEvent"] or "startDate" in data:
                     raw_date = data.get("startDate")
                     if raw_date:
                         start_date = raw_date.split("T")[0]
@@ -132,7 +145,7 @@ def parse_generic_event_page(url, is_free_town_event=False):
 # --- SCRAPER FUNCTIONS ---
 
 def search_cooltix(keyword):
-    """Searches Cooltix.hu for event links."""
+    """Searches Cooltix.hu for event links across all categories."""
     urls = []
     encoded_query = urllib.parse.quote(keyword)
     search_url = f"https://cooltix.hu/search?q={encoded_query}"
@@ -150,11 +163,11 @@ def search_cooltix(keyword):
                 if full_url not in urls:
                     urls.append(full_url)
     except Exception as e:
-        print(f"⚠️ Cooltix search failed: {e}")
+        print(f"⚠️ Cooltix search failed for '{keyword}': {e}")
     return urls
 
 def search_tixa(keyword):
-    """Searches Tixa.hu for event links."""
+    """Searches Tixa.hu for event links across all categories."""
     urls = []
     encoded_query = urllib.parse.quote(keyword)
     search_url = f"https://www.tixa.hu/kereses?q={encoded_query}"
@@ -172,11 +185,11 @@ def search_tixa(keyword):
                 if full_url not in urls and 'kereses' not in full_url:
                     urls.append(full_url)
     except Exception as e:
-        print(f"⚠️ Tixa search failed: {e}")
+        print(f"⚠️ Tixa search failed for '{keyword}': {e}")
     return urls
 
 def search_programturizmus(location="szekesfehervar"):
-    """Scrapes free municipal events from Programturizmus.hu."""
+    """Scrapes municipal, sports, museum, and town events from Programturizmus.hu."""
     urls = []
     search_url = f"https://www.programturizmus.hu/helykategoria-szabadido.{location}.html"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -197,7 +210,7 @@ def search_programturizmus(location="szekesfehervar"):
     return urls
 
 def search_fehervari_programok():
-    """Scrapes official town events from fehervariprogram.hu."""
+    """Scrapes all official town events, sports, exhibitions, and theater from fehervariprogram.hu."""
     urls = []
     search_url = "https://fehervariprogram.hu/musornaptar/"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -228,22 +241,22 @@ def main():
     known_urls = {e["ticket_link"] for e in active_memory if "ticket_link" in e}
     print(f"✅ Active future events retained: {len(active_memory)}")
 
-    # 3. Discover links from ticketing & town portals
+    # 3. Discover links for ALL categories
     discovered_urls = set()
     
-    # Ticketing sites
+    # Search ticketing sites across broad category keywords
     for kw in SEARCH_KEYWORDS:
         discovered_urls.update(search_cooltix(kw))
         discovered_urls.update(search_tixa(kw))
 
-    # Free town portals
+    # Town & cultural portals (museums, sports, festivals, exhibitions)
     town_urls = set()
     town_urls.update(search_programturizmus("szekesfehervar"))
     town_urls.update(search_fehervari_programok())
 
-    # 4. Process new paid events
+    # 4. Process new general events from ticketing sites
     added_count = 0
-    for url in list(discovered_urls)[:10]:
+    for url in list(discovered_urls)[:30]:
         if url not in known_urls:
             event_data = parse_generic_event_page(url, is_free_town_event=False)
             if event_data and event_data["header_image"]:
@@ -252,15 +265,15 @@ def main():
                 added_count += 1
                 print(f"✨ New event added: {event_data['title']} ({event_data['date']})")
 
-    # 5. Process new free town events
-    for url in list(town_urls)[:10]:
+    # 5. Process new municipal/town/museum/sports events
+    for url in list(town_urls)[:30]:
         if url not in known_urls:
             event_data = parse_generic_event_page(url, is_free_town_event=True)
             if event_data and event_data["header_image"]:
                 active_memory.append(event_data)
                 known_urls.add(url)
                 added_count += 1
-                print(f"🏛️ New free town event added: {event_data['title']} ({event_data['date']})")
+                print(f"🏛️ New town/cultural event added: {event_data['title']} ({event_data['date']})")
 
     # 6. Overwrite events.json with clean data
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
