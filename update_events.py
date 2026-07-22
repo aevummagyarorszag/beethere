@@ -7,11 +7,6 @@ from bs4 import BeautifulSoup
 
 MEMORY_FILE = "events.json"
 
-SEARCH_KEYWORDS = [
-    "koncert", "zene", "buli", "fesztivál", "party", "kiállítás", 
-    "múzeum", "színház", "sport", "program", "vásár", "előadás"
-]
-
 def load_memory():
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
@@ -36,25 +31,31 @@ def purge_expired_events(events):
     return valid_events
 
 def extract_direct_image(soup, page_url):
+    """Kiemeli a valódi egyedi eseményképet, kiszűrve a gyűjtőoldalak általános logóit."""
+    
+    # Kiszűrendő általános logók listája
+    generic_logos = ["programturizmus_og.jpg", "szkk_noimage.jpg", "default", "logo"]
+
+    # 1. Próbáljuk meg megtalálni a cikk törzsében található legelső nagy képet
+    content_area = soup.find("article") or soup.find("div", class_=re.compile("content|detail|entry|post")) or soup
+    for img in content_area.find_all("img", src=True):
+        src = img["src"]
+        if not any(bad in src.lower() for bad in generic_logos) and ("upload" in src or "images" in src or "media" in src or "wp-content" in src):
+            if src.startswith("//"):
+                return "https:" + src
+            elif src.startswith("/"):
+                parsed_base = urllib.parse.urlparse(page_url)
+                return f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
+            return src
+
+    # 2. Ha nincs kép a cikkben, megnézzük az og:image-et (de csak ha nem az általános logó)
     og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
         img_url = og_image["content"]
-        if img_url.startswith("//"):
-            return "https:" + img_url
-        return img_url
-        
-    twitter_image = soup.find("meta", attrs={"name": "twitter:image"})
-    if twitter_image and twitter_image.get("content"):
-        return twitter_image["content"]
-        
-    article = soup.find("article") or soup
-    img = article.find("img", src=True)
-    if img:
-        src = img["src"]
-        if src.startswith("/"):
-            parsed_base = urllib.parse.urlparse(page_url)
-            return f"{parsed_base.scheme}://{parsed_base.netloc}{src}"
-        return src
+        if not any(bad in img_url.lower() for bad in generic_logos):
+            if img_url.startswith("//"):
+                return "https:" + img_url
+            return img_url
 
     return "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
 
@@ -65,19 +66,15 @@ def parse_generic_event_page(url, default_title="Székesfehérvári Program"):
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Title
+        # Cím letisztítása
         title_meta = soup.find("meta", property="og:title")
         title_str = title_meta["content"] if title_meta else default_title
+        title_str = title_str.replace(" - Programturizmus", "").strip()
         
-        # Ignore main overview/calendar pages
-        if any(bad in title_str.lower() for bad in ["műsornaptár", "programok", "szűrés", "keresés"]):
-            if " – " in title_str:
-                title_str = title_str.split(" – ")[0]
-            elif " | " in title_str and not "SZKKK" in title_str:
-                title_str = title_str.split(" | ")[0]
-
+        # Egyedi borítókép kinyerése
         header_image = extract_direct_image(soup, url)
         
+        # Leírás
         desc_meta = soup.find("meta", property="og:description")
         desc_str = desc_meta["content"] if desc_meta else "Helyi esemény Székesfehérváron."
         
@@ -85,7 +82,7 @@ def parse_generic_event_page(url, default_title="Székesfehérvári Program"):
         location_name = "Székesfehérvár"
         lat, lon = 47.1912, 18.4095
         
-        # Parse JSON-LD metadata for real dates
+        # JSON-LD adatok beolvasása a pontos dátumokért
         for json_script in soup.find_all("script", type="application/ld+json"):
             if not json_script.string:
                 continue
@@ -125,10 +122,7 @@ def parse_generic_event_page(url, default_title="Székesfehérvári Program"):
         print(f"⚠️ Could not parse {url}: {e}")
         return None
 
-# --- SOURCES ---
-
 def search_programturizmus():
-    """Fetches real event articles from Programturizmus Székesfehérvár page."""
     urls = []
     search_url = "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -140,7 +134,6 @@ def search_programturizmus():
         
         for a_tag in soup.find_all('a', href=True):
             href = a_tag['href']
-            # Direct event offer links
             if '/ajanlat-' in href and href != search_url:
                 full_url = f"https://www.programturizmus.hu{href}" if href.startswith('/') else href
                 if full_url not in urls:
@@ -150,7 +143,6 @@ def search_programturizmus():
     return urls
 
 def search_fehervari_programok():
-    """Fetches individual event posts from fehervariprogram.hu."""
     urls = []
     search_url = "https://fehervariprogram.hu/musornaptar/"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
@@ -162,31 +154,11 @@ def search_fehervari_programok():
         
         for a_tag in soup.find_all('a', href=True):
             href = a_tag['href']
-            # Filter out category / calendar pages like /cat_ids~81/
-            if 'fehervariprogram.hu/' in href and '/event/' in href or ('/2026/' in href and '/cat_ids' not in href):
+            if 'fehervariprogram.hu/' in href and ('/event/' in href or '/2026/' in href) and '/cat_ids' not in href:
                 if href not in urls:
                     urls.append(href)
     except Exception as e:
         print(f"⚠️ FehervariProgram search failed: {e}")
-    return urls
-
-def search_cooltix(keyword):
-    urls = []
-    encoded_query = urllib.parse.quote(f"szekesfehervar {keyword}")
-    search_url = f"https://cooltix.hu/search?q={encoded_query}"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    try:
-        req = urllib.request.Request(search_url, headers=headers)
-        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
-        soup = BeautifulSoup(html, 'html.parser')
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            if '/event/' in href:
-                full_url = f"https://cooltix.hu{href}" if href.startswith('/') else href
-                if full_url not in urls:
-                    urls.append(full_url)
-    except Exception:
-        pass
     return urls
 
 def main():
@@ -194,16 +166,11 @@ def main():
     print(f"📖 Loaded {len(memory)} events from memory.")
 
     active_memory = purge_expired_events(memory)
-    # Remove category pages if previously saved
-    active_memory = [e for e in active_memory if "cat_ids" not in e.get("ticket_link", "")]
     known_urls = {e["ticket_link"] for e in active_memory if "ticket_link" in e}
 
     discovered_urls = set()
     discovered_urls.update(search_programturizmus())
     discovered_urls.update(search_fehervari_programok())
-    
-    for kw in ["szekesfehervar", "fehervar"]:
-        discovered_urls.update(search_cooltix(kw))
 
     added_count = 0
     for url in list(discovered_urls):
@@ -213,7 +180,7 @@ def main():
                 active_memory.append(event_data)
                 known_urls.add(url)
                 added_count += 1
-                print(f"✨ Event added: {event_data['title']} ({event_data['date']})")
+                print(f"✨ Event added with unique image: {event_data['title']}")
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         json.dump(active_memory, f, ensure_ascii=False, indent=2)
