@@ -45,8 +45,15 @@ def load_memory():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
+def get_headers():
+    return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache'
+    }
+
 def geocode_address(address):
-    """OpenStreetMap Nominatim API geocoding."""
     if not address or address == "Székesfehérvár":
         return 47.1912, 18.4095
 
@@ -66,11 +73,6 @@ def geocode_address(address):
     return 47.1912, 18.4095
 
 def extract_categories(title, description, full_text):
-    """
-    Intelligens kategória meghatározó logika.
-    Visszaadja a hozzáillő kategóriák listáját:
-    ['baratokkal', 'kultura', 'luxus', 'detektiv', 'turista', 'romantikus', 'sport', 'zene', 'muzeum']
-    """
     text_lower = f"{title} {description} {full_text}".lower()
     matched_categories = set()
 
@@ -87,7 +89,7 @@ def extract_categories(title, description, full_text):
         ],
         "muzeum": [
             "múzeum", "kiállítás", "tárlat", "galéria", "régészeti", "műtárgy", 
-            "művészet", "művészeti", "fotókiállítás", "totus tuus", "park", "gorsium"
+            "művészet", "művészeti", "fotókiállítás", "totus tuus", "gorsium"
         ],
         "turista": [
             "városnézés", "túra", "idegenvezetés", "felfedező", "séta", "kirándulás", 
@@ -96,8 +98,7 @@ def extract_categories(title, description, full_text):
         ],
         "sport": [
             "sport", "futás", "foci", "mérkőzés", "bajnokság", "torna", "fitness", 
-            "aerobic", "sárkányhajó", "repülőnap", "légiparádé", "meccs", "aréna", 
-            "csarnok", "sportcsarnok"
+            "sárkányhajó", "repülőnap", "légiparádé", "meccs", "aréna", "sportcsarnok"
         ],
         "detektiv": [
             "szabadulószoba", "rejtély", "nyomozás", "logikai", "fejtörő", "kaland", 
@@ -105,11 +106,11 @@ def extract_categories(title, description, full_text):
         ],
         "romantikus": [
             "romantikus", "pároknak", "fáklyás", "naplemente", "séta", "kettesben", 
-            "vacsora", "borkóstoló", "csónakázás", "éjszakai", "bory-vár", "szimfónia"
+            "vacsora", "borkóstoló", "csónakázás", "éjszakai", "bory-vár"
         ],
         "luxus": [
             "vip", "gála", "exkluzív", "luxus", "premium", "borkóstoló", "gourmet", 
-            "szivar", "champagne", "királyi", "pápai", "díszelőadás"
+            "champagne", "királyi", "pápai", "díszelőadás"
         ],
         "baratokkal": [
             "fesztivál", "buli", "kocsma", "kvíz", "dumaszínház", "stand-up", 
@@ -317,16 +318,11 @@ def extract_real_poster_image(soup, page_url):
     return "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
 
 def parse_generic_event_page(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7'
-    }
     try:
-        req = urllib.request.Request(url, headers=headers)
+        req = urllib.request.Request(url, headers=get_headers())
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Hub page szűrés
         content_area = soup.find("article") or soup.find("div", class_=re.compile(r'content|detail|entry|main', re.I)) or soup
         sub_event_links = []
         for a_tag in content_area.find_all('a', href=True):
@@ -342,7 +338,7 @@ def parse_generic_event_page(url):
         title_tag = soup.find("h1") or soup.find("meta", property="og:title")
         title_str = title_tag.get_text(strip=True) if hasattr(title_tag, 'get_text') else title_tag.get("content", "")
         
-        if "biztonsági ellenőrzés" in title_str.lower() or "robot" in title_str.lower():
+        if not title_str or "biztonsági ellenőrzés" in title_str.lower() or "robot" in title_str.lower():
             return None, []
 
         title_str = title_str.replace(" - Programturizmus", "").replace(" | SZKKK", "").replace(" - Fehérvári Programok", "").strip()
@@ -387,14 +383,13 @@ def parse_generic_event_page(url):
         print(f"⚠️ Hiba a(z) {url} feldolgozásánál: {e}")
         return None, []
 
-# --- MULTI-SOURCE SCRAPING (TÖBB WEBOLDAL KERESŐI) ---
+# --- WEBOLDAL KERESŐK ---
 
 def search_programturizmus():
     urls = []
     search_url = "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
-    headers = {'User-Agent': 'Mozilla/5.0'}
     try:
-        req = urllib.request.Request(search_url, headers=headers)
+        req = urllib.request.Request(search_url, headers=get_headers())
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         for a_tag in soup.find_all('a', href=True):
@@ -410,9 +405,8 @@ def search_programturizmus():
 def search_fehervariprogram():
     urls = []
     search_url = "https://fehervariprogram.hu/musornaptar/"
-    headers = {'User-Agent': 'Mozilla/5.0'}
     try:
-        req = urllib.request.Request(search_url, headers=headers)
+        req = urllib.request.Request(search_url, headers=get_headers())
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         for a_tag in soup.find_all('a', href=True):
@@ -425,12 +419,10 @@ def search_fehervariprogram():
     return urls
 
 def search_koncert_hu():
-    """Keresés a koncert.hu-n"""
     urls = []
     search_url = "https://www.koncert.hu/helyszin/szekesfehervar"
-    headers = {'User-Agent': 'Mozilla/5.0'}
     try:
-        req = urllib.request.Request(search_url, headers=headers)
+        req = urllib.request.Request(search_url, headers=get_headers())
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         for a_tag in soup.find_all('a', href=True):
@@ -443,77 +435,16 @@ def search_koncert_hu():
         print(f"⚠️ Koncert.hu keresési hiba: {e}")
     return urls
 
-def search_cooltix_hu():
-    """Keresés a cooltix.hu-n"""
-    urls = []
-    search_url = "https://cooltix.hu/search?q=szekesfehervar"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    try:
-        req = urllib.request.Request(search_url, headers=headers)
-        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
-        soup = BeautifulSoup(html, 'html.parser')
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            if '/event/' in href:
-                full_url = f"https://cooltix.hu{href}" if href.startswith('/') else href
-                if full_url not in urls:
-                    urls.append(full_url)
-    except Exception as e:
-        print(f"⚠️ Cooltix.hu keresési hiba: {e}")
-    return urls
-
-def search_tixa_hu():
-    """Keresés a tixa.hu-n"""
-    urls = []
-    search_url = "https://tixa.hu/szekesfehervar"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    try:
-        req = urllib.request.Request(search_url, headers=headers)
-        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
-        soup = BeautifulSoup(html, 'html.parser')
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            if len(href.split('/')) > 1 and not href.startswith('http'):
-                full_url = f"https://tixa.hu/{href.lstrip('/')}"
-                if full_url not in urls and 'tixa.hu' in full_url:
-                    urls.append(full_url)
-    except Exception as e:
-        print(f"⚠️ Tixa.hu keresési hiba: {e}")
-    return urls
-
-def search_eventim_hu():
-    """Keresés az eventim.hu-n"""
-    urls = []
-    search_url = "https://www.eventim.hu/hu/kereses/?search_string=szekesfehervar"
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    try:
-        req = urllib.request.Request(search_url, headers=headers)
-        html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
-        soup = BeautifulSoup(html, 'html.parser')
-        for a_tag in soup.find_all('a', href=True):
-            href = a_tag['href']
-            if '/event/' in href or '/esemeny/' in href:
-                full_url = f"https://www.eventim.hu{href}" if href.startswith('/') else href
-                if full_url not in urls:
-                    urls.append(full_url)
-    except Exception as e:
-        print(f"⚠️ Eventim.hu keresési hiba: {e}")
-    return urls
-
 def main():
     active_memory = []
     known_urls = set()
 
-    # Összegyűjtjük a hivatkozásokat az ÖSSZES megadott weboldalról!
     urls_to_process = set()
     urls_to_process.update(search_programturizmus())
     urls_to_process.update(search_fehervariprogram())
     urls_to_process.update(search_koncert_hu())
-    urls_to_process.update(search_cooltix_hu())
-    urls_to_process.update(search_tixa_hu())
-    urls_to_process.update(search_eventim_hu())
 
-    print(f"🌐 Összesen {len(urls_to_process)} esemény linkje felfedezve az összes forrásból.")
+    print(f"🌐 Összesen {len(urls_to_process)} esemény linkje felfedezve.")
 
     while urls_to_process:
         url = urls_to_process.pop()
@@ -531,10 +462,13 @@ def main():
             active_memory.append(res)
             print(f"✨ Elmentve: {res['title']} | Kategóriák: {res['categories']} | Ár: {res['price']}")
 
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(active_memory, f, ensure_ascii=False, indent=2)
-
-    print(f"💾 Memória frissítve! Összesen {len(active_memory)} esemény elmentve a JSON-ba.")
+    # BIZTONSÁGI FÉK: Ha 0 eseményt talált, NEM írja felül az events.json-t üres tömbbel!
+    if len(active_memory) > 0:
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(active_memory, f, ensure_ascii=False, indent=2)
+        print(f"💾 Memória frissítve! Összesen {len(active_memory)} esemény elmentve a JSON-ba.")
+    else:
+        print("⚠️ Figyelem: Egyetlen eseményt sem sikerült kinyerni. Az events.json NEM lett felülírva.")
 
 if __name__ == "__main__":
     main()
