@@ -263,13 +263,58 @@ def extract_exact_address_and_coords(soup, full_text):
 
     return "Székesfehérvár", 47.1912, 18.4095
 
+def extract_full_description(soup):
+    """
+    Kiváló minőségű, teljes leírás kinyerése vágás nélkül.
+    """
+    # 1. Kísérlet: Strukturált adatokból (JSON-LD)
+    for json_script in soup.find_all("script", type="application/ld+json"):
+        if json_script.string:
+            try:
+                data = json.loads(json_script.string)
+                if isinstance(data, list):
+                    data = data[0]
+                if isinstance(data, dict) and "description" in data:
+                    desc = data["description"]
+                    if isinstance(desc, str) and len(desc) > 80:
+                        return re.sub(r'\s+', ' ', desc).strip()
+            except Exception:
+                pass
+
+    # 2. Kísérlet: Fő cikk törzsszövegének bekezdéseiből (<article>, .description, .content)
+    main_containers = soup.find_all(['article', 'div', 'section'], class_=re.compile(r'description|detail|content|entry|text|body', re.I))
+    for container in main_containers:
+        paragraphs = container.find_all(['p', 'div'])
+        valid_texts = [p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 30]
+        if valid_texts:
+            full_desc = " ".join(valid_texts)
+            if len(full_desc) > 100:
+                return re.sub(r'\s+', ' ', full_desc).strip()
+
+    # 3. Kísérlet: Meta tag leírás (csak ha nincs más)
+    desc_meta = soup.find("meta", property="og:description") or soup.find("meta", attrs={"name": "description"})
+    if desc_meta and desc_meta.get("content"):
+        content = desc_meta["content"]
+        # Eltávolítjuk a végéről a levágást jelző három pontot
+        content = re.sub(r'\.\.\.$', '', content).strip()
+        return content
+
+    return "Részletes leírásért látogass el a megadott esemény linkre."
+
 def extract_real_poster_image(soup, page_url):
-    forbidden = [
+    """
+    Kizárólag valódi, egyedi plakátképek kiolvasása.
+    Szigorúan kiszűri a reklámokat, logókat ÉS az oldalsávos gyűjtőképeket is!
+    """
+    forbidden_patterns = [
         "67sigma", "etterem", "restaurant", "hotel", "partner", "szallas", 
         "banner", "logo", "190x190", "com_eventgallery", "bridge?url=", 
-        "programturizmus_og.jpg", "szkk_noimage.jpg"
+        "programturizmus_og.jpg", "szkk_noimage.jpg",
+        "sidelist", "special/sidelist", "593-szekesfehervari-programok", 
+        "18380-csaladi-program", "icon", "avatar", "ad-", "advertisement"
     ]
 
+    # Priority 1: JSON-LD strukturált adatból származó egyedi kép
     for json_script in soup.find_all("script", type="application/ld+json"):
         if json_script.string:
             try:
@@ -283,20 +328,21 @@ def extract_real_poster_image(soup, page_url):
                     if isinstance(img_val, dict):
                         img_val = img_val.get("url", "")
                     if isinstance(img_val, str) and img_val.startswith("http"):
-                        if not any(bad in img_val.lower() for bad in forbidden):
+                        if not any(bad in img_val.lower() for bad in forbidden_patterns):
                             return img_val
             except Exception:
                 pass
 
+    # Priority 2: Cikken belüli plakat/show mappa képei
     poster_candidates = []
     for img in soup.find_all("img", src=True):
         src = img["src"]
         src_lower = src.lower()
 
-        if any(bad in src_lower for bad in forbidden):
+        if any(bad in src_lower for bad in forbidden_patterns):
             continue
 
-        if any(good in src_lower for good in ["/media/image/plakat/", "/media/image/show/", "/media/image/special/", "wp-content/uploads", "cdn", "poster"]):
+        if any(good in src_lower for good in ["/media/image/plakat/", "/media/image/show/", "wp-content/uploads", "poster"]):
             if src.startswith("//"):
                 full_src = "https:" + src
             elif src.startswith("/"):
@@ -309,10 +355,11 @@ def extract_real_poster_image(soup, page_url):
     if poster_candidates:
         return poster_candidates[0]
 
+    # Priority 3: Tisztított og:image
     og_image = soup.find("meta", property="og:image")
     if og_image and og_image.get("content"):
         content = og_image["content"]
-        if not any(bad in content.lower() for bad in forbidden):
+        if not any(bad in content.lower() for bad in forbidden_patterns):
             return content if not content.startswith("//") else "https:" + content
 
     return "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg"
@@ -323,6 +370,7 @@ def parse_generic_event_page(url):
         html = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
+        # Hub page szűrés (ha gyűjtőoldalról van szó)
         content_area = soup.find("article") or soup.find("div", class_=re.compile(r'content|detail|entry|main', re.I)) or soup
         sub_event_links = []
         for a_tag in content_area.find_all('a', href=True):
@@ -343,16 +391,8 @@ def parse_generic_event_page(url):
 
         title_str = title_str.replace(" - Programturizmus", "").replace(" | SZKKK", "").replace(" - Fehérvári Programok", "").strip()
 
-        desc_meta = soup.find("meta", property="og:description")
-        if desc_meta and len(desc_meta.get("content", "")) > 50:
-            desc_str = desc_meta["content"]
-        else:
-            paragraphs = soup.find_all("p")
-            desc_str = " ".join([p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 20])
-            if not desc_str:
-                desc_str = soup.get_text()
-
-        desc_str = re.sub(r'\s+', ' ', desc_str).strip()
+        # Teljes leírás & Szövegtörzs kinyerése
+        desc_str = extract_full_description(soup)
         full_text = soup.get_text()
 
         price_str = extract_price_advanced(soup, full_text)
@@ -460,15 +500,14 @@ def main():
                     urls_to_process.add(sub_url)
         elif res is not None:
             active_memory.append(res)
-            print(f"✨ Elmentve: {res['title']} | Kategóriák: {res['categories']} | Ár: {res['price']}")
+            print(f"✨ Elmentve: {res['title']} | Kép: {res['header_image']}")
 
-    # BIZTONSÁGI FÉK: Ha 0 eseményt talált, NEM írja felül az events.json-t üres tömbbel!
     if len(active_memory) > 0:
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
             json.dump(active_memory, f, ensure_ascii=False, indent=2)
         print(f"💾 Memória frissítve! Összesen {len(active_memory)} esemény elmentve a JSON-ba.")
     else:
-        print("⚠️ Figyelem: Egyetlen eseményt sem sikerült kinyerni. Az events.json NEM lett felülírva.")
+        print("⚠️ Egyetlen eseményt sem sikerült kinyerni. Az events.json nem lett felülírva.")
 
 if __name__ == "__main__":
     main()
