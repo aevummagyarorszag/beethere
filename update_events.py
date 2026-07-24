@@ -16,8 +16,7 @@ if api_key:
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config={"response_mime_type": "application/json"}
+            model_name="gemini-1.5-flash"
         )
         print("✅ Gemini API Kulcs és AI Modell sikeresen betöltve!")
     except Exception as e:
@@ -78,6 +77,7 @@ def process_event_with_ai(url):
 
         prompt = f"""
         Elemzed az alábbi magyar esemény weboldalának szövegét és képlinkjeit.
+        Kizárólag érvényes JSON formátumban válaszolj, más kísérőszöveg nélkül!
         
         Weboldal szövege:
         {page_text}
@@ -98,8 +98,16 @@ def process_event_with_ai(url):
         """
 
         response = model.generate_content(prompt)
+        raw_text = response.text.strip()
         
-        event_json = json.loads(response.text)
+        # Tisztítjuk a Markdown kódblokkokat a JSON beolvasáshoz
+        match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        if match:
+            clean_json_str = match.group(0)
+            event_json = json.loads(clean_json_str)
+        else:
+            event_json = json.loads(raw_text)
+
         event_json["latitude"] = 47.1912
         event_json["longitude"] = 18.4095
         event_json["age_requirement"] = "Korhatár nélkül (All ages)"
