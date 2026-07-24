@@ -5,26 +5,22 @@ import urllib.parse
 import re
 import time
 from bs4 import BeautifulSoup
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 MEMORY_FILE = "events.json"
-MAX_EVENTS = 15  # 15 esemény feldolgozása AI-val (pontosan belefér az 1 perces ingyenes keretbe)
+MAX_EVENTS = 15
 
 GEO_CACHE = {}
 
-# Gemini AI Konfiguráció
+# Új Google GenAI Kliens
 api_key = os.environ.get("GEMINI_API_KEY")
-model = None
+client = None
 
 if api_key:
     try:
-        genai.configure(api_key=api_key)
-        # Szigorú JSON válaszadási mód bekapcsolása
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config={"response_mime_type": "application/json"}
-        )
-        print("✅ Gemini AI sikeresen csatlakoztatva!")
+        client = genai.Client(api_key=api_key)
+        print("✅ Gemini AI (google-genai) sikeresen csatlakoztatva!")
     except Exception as e:
         print(f"❌ Gemini indítási hiba: {e}")
 else:
@@ -37,7 +33,6 @@ def get_headers():
     }
 
 def geocode_address(address):
-    """A megtalált utcanév alapján lekéri a pontos GPS koordinátákat."""
     if not address or address == "Székesfehérvár":
         return 47.1912, 18.4095
 
@@ -62,7 +57,6 @@ def geocode_address(address):
     return 47.1912, 18.4095
 
 def fetch_event_links():
-    """Összegyűjti az események egyedi linkjeit."""
     url = "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
     try:
         req = urllib.request.Request(url, headers=get_headers())
@@ -82,19 +76,16 @@ def fetch_event_links():
         return []
 
 def process_event_with_ai(url):
-    """Letölti az oldalt, átadja a Gemini AI-nak, ami visszadja a strukturált JSON-t."""
     try:
         req = urllib.request.Request(url, headers=get_headers())
         html = urllib.request.urlopen(req, timeout=8).read().decode('utf-8')
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Töröljük a menüket, láblécet
         for tag in soup(['nav', 'header', 'footer', 'script', 'style', 'aside']):
             tag.decompose()
             
         page_text = soup.get_text(separator=' ', strip=True)[:3500]
         
-        # Képlinkek kigyűjtése az AI számára
         image_candidates = []
         for img in soup.find_all('img', src=True):
             src = img['src']
@@ -107,7 +98,7 @@ def process_event_with_ai(url):
         if og_img and og_img.get('content') and "programturizmus_og" not in og_img['content']:
             image_candidates.append(og_img['content'])
 
-        if not model:
+        if not client:
             return None
 
         prompt = f"""
@@ -137,19 +128,24 @@ def process_event_with_ai(url):
             - "telefon": Ha van a szövegben telefonszám, különben null
         """
 
-        response = model.generate_content(prompt)
-        
-        # Tisztítás a biztonság kedvéért (ha az AI mégis markdown jelet tenne bele)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1
+            )
+        )
+
         raw_text = response.text.strip()
         clean_json_str = re.sub(r'```json\s*|```\s*', '', raw_text)
         match = re.search(r'\{.*\}', clean_json_str, re.DOTALL)
-        
+
         if match:
             event_json = json.loads(match.group(0))
         else:
             event_json = json.loads(raw_text)
 
-        # GPS Koordináta lekérése az AI által megtalált utca alapján
         loc_text = event_json.get("location", "Székesfehérvár")
         full_address = f"Székesfehérvár, {loc_text}" if "Székesfehérvár" not in loc_text and "Tác" not in loc_text else loc_text
         lat, lon = geocode_address(full_address)
@@ -167,7 +163,7 @@ def main():
     links = fetch_event_links()
     print(f"🌐 {len(links)} esemény feldolgozása elindult a Gemini AI-val...")
 
-    if not model:
+    if not client:
         print("❌ Szakítás: Nincs működő Gemini AI kliens. Ellenőrizd a GEMINI_API_KEY-t a Secrets-ben!")
         return
 
@@ -175,12 +171,11 @@ def main():
     for i, link in enumerate(links, 1):
         print(f"[{i}/{len(links)}] AI elemzi: {link}...")
         event_data = process_event_with_ai(link)
-        
+
         if event_data and event_data.get("title"):
             events.append(event_data)
             print(f"    ✨ AI Válaszolt: {event_data['title']} | Cím: {event_data['location']} | Dátum: {event_data['date']}")
-        
-        # KÖTELEZŐ 4.5 MÁSODPERCES SZÜNET az ingyenes AI API korlát (15 RPM) miatt!
+
         time.sleep(4.5)
 
     if events:
