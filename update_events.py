@@ -4,23 +4,26 @@ import urllib.request
 import urllib.parse
 import re
 from bs4 import BeautifulSoup
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 MEMORY_FILE = "events.json"
 MAX_EVENTS = 30
 
 api_key = os.environ.get("GEMINI_API_KEY")
-client = None
+model = None
 
 if api_key:
     try:
-        client = genai.Client(api_key=api_key)
-        print("✅ Gemini API Kulcs sikeresen betöltve!")
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config={"response_mime_type": "application/json"}
+        )
+        print("✅ Gemini API Kulcs és AI Modell sikeresen betöltve!")
     except Exception as e:
-        print(f"❌ Hiba a Gemini Kliens indításakor: {e}")
+        print(f"❌ Hiba a Gemini beállításakor: {e}")
 else:
-    print("❌ HIÁNYZÓ KULCS: A GEMINI_API_KEY nem található a GitHub Secrets között!")
+    print("❌ HIÁNYZÓ KULCS: A GEMINI_API_KEY nem található a GitHub Secrets-ben!")
 
 def get_headers():
     return {
@@ -70,7 +73,7 @@ def process_event_with_ai(url):
         if og_img and og_img.get('content'):
             image_candidates.append(og_img['content'])
 
-        if not client:
+        if not model:
             return None
 
         prompt = f"""
@@ -82,26 +85,19 @@ def process_event_with_ai(url):
         Elérhető képlinkek:
         {json.dumps(image_candidates, ensure_ascii=False)}
         
-        A feladatod egy JSON objektum létrehozása:
+        A feladatod egy JSON objektum létrehozása az alábbi mezőkkel:
         - "title": Esemény címe
         - "date": YYYY-MM-DD
         - "date_and_time": "YYYY-MM-DD HH:MM" vagy null
         - "price": "Ingyenes (Free)" vagy pontos ár (pl. "3 500 Ft")
         - "location": Helyszín neve vagy címe Székesfehérváron
-        - "description": Tiszta 2-3 mondatos összefoglaló
-        - "categories": Legillőbb tételek tömbként kiválasztva ebből a listából: ["zene", "kultura", "muzeum", "turista", "sport", "detektiv", "romantikus", "luxus", "baratokkal"]
-        - "header_image": A leginkább poszternek tűnő képlink a listából
-        - "ticket_link": Ha fizetős: "{url}", ha ingyenes: null
+        - "description": Tiszta 2-3 mondatos összefoglaló a programról
+        - "categories": A legillőbb kategóriák tömbként kiválasztva ebből a listából: ["zene", "kultura", "muzeum", "turista", "sport", "detektiv", "romantikus", "luxus", "baratokkal"]
+        - "header_image": A leginkább poszternek/plakátnak tűnő képlink a megadott képlinkek közül
+        - "ticket_link": Ha fizetős az esemény, add meg ezt a linket: "{url}", ha ingyenes, legyen null
         """
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.1
-            )
-        )
+        response = model.generate_content(prompt)
         
         event_json = json.loads(response.text)
         event_json["latitude"] = 47.1912
@@ -118,8 +114,8 @@ def main():
     links = fetch_events_from_programturizmus()
     print(f"🌐 {len(links)} esemény linkje megtalálva.")
     
-    if not client:
-        print("❌ Szakítás: Nincs működő AI Kliens. Ellenőrizd a GEMINI_API_KEY-t a GitHub Secrets-ben!")
+    if not model:
+        print("❌ Szakítás: Nincs működő Gemini AI modell. Ellenőrizd a GEMINI_API_KEY-t a GitHub Secrets-ben!")
         return
 
     events = []
