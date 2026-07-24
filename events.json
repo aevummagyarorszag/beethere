@@ -1,1 +1,20 @@
-
+[
+  {
+    "title": "Wathay-kód szabadulószoba - izgalmas történelmi és logikai kalandozás",
+    "location": "Székesfehérvár",
+    "latitude": 47.1912,
+    "longitude": 18.4095,
+    "date": "2026-07-20",
+    "date_and_time": null,
+    "description": "Székesfehérvári 2026. és 2027. évi programok. Székesfehérvár egész évben változatos eseményekkel várja a turistákat és a város lakóit. A Székesfehérvár programok egész éves kínálatában kulturális rendezvények, koncertek, kiállítások, családi programok és szabadidős események szerepelnek. A történelmi Fejér megyei város – a Velencei-tó közelében – ideális úti cél városnézéshez, kikapcsolódáshoz és szórakozáshoz is.",
+    "price": "Jegyár a linken",
+    "age_requirement": "Korhatár nélkül",
+    "categories": [
+      "zene",
+      "kultúra",
+      "turista"
+    ],
+    "header_image": "https://www.programturizmus.hu/media/image/original/ajanlat/202604/593-szekesfehervari-programok.jpg",
+    "ticket_link": "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
+  }
+]
