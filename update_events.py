@@ -16,6 +16,8 @@ import re
 import time
 import urllib.parse
 import urllib.request
+import urllib.error
+import urllib.robotparser
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterable
@@ -27,8 +29,16 @@ MEMORY_FILE = "events.json"
 MAX_EVENTS = 40
 MAX_QUEUE_SIZE = 100
 REQUEST_TIMEOUT_SECONDS = 12
+REQUEST_DELAY_SECONDS = 2.0
 DEFAULT_COORDS = (47.1912, 18.4095)
 SEARCH_URL = "https://www.programturizmus.hu/ajanlat-szekesfehervari-programok.html"
+EVENTIM_LISTINGS = (
+    "https://www.eventim.hu/hu/konzert/",
+    "https://www.eventim.hu/hu/kultura/",
+    "https://www.eventim.hu/hu/csalad/",
+    "https://www.eventim.hu/hu/sport/",
+)
+COOLTIX_LISTINGS = ("https://cooltix.hu/",)
 
 MONTHS_HU = {
     "január": "01", "januar": "01", "jan": "01", "február": "02",
@@ -70,6 +80,8 @@ IMAGE_POSTER_TOKENS = {
 }
 HUB_TITLE_TOKENS = {"programok", "események", "esemenyek", "naptár", "naptar", "ajánlatok", "ajanlatok"}
 GEO_CACHE: dict[str, tuple[float, float]] = {}
+ROBOTS_CACHE: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+LAST_REQUEST_AT: dict[str, float] = {}
 
 
 @dataclass(frozen=True)
@@ -87,14 +99,40 @@ def request_headers() -> dict[str, str]:
 
 
 def fetch_html(url: str) -> str | None:
-    """Letölti az oldalt egyszeri, rövid újrapróbálással."""
+    """Udvarias lekérés: robots.txt, domainenkénti várakozás, nincs botvédelem-megkerülés."""
+    parsed = urllib.parse.urlsplit(url)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    if origin not in ROBOTS_CACHE:
+        parser = urllib.robotparser.RobotFileParser()
+        parser.set_url(f"{origin}/robots.txt")
+        try:
+            parser.read()
+            ROBOTS_CACHE[origin] = parser
+        except Exception:
+            # Ismeretlen robots állapotban egyetlen normál kérést engedünk; 403/429-nél megállunk.
+            ROBOTS_CACHE[origin] = None
+    parser = ROBOTS_CACHE[origin]
+    if parser and not parser.can_fetch(request_headers()["User-Agent"], url):
+        print(f"  - robots.txt tiltja, kihagyva: {url}")
+        return None
+    wait_for = REQUEST_DELAY_SECONDS - (time.monotonic() - LAST_REQUEST_AT.get(origin, 0))
+    if wait_for > 0:
+        time.sleep(wait_for)
     for attempt in range(2):
         try:
             request = urllib.request.Request(url, headers=request_headers())
             with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                LAST_REQUEST_AT[origin] = time.monotonic()
                 raw = response.read()
                 charset = response.headers.get_content_charset() or "utf-8"
                 return raw.decode(charset, errors="replace")
+        except urllib.error.HTTPError as error:
+            LAST_REQUEST_AT[origin] = time.monotonic()
+            if error.code in {401, 403, 429}:
+                print(f"  - Hozzáférés korlátozva ({error.code}), kihagyva: {url}")
+                return None
+            if attempt == 1:
+                print(f"  ! Nem tölthető le: {url} ({error})")
         except Exception as error:
             if attempt == 1:
                 print(f"  ! Nem tölthető le: {url} ({error})")
@@ -333,7 +371,7 @@ def extract_price(soup: BeautifulSoup, full_text: str, event_data: dict[str, Any
     if re.search(r"(?:belépés|részvétel|program)\s+(?:ingyenes|díjtalan|térítésmentes)|(?:ingyenes|díjtalan|térítésmentes)\s+(?:koncert|program|rendezvény|előadás|túra|kiállítás|fesztivál)", full_text, re.I):
         return "Ingyenes"
     price_match = re.search(r"\b(\d[\d .]*\s*(?:Ft|forint))\b", full_text, re.I)
-    return price_match.group(1).replace("forint", "Ft").strip() if price_match else "Ár a linken"
+    return price_match.group(1).replace("forint", "Ft").strip() if price_match else "Nincs megadva"
 
 
 def extract_age_requirement(soup: BeautifulSoup, full_text: str, event_data: dict[str, Any] | None = None) -> str:
@@ -356,6 +394,25 @@ def extract_age_requirement(soup: BeautifulSoup, full_text: str, event_data: dic
         return f"{match.group(1)}+"
     plus_match = re.search(r"\b(\d{1,2})\s*\+", full_text)
     return f"{plus_match.group(1)}+" if plus_match else "Nincs megadva"
+
+
+def has_fixed_schedule(text: str) -> bool:
+    """Foglalásos/nyitvatartásos programnál nem teszünk hamis konkrét dátumot a kártyára."""
+    return not bool(re.search(
+        r"előzetes (?:időpont)?foglalás|időpont-egyeztetés|bejelentkezés alapján|foglalj időpontot|nyitvatartási időben|bármikor látogatható",
+        text, re.I,
+    ))
+
+
+def extract_additional_info(soup: BeautifulSoup, page_url: str, full_text: str) -> dict[str, str]:
+    emails = list(dict.fromkeys(re.findall(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", full_text)))
+    phones = list(dict.fromkeys(re.findall(r"(?:\+36|06)[\s()/-]*\d(?:[\s()/-]*\d){7,9}", full_text)))
+    result = {"weboldal": page_url}
+    if emails:
+        result["email"] = emails[0]
+    if phones:
+        result["telefon"] = re.sub(r"\s+", " ", phones[0]).strip()
+    return result
 
 
 def extract_description(soup: BeautifulSoup, event_data: dict[str, Any] | None = None) -> str:
@@ -498,16 +555,20 @@ def event_from_listing_card(summary: dict[str, Any]) -> dict[str, Any]:
         price = extract_price(detail_soup, full_text, detail_event)
         age_requirement = extract_age_requirement(detail_soup, full_text, detail_event)
         header_image = extract_best_image(detail_soup, detail_url, title, detail_event)
+        additional_info = extract_additional_info(detail_soup, detail_url, full_text)
     else:
-        price = "Ár a linken"
+        price = "Nincs megadva"
         age_requirement = "Nincs megadva"
         header_image = None
+        additional_info = {"weboldal": detail_url}
     # A lista saját leírása már csak ehhez az egy programhoz tartozik, ezért
     # biztonságos második forrás explicit „ingyenes” vagy Ft ár esetén.
-    if price == "Ár a linken" and description:
+    if price == "Nincs megadva" and description:
         price = extract_price(BeautifulSoup("", "html.parser"), description)
     if age_requirement == "Nincs megadva" and description:
         age_requirement = extract_age_requirement(BeautifulSoup("", "html.parser"), description)
+    if not has_fixed_schedule(f"{title} {description} {full_text}"):
+        date, date_and_time = None, None
     return {
         "title": title, "location": location, "latitude": latitude, "longitude": longitude,
         "date": date, "date_and_time": date_and_time,
@@ -515,6 +576,7 @@ def event_from_listing_card(summary: dict[str, Any]) -> dict[str, Any]:
         "price": price, "age_requirement": age_requirement,
         "categories": categories(title, description), "header_image": header_image,
         "ticket_link": None if price == "Ingyenes" else detail_url,
+        "additional_info": additional_info,
     }
 
 
@@ -527,11 +589,15 @@ def event_from_jsonld(item: dict[str, Any], soup: BeautifulSoup, page_url: str) 
     location, latitude, longitude = extract_location(soup, "", item)
     image = extract_best_image(soup, page_url, title, item)
     event_url = canonical_url(str(item.get("url") or page_url), page_url)
+    full_text = text_of(soup)
+    if not has_fixed_schedule(f"{title} {description} {full_text}"):
+        start_date, date_and_time = None, None
     return {
         "title": title, "location": location, "latitude": latitude, "longitude": longitude,
         "date": start_date, "date_and_time": date_and_time, "description": description,
-        "price": extract_price(soup, description, item), "age_requirement": "Korhatár nélkül",
+        "price": extract_price(soup, full_text, item), "age_requirement": extract_age_requirement(soup, full_text, item),
         "categories": categories(title, description), "header_image": image, "ticket_link": event_url,
+        "additional_info": extract_additional_info(soup, event_url, full_text),
     }
 
 
@@ -560,6 +626,18 @@ def event_card_links(soup: BeautifulSoup, page_url: str) -> list[str]:
     return found
 
 
+def external_listing_links(soup: BeautifulSoup, page_url: str) -> list[str]:
+    """Eventim/Cooltix listaoldalakon csak konkrét esemény részletező URL-eket követ."""
+    host = urllib.parse.urlsplit(page_url).netloc.lower()
+    patterns = ("/event/", "/events/", "/esemeny/", "/event-") if "eventim" in host else ("/event/", "/esemeny/", "/events/")
+    links: list[str] = []
+    for link in soup.find_all("a", href=True):
+        url = canonical_url(str(link["href"]), page_url)
+        if url and any(token in urllib.parse.urlsplit(url).path.lower() for token in patterns) and url not in links:
+            links.append(url)
+    return links[:MAX_EVENTS]
+
+
 def parse_page(url: str) -> tuple[list[dict[str, Any]], list[str]]:
     source = fetch_html(url)
     if not source:
@@ -567,6 +645,9 @@ def parse_page(url: str) -> tuple[list[dict[str, Any]], list[str]]:
     soup = BeautifulSoup(source, "html.parser")
     for noise in soup.find_all(["nav", "footer", "aside", "noscript"]):
         noise.decompose()
+    host = urllib.parse.urlsplit(url).netloc.lower()
+    if url in EVENTIM_LISTINGS or url in COOLTIX_LISTINGS:
+        return [], external_listing_links(soup, url)
     listing_events = extract_programturizmus_listing_events(soup, url)
     if len(listing_events) >= 2:
         return [event_from_listing_card(event) for event in listing_events[:MAX_EVENTS]], []
@@ -594,13 +675,16 @@ def parse_page(url: str) -> tuple[list[dict[str, Any]], list[str]]:
     description = extract_description(soup)
     full_text = text_of(soup)
     date, date_and_time = parse_date_and_time(f"{page_title} {description} {full_text[:1800]}")
+    if not has_fixed_schedule(f"{page_title} {description} {full_text}"):
+        date, date_and_time = None, None
     location, latitude, longitude = extract_location(soup, full_text)
     return [{
         "title": page_title, "location": location, "latitude": latitude, "longitude": longitude,
         "date": date, "date_and_time": date_and_time, "description": description,
-        "price": extract_price(soup, full_text), "age_requirement": "Korhatár nélkül",
+        "price": extract_price(soup, full_text), "age_requirement": extract_age_requirement(soup, full_text),
         "categories": categories(page_title, description),
         "header_image": extract_best_image(soup, url, page_title), "ticket_link": url,
+        "additional_info": extract_additional_info(soup, url, full_text),
     }], []
 
 
@@ -647,7 +731,7 @@ def merge_with_existing(fresh_events: list[dict[str, Any]]) -> list[dict[str, An
 def main() -> None:
     # A Programturizmus listaoldal maga tartalmazza az egyedi kártyákat;
     # innen kell indulni, nem a csak belső /ajanlat- linkek szűk halmazából.
-    queue = [SEARCH_URL]
+    queue = [SEARCH_URL, *EVENTIM_LISTINGS, *COOLTIX_LISTINGS]
     queued = set(queue)
     visited: set[str] = set()
     collected: list[dict[str, Any]] = []
