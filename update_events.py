@@ -10,17 +10,17 @@ from google.genai import types
 MEMORY_FILE = "events.json"
 MAX_EVENTS = 30
 
-# Gemini AI Kliens
 api_key = os.environ.get("GEMINI_API_KEY")
 client = None
 
 if api_key:
     try:
         client = genai.Client(api_key=api_key)
+        print("✅ Gemini API Kulcs sikeresen betöltve!")
     except Exception as e:
-        print(f"⚠️ Hiba a Gemini Kliens indításakor: {e}")
+        print(f"❌ Hiba a Gemini Kliens indításakor: {e}")
 else:
-    print("⚠️ FIGYELEM: A GEMINI_API_KEY nem található a környezeti változók között!")
+    print("❌ HIÁNYZÓ KULCS: A GEMINI_API_KEY nem található a GitHub Secrets között!")
 
 def get_headers():
     return {
@@ -56,7 +56,7 @@ def process_event_with_ai(url):
         for tag in soup(['nav', 'header', 'footer', 'script', 'style', 'aside']):
             tag.decompose()
             
-        page_text = soup.get_text(separator=' ', strip=True)[:4000]
+        page_text = soup.get_text(separator=' ', strip=True)[:3500]
         
         image_candidates = []
         for img in soup.find_all('img', src=True):
@@ -82,20 +82,20 @@ def process_event_with_ai(url):
         Elérhető képlinkek:
         {json.dumps(image_candidates, ensure_ascii=False)}
         
-        A feladatod:
-        1. Hozz létre egy strukturált JSON objektumot az eseményről!
-        2. Cím: "title"
-        3. Dátum formátum: "date": "YYYY-MM-DD". Ha van pontos időpont, "date_and_time": "YYYY-MM-DD HH:MM", különben null.
-        4. Ár: "price": Ha ingyenes, pontosan "Ingyenes (Free)". Ha fizetős, add meg a pontos árat (pl. "3 500 Ft" vagy "Jegyárak a linken").
-        5. Cím/Helyszín: "location": Pontos székesfehérvári helyszín vagy cím.
-        6. Leírás: "description": 2-4 mondatos tiszta összefoglaló a programról.
-        7. Kategóriák: "categories": Válaszd ki a legillőbbeket tömbként ebből a listából: ["zene", "kultura", "muzeum", "turista", "sport", "detektiv", "romantikus", "luxus", "baratokkal"].
-        8. Poszter kép: "header_image": Válaszd ki a megadott képlinkek közül a leginkább esemény-poszternek tűnőt! Ha egyik sem jó, használhatod ezt: "https://fehervariprogram.hu/wordpress/wp-content/uploads/2021/04/szkk_noimage.jpg".
-        9. Ticket link: "ticket_link": Ha fizetős az esemény, add meg ezt a linket: "{url}". Ha ingyenes, legyen null.
+        A feladatod egy JSON objektum létrehozása:
+        - "title": Esemény címe
+        - "date": YYYY-MM-DD
+        - "date_and_time": "YYYY-MM-DD HH:MM" vagy null
+        - "price": "Ingyenes (Free)" vagy pontos ár (pl. "3 500 Ft")
+        - "location": Helyszín neve vagy címe Székesfehérváron
+        - "description": Tiszta 2-3 mondatos összefoglaló
+        - "categories": Legillőbb tételek tömbként kiválasztva ebből a listából: ["zene", "kultura", "muzeum", "turista", "sport", "detektiv", "romantikus", "luxus", "baratokkal"]
+        - "header_image": A leginkább poszternek tűnő képlink a listából
+        - "ticket_link": Ha fizetős: "{url}", ha ingyenes: null
         """
 
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -104,7 +104,6 @@ def process_event_with_ai(url):
         )
         
         event_json = json.loads(response.text)
-        
         event_json["latitude"] = 47.1912
         event_json["longitude"] = 18.4095
         event_json["age_requirement"] = "Korhatár nélkül (All ages)"
@@ -112,7 +111,7 @@ def process_event_with_ai(url):
         return event_json
 
     except Exception as e:
-        print(f"⚠️ AI Feldolgozási hiba ({url}): {e}")
+        print(f"⚠️ Hiba az esemény feldolgozásakor ({url}): {e}")
         return None
 
 def main():
@@ -120,7 +119,7 @@ def main():
     print(f"🌐 {len(links)} esemény linkje megtalálva.")
     
     if not client:
-        print("❌ A futás leállt, mert hiányzik az API kulcs vagy érvénytelen.")
+        print("❌ Szakítás: Nincs működő AI Kliens. Ellenőrizd a GEMINI_API_KEY-t a GitHub Secrets-ben!")
         return
 
     events = []
@@ -133,7 +132,7 @@ def main():
     if events:
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
             json.dump(events, f, ensure_ascii=False, indent=2)
-        print(f"💾 Kész! {len(events)} esemény elmentve az events.json-ba.")
+        print(f"💾 Kész! {len(events)} esemény elmentve a(z) {MEMORY_FILE} fájlba.")
     else:
         print("⚠️ Nem sikerült egyetlen eseményt sem feldolgozni.")
 
