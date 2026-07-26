@@ -79,8 +79,8 @@ function eventKey(event) { return [event.Title, eventDateValue(event), event.Loc
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
 function eventDateOnly(event) { const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
 function dateKey(value) { const match = String(value || '').match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : ''; }
-function todayKey() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; }
-function isToday(event) { return dateKey(eventDateValue(event)) === todayKey(); }
+function tomorrowKey() { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`; }
+function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
 function setText(selector, value, scope) { const element = find(selector, scope); if (element) element.textContent = value; return element; }
 function vibrate(milliseconds = 16) { if ('vibrate' in navigator) navigator.vibrate(milliseconds); }
 
@@ -390,19 +390,6 @@ function openEventDetails(event, triggerButton) {
     if (ticketUrl && !isFree(event)) eventDetailsTicket.href = ticketUrl;
   }
   eventDetailsDialog.hidden = false;
-  if (triggerButton) {
-    const buttonBounds = triggerButton.getBoundingClientRect();
-    const dialogBounds = detailsWindow.getBoundingClientRect();
-    const inset = 16;
-    const viewportWidth = window.visualViewport?.width || window.innerWidth;
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const maxTop = Math.max(inset, viewportHeight - dialogBounds.height - inset);
-    const maxLeft = Math.max(inset, viewportWidth - dialogBounds.width - inset);
-    const top = Math.min(Math.max(inset, buttonBounds.top - 76), maxTop);
-    const left = Math.min(Math.max(inset, buttonBounds.left - dialogBounds.width * 0.5), maxLeft);
-    detailsWindow.style.top = `${top}px`;
-    detailsWindow.style.left = `${left}px`;
-  }
   fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
     if (eventDetailsWeather) eventDetailsWeather.textContent = `Várható időjárás: ${value}`;
   });
@@ -563,7 +550,7 @@ function renderFavorites() {
 
 function renderToday() {
   if (!todayGrid || !todaySection) return;
-  const todayEvents = events.filter(isToday);
+  const todayEvents = events.filter(isTomorrow);
   const visibleToday = position ? sortByDistance(todayEvents) : todayEvents;
   todayGrid.replaceChildren();
   todaySection.hidden = !visibleToday.length;
