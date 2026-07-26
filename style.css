@@ -169,13 +169,15 @@ button, .ticket-button { position: relative; }
 .city-option:last-child { grid-column: 1 / -1; }
 .city-option:hover, .city-option.active { border-color: rgba(3, 218, 198, 0.72); background: linear-gradient(135deg, rgba(3, 218, 198, 0.23), rgba(255, 255, 255, 0.09)); color: var(--accent); }
 .event-details-dialog { width: min(820px, calc(100% - 32px)); max-height: min(78vh, 760px); padding: 0; border: 1px solid rgba(224, 224, 224, 0.26); border-radius: 28px; background: rgba(30, 30, 30, 0.97); color: var(--text); box-shadow: 0 40px 110px rgba(0, 0, 0, 0.72); backdrop-filter: blur(32px); }
-.event-details-dialog.is-anchored { position: fixed; margin: 0; }
+.event-details-dialog.is-anchored { position: fixed; inset: auto; right: auto; bottom: auto; margin: 0; transform: none; }
 .event-details-dialog::backdrop { background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(5px); }
-.event-details-content { position: relative; max-height: min(78vh, 760px); padding: 40px 36px 32px; overflow-y: auto; }
-.event-details-content .dialog-close { position: absolute; top: 16px; right: 16px; }
-.event-details-content h2 { max-width: calc(100% - 54px); margin: 0 0 16px; font-size: 32px; line-height: 1.25; letter-spacing: -0.04em; }
+.event-details-content { position: relative; max-height: min(78vh, 760px); overflow-y: auto; }
+.event-details-header { position: sticky; z-index: 2; top: 0; padding: 32px 36px 20px; border-bottom: 1px solid rgba(224, 224, 224, 0.14); background: rgba(30, 30, 30, 0.98); backdrop-filter: blur(28px); }
+.event-details-header .dialog-close { position: absolute; top: 16px; right: 16px; }
+.event-details-header h2 { max-width: calc(100% - 54px); margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: -0.04em; }
+.event-details-body { padding: 24px 36px 32px; }
 .event-details-description { margin: 16px 0 24px; color: var(--text); white-space: pre-line; }
-.event-details-content .ticket-button { min-height: 44px; padding: 10px 14px; }
+.event-details-body .ticket-button { min-height: 44px; padding: 10px 14px; }
 
 @media (max-width: 800px) {
   .hero { min-height: 390px; }
