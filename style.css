@@ -168,9 +168,9 @@ button, .ticket-button { position: relative; }
 .city-option { min-height: 48px; padding: 8px 14px; border: 1px solid var(--glass-border); border-radius: 16px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04)); box-shadow: inset 0 1px 0 var(--glass-highlight); color: var(--text); text-align: left; cursor: pointer; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
 .city-option:last-child { grid-column: 1 / -1; }
 .city-option:hover, .city-option.active { border-color: rgba(3, 218, 198, 0.72); background: linear-gradient(135deg, rgba(3, 218, 198, 0.23), rgba(255, 255, 255, 0.09)); color: var(--accent); }
-.event-details-dialog { width: min(820px, calc(100% - 32px)); max-height: min(78vh, 760px); padding: 0; border: 1px solid rgba(224, 224, 224, 0.26); border-radius: 28px; background: rgba(30, 30, 30, 0.97); color: var(--text); box-shadow: 0 40px 110px rgba(0, 0, 0, 0.72); backdrop-filter: blur(32px); }
-.event-details-dialog.is-anchored { position: fixed; inset: auto; right: auto; bottom: auto; margin: 0; transform: none; }
-.event-details-dialog::backdrop { background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(5px); }
+.event-details-overlay { position: fixed; z-index: 100; inset: 0; background: rgba(0, 0, 0, 0.68); backdrop-filter: blur(5px); }
+.event-details-overlay[hidden] { display: none; }
+.event-details-window { position: fixed; width: min(820px, calc(100vw - 32px)); max-height: min(78vh, 760px); overflow: hidden; border: 1px solid rgba(224, 224, 224, 0.26); border-radius: 28px; background: rgba(30, 30, 30, 0.97); color: var(--text); box-shadow: 0 40px 110px rgba(0, 0, 0, 0.72); backdrop-filter: blur(32px); }
 .event-details-content { position: relative; max-height: min(78vh, 760px); overflow-y: auto; }
 .event-details-header { position: sticky; z-index: 2; top: 0; padding: 32px 36px 20px; border-bottom: 1px solid rgba(224, 224, 224, 0.14); background: rgba(30, 30, 30, 0.98); backdrop-filter: blur(28px); }
 .event-details-header .dialog-close { position: absolute; top: 16px; right: 16px; }
