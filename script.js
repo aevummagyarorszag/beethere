@@ -1,4 +1,4 @@
-const SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSPfSI82U3LFTE93Wj_ZaGSqNHyxpmAXnnt6ixl2XBgqNUfHkbXZeS4TV_WEY3DB1mESAsRZRtOY8HZ/pub?output=csv';
+const EVENTS_FILE = 'events.json';
 const CATEGORIES = ['party', 'kultúra', 'sport', 'családi', 'gasztro', 'romantika'];
 const CATEGORY_EMOJIS = { party: '🎉', kultúra: '🎭', sport: '🏀', családi: '👪', gasztro: '🦐', romantika: '🌹' };
 const CITIES = [
@@ -65,9 +65,6 @@ let activeFilterButton = null;
 let position = null;
 let selectedCity = '';
 let favoriteIds = loadFavorites();
-
-// A meglévő Google Sheets CSV-parser.
-function csv(text) { let rows = [], row = [], cell = '', quoted = false; for (let i = 0; i < text.length; i += 1) { const char = text[i], next = text[i + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { row.push(cell.trim()); cell = ''; } else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && next === '\n') i += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; } else cell += char; } row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); const [headers, ...data] = rows; return data.map(values => Object.fromEntries(headers.map((header, index) => [header.replace(/^\uFEFF/, '').trim(), values[index] || '']))); }
 
 function safeUrl(value) { try { const valueUrl = new URL(value); return /^https?:$/.test(valueUrl.protocol) ? valueUrl.href : ''; } catch { return ''; } }
 function haversineKm(lat1, lon1, lat2, lon2) { const toRadians = value => value * Math.PI / 180; const lat = toRadians(lat2 - lat1), lon = toRadians(lon2 - lon1); const a = Math.sin(lat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(lon / 2) ** 2; return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); }
@@ -766,9 +763,9 @@ function initSideRays() {
 
 async function loadEvents() {
   try {
-    const response = await fetch(SHEET);
-    if (!response.ok) throw new Error('A táblázat nem elérhető.');
-    events = csv(await response.text()).filter(event => event.Title);
+    const response = await fetch(EVENTS_FILE);
+    if (!response.ok) throw new Error('Az events.json fájl nem elérhető.');
+    events = (await response.json()).filter(event => event.Title);
     renderEvents();
   } catch (error) {
     console.error('[Bee There] Eseménybetöltési hiba:', error);
