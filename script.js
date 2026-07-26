@@ -49,7 +49,8 @@ const heroVideo = find('#hero-video');
 const pixelBlast = find('#pixel-blast');
 const eventDetailsDialog = find('#event-details-dialog');
 const eventDetailsClose = find('#event-details-close');
-const eventDetailsMeta = find('#event-details-meta');
+const eventDetailsDate = find('#event-details-date');
+const eventDetailsLocation = find('#event-details-location');
 const eventDetailsTitle = find('#event-details-title');
 const eventDetailsTime = find('#event-details-time');
 const eventDetailsWeather = find('#event-details-weather');
@@ -365,18 +366,20 @@ function attachCarouselControls(scope = document) {
 
 function closeEventDetails() {
   if (!eventDetailsDialog) return;
-  if (typeof eventDetailsDialog.close === 'function') eventDetailsDialog.close();
-  else eventDetailsDialog.removeAttribute('open');
-  eventDetailsDialog.classList.remove('is-anchored');
-  eventDetailsDialog.style.removeProperty('top');
-  eventDetailsDialog.style.removeProperty('left');
+  const detailsWindow = find('.event-details-window', eventDetailsDialog);
+  eventDetailsDialog.hidden = true;
+  if (detailsWindow) {
+    detailsWindow.style.removeProperty('top');
+    detailsWindow.style.removeProperty('left');
+  }
 }
 
 function openEventDetails(event, triggerButton) {
   if (!eventDetailsDialog) return;
-  const scrollX = window.scrollX;
-  const scrollY = window.scrollY;
-  setText('#event-details-meta', `${eventDateOnly(event)} · ${event.Location || 'Helyszín hamarosan'}`, document);
+  const detailsWindow = find('.event-details-window', eventDetailsDialog);
+  if (!detailsWindow) return;
+  setText('#event-details-date', eventDateOnly(event), document);
+  setText('#event-details-location', event.Location || 'Helyszín hamarosan', document);
   setText('#event-details-title', event.Title || 'Esemény', document);
   setText('#event-details-time', event.Time || event['Date and Time'] || 'Időpont nincs megadva', document);
   setText('#event-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', document);
@@ -386,12 +389,10 @@ function openEventDetails(event, triggerButton) {
     eventDetailsTicket.hidden = !ticketUrl || isFree(event);
     if (ticketUrl && !isFree(event)) eventDetailsTicket.href = ticketUrl;
   }
-  eventDetailsDialog.classList.add('is-anchored');
-  if (typeof eventDetailsDialog.showModal === 'function') eventDetailsDialog.showModal();
-  else eventDetailsDialog.setAttribute('open', '');
+  eventDetailsDialog.hidden = false;
   if (triggerButton) {
     const buttonBounds = triggerButton.getBoundingClientRect();
-    const dialogBounds = eventDetailsDialog.getBoundingClientRect();
+    const dialogBounds = detailsWindow.getBoundingClientRect();
     const inset = 16;
     const viewportWidth = window.visualViewport?.width || window.innerWidth;
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
@@ -399,12 +400,9 @@ function openEventDetails(event, triggerButton) {
     const maxLeft = Math.max(inset, viewportWidth - dialogBounds.width - inset);
     const top = Math.min(Math.max(inset, buttonBounds.top - 76), maxTop);
     const left = Math.min(Math.max(inset, buttonBounds.left - dialogBounds.width * 0.5), maxLeft);
-    eventDetailsDialog.style.top = `${top}px`;
-    eventDetailsDialog.style.left = `${left}px`;
+    detailsWindow.style.top = `${top}px`;
+    detailsWindow.style.left = `${left}px`;
   }
-  const restoreScrollPosition = () => window.scrollTo(scrollX, scrollY);
-  window.requestAnimationFrame(restoreScrollPosition);
-  window.setTimeout(restoreScrollPosition, 0);
   fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
     if (eventDetailsWeather) eventDetailsWeather.textContent = `Várható időjárás: ${value}`;
   });
