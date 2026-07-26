@@ -145,13 +145,17 @@
 
   <dialog id="event-details-dialog" class="event-details-dialog" aria-labelledby="event-details-title">
     <article class="event-details-content">
-      <button id="event-details-close" class="dialog-close" type="button" aria-label="Bezárás">×</button>
-      <p id="event-details-meta" class="eyebrow"></p>
-      <h2 id="event-details-title"></h2>
-      <p id="event-details-time" class="event-time"></p>
-      <p id="event-details-weather" class="event-weather" aria-live="polite">Időjárás betöltése…</p>
-      <p id="event-details-description" class="event-details-description"></p>
-      <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+      <header class="event-details-header">
+        <button id="event-details-close" class="dialog-close" type="button" aria-label="Bezárás">×</button>
+        <p id="event-details-meta" class="eyebrow"></p>
+        <h2 id="event-details-title"></h2>
+      </header>
+      <div class="event-details-body">
+        <p id="event-details-time" class="event-time"></p>
+        <p id="event-details-weather" class="event-weather" aria-live="polite">Időjárás betöltése…</p>
+        <p id="event-details-description" class="event-details-description"></p>
+        <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+      </div>
     </article>
   </dialog>
 
