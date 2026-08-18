@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Események, amelyekért érdemes elindulni.">
+  <title>Bee There — Események</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="pixel-blast" aria-hidden="true"></canvas>
+  <header class="hero" id="top">
+    <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" muted playsinline preload="metadata"></video></div>
+    <canvas id="side-rays" aria-hidden="true"></canvas>
+    <nav class="nav wrapper" aria-label="Fő navigáció">
+        <a class="brand" href="#top" aria-label="Bee There – főoldal"><img src="assets/beethere_navmark.png" alt="Bee There" loading="lazy" decoding="async"></a>
+      <div class="nav-menu-group">
+        <div id="nav-menu" class="nav-menu" hidden>
+          <a href="#esemenyek">Események</a>
+          <a href="#favorites-section">Kedvencek</a>
+          <a href="#calendar-section">Naptár</a>
+          <a href="#kapcsolat">Kapcsolat</a>
+        </div>
+        <button id="nav-menu-toggle" class="nav-menu-toggle" type="button" aria-label="Navigáció megnyitása" aria-expanded="false" aria-controls="nav-menu"><span></span><span></span><span></span></button>
+      </div>
+      <span class="beta-badge">BÉTA</span>
+      <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog">
+        <svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg>
+        <span id="city-selector-label">Helyzeted…</span><span class="city-selector-chevron" aria-hidden="true">⌄</span>
+      </button>
+    </nav>
+    <div class="hero-content wrapper">
+      <p class="eyebrow">PROGRAMOK, AMIK MEGMOZDÍTANAK</p>
+      <h1>Találd meg a<br><em>következő élményed.</em></h1>
+      <p>Koncertek, közös esték és különleges programok — hozzád rendezve.</p>
+      <a class="cta" href="#esemenyek">Események felkutatása <span aria-hidden="true">↘</span></a>
+    </div>
+  </header>
+
+  <main class="wrapper events-section" id="esemenyek">
+    <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">NE HAGYD KI</p>
+          <h2 id="featured-title">Kiemelt események <span class="title-emoji" aria-hidden="true">🔥</span></h2>
+        </div>
+        <div class="carousel-controls" aria-label="Kiemelt események lapozása">
+          <button class="carousel-arrow" type="button" data-carousel-target="featured-grid" data-direction="prev" aria-label="Előző kiemelt esemény">←</button>
+          <button class="carousel-arrow" type="button" data-carousel-target="featured-grid" data-direction="next" aria-label="Következő kiemelt esemény">→</button>
+        </div>
+      </div>
+      <div id="featured-grid" class="events-grid featured-grid event-carousel" tabindex="0" aria-label="Kiemelt események"><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article></div>
+    </section>
+
+    <section class="all-events" aria-labelledby="events-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MINDEN PROGRAM</p>
+          <h2 id="events-title">Aktuális események <span class="title-emoji" aria-hidden="true">⚡</span></h2>
+        </div>
+        <p id="location-text" class="location-status">Helyzeted meghatározása…</p>
+      </div>
+      <div id="category-filters" class="filter-bar" aria-label="Kategóriaszűrők"></div>
+      <div id="events-grid" aria-live="polite"><div class="events-grid"><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article></div></div>
+    </section>
+
+    <section id="favorites-section" class="favorites-section" hidden aria-labelledby="favorites-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ELMENTVE NEKED</p>
+          <h2 id="favorites-title">Kedvelt események <span class="title-emoji" aria-hidden="true">❤️</span></h2>
+        </div>
+        <div class="carousel-controls" aria-label="Kedvelt események lapozása">
+          <button class="carousel-arrow" type="button" data-carousel-target="favorites-grid" data-direction="prev" aria-label="Előző kedvelt esemény">←</button>
+          <button class="carousel-arrow" type="button" data-carousel-target="favorites-grid" data-direction="next" aria-label="Következő kedvelt esemény">→</button>
+        </div>
+      </div>
+      <div id="favorites-grid" class="events-grid event-carousel" tabindex="0" aria-label="Kedvelt események"></div>
+    </section>
+
+    <section id="today-section" class="today-section" aria-labelledby="today-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">HOLNAPI TERV</p><h2 id="today-title">Holnapi események</h2></div>
+        <div class="carousel-controls" aria-label="Holnapi események lapozása">
+          <button class="carousel-arrow" type="button" data-carousel-target="today-grid" data-direction="prev" aria-label="Előző mai esemény">←</button>
+          <button class="carousel-arrow" type="button" data-carousel-target="today-grid" data-direction="next" aria-label="Következő mai esemény">→</button>
+        </div>
+      </div>
+      <div id="today-grid" class="events-grid event-carousel" tabindex="0" aria-label="Holnapi események"></div>
+    </section>
+
+    <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-title">
+      <div class="section-heading"><div><p class="eyebrow">TERVEZD MEG</p><h2 id="calendar-title">Eseménynaptár <span class="title-emoji" aria-hidden="true">📆</span></h2></div></div>
+      <div id="calendar-filters" class="filter-bar calendar-filter-bar" aria-label="Naptár kategóriaszűrői"></div>
+      <div class="calendar-shell">
+        <div class="calendar-toolbar"><button id="calendar-prev" class="calendar-nav-button" type="button" aria-label="Előző hónap">←</button><h3 id="calendar-month-label"></h3><button id="calendar-next" class="calendar-nav-button" type="button" aria-label="Következő hónap">→</button></div>
+        <div class="calendar-weekdays" aria-hidden="true"><span>H</span><span>K</span><span>Sze</span><span>Cs</span><span>P</span><span>Szo</span><span>V</span></div>
+        <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Eseménynaptár"></div>
+      </div>
+      <div id="calendar-events" class="calendar-events" aria-live="polite"><p class="calendar-empty">Válassz egy napot a programok megtekintéséhez.</p></div>
+    </section>
+
+    <template id="event-template">
+      <article class="event-card">
+        <div class="image-wrap">
+          <img class="event-image" alt="" loading="lazy">
+          <div class="image-placeholder"><span>bee there / esemény</span><strong class="placeholder-title"></strong></div>
+          <span class="distance-pill" aria-label="Távolság"><span class="distance-value">---</span></span>
+          <button class="favorite-button" type="button" aria-label="Esemény kedvelése" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
+          </button>
+        </div>
+        <div class="event-content">
+          <div class="event-meta">
+            <time class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span class="event-date-value"></span></time>
+            <span class="event-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span class="event-location-value"></span></span>
+          </div>
+          <h3 class="event-title"></h3>
+          <p class="event-description"></p>
+          <div class="event-bottom"><div class="badges"><span class="badge category-badge"></span><span class="badge price-badge"></span><span class="badge age-badge"></span></div></div>
+          <section class="inline-details" hidden aria-live="polite">
+            <header class="inline-details-header">
+              <div class="event-meta inline-details-meta">
+                <span class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span class="inline-date-value"></span></span>
+                <span class="event-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span class="inline-location-value"></span></span>
+              </div>
+              <h4 class="inline-details-title"></h4>
+            </header>
+            <p class="inline-details-time"></p>
+            <p class="inline-details-weather">Időjárás betöltése…</p>
+            <p class="inline-details-description"></p>
+            <a class="inline-details-ticket ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+          </section>
+        </div>
+        <button class="details-button" type="button" aria-haspopup="dialog">Részletek</button>
+      </article>
+    </template>
+  </main>
+
+  <section class="contact-video-section" aria-label="Bee There hangulatvideó">
+    <video src="assets/beevid_transparent.webm" autoplay muted loop playsinline preload="metadata" class="contact-video"></video>
+  </section>
+
+  <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title">
+    <div class="outro-content wrapper">
+      <div class="outro-topline">
+        <p class="outro-weather"><span id="outro-weather-icon" aria-hidden="true">🌡️</span><span id="outro-weather">Időjárás a helyzeted alapján</span></p>
+        <div class="outro-contact">
+          <span>Kapcsolat</span>
+          <a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a>
+          <div class="social-links" aria-label="Közösségi oldalak">
+            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+            <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 21v-8h3l.45-3H14V8.1c0-.87.25-1.46 1.5-1.46H17.6V4.02c-.37-.05-1.13-.16-2.15-.16-2.13 0-3.59 1.3-3.59 3.69V10H9v3h2.86v8H14Z"/></svg></a>
+          </div>
+        </div>
+      </div>
+        <h2 id="outro-title" class="outro-message" aria-label="A Bee there segít, hogy jól érezd magad bármikor, bárkivel."></h2>
+    </div>
+  </section>
+
+  <dialog id="city-dialog" class="city-dialog" aria-labelledby="city-dialog-title">
+    <div class="city-dialog-content">
+      <div class="city-dialog-heading"><div><p class="eyebrow">HELYSZÍN</p><h2 id="city-dialog-title">Melyik városban keresel?</h2></div><button id="city-dialog-close" class="dialog-close" type="button" aria-label="Bezárás">×</button></div>
+      <p class="city-dialog-copy">Válassz egy várost, és a programokat ehhez a ponthoz rendezzük távolság szerint.</p>
+      <div id="city-options" class="city-options" aria-label="Városok">
+        <button class="city-option" type="button" data-city="Budapest">Budapest</button>
+        <button class="city-option" type="button" data-city="Debrecen">Debrecen</button>
+        <button class="city-option" type="button" data-city="Győr">Győr</button>
+        <button class="city-option" type="button" data-city="Pécs">Pécs</button>
+        <button class="city-option" type="button" data-city="Székesfehérvár">Székesfehérvár</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="event-details-dialog" class="event-details-overlay" role="dialog" aria-modal="true" aria-labelledby="event-details-title" hidden>
+    <article class="event-details-window">
+      <div class="event-details-content">
+      <header class="event-details-header">
+        <button id="event-details-close" class="dialog-close" type="button" aria-label="Bezárás">×</button>
+        <div class="event-details-meta event-meta">
+          <span class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span id="event-details-date"></span></span>
+          <span class="event-location event-details-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span id="event-details-location"></span></span>
+        </div>
+        <h2 id="event-details-title"></h2>
+      </header>
+      <div class="event-details-body">
+        <p id="event-details-time" class="event-time"></p>
+        <p id="event-details-weather" class="event-weather" aria-live="polite">Időjárás betöltése…</p>
+        <p id="event-details-description" class="event-details-description"></p>
+        <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+      </div>
+      </div>
+    </article>
+  </div>
+
+  <footer class="footer wrapper">
+<img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
+    <span>Találkozzunk a városban.</span>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
