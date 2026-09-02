@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Események, amelyekért érdemes elindulni.">
+  <!-- GitHub Pages cannot set server headers. These browser-enforced policies
+       still restrict the static app to its required resources. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; media-src 'self'; connect-src 'self' https://api.open-meteo.com https://archive-api.open-meteo.com; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), payment=(), usb=()">
   <title>Bee There — Események</title>
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
@@ -15,7 +20,7 @@
 <body>
   <canvas id="pixel-blast" aria-hidden="true"></canvas>
   <header class="hero" id="top">
-    <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" muted playsinline preload="metadata"></video></div>
+    <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" autoplay muted playsinline preload="metadata"></video></div>
     <canvas id="side-rays" aria-hidden="true"></canvas>
     <nav class="nav wrapper" aria-label="Fő navigáció">
         <a class="brand" href="#top" aria-label="Bee There – főoldal"><img src="assets/beethere_navmark.png" alt="Bee There" loading="lazy" decoding="async"></a>
@@ -143,7 +148,9 @@
   </main>
 
   <section class="contact-video-section" aria-label="Bee There hangulatvideó">
-    <video src="assets/beevid_transparent.webm" autoplay muted loop playsinline preload="metadata" class="contact-video"></video>
+    <video id="contact-video" autoplay muted loop playsinline webkit-playsinline preload="auto" class="contact-video" disablepictureinpicture>
+      <source src="assets/beevid_transparent.webm" type="video/webm">
+    </video>
   </section>
 
   <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title">
@@ -199,7 +206,10 @@
   </div>
 
   <footer class="footer wrapper">
-<img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
+    <div class="footer-brand">
+      <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
+      <span class="site-version">version - 01.041</span>
+    </div>
     <span>Találkozzunk a városban.</span>
   </footer>
   <script src="script.js"></script>

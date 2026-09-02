@@ -10,8 +10,12 @@ const CITIES = [
   { name: 'Székesfehérvár', latitude: 47.1860, longitude: 18.4221 }
 ];
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
+const MAX_FAVORITES = 100;
+const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
 const weatherCache = new Map();
-const HERO_VIDEOS = ['assets/front_danc.mp4', 'assets/front_family.mp4', 'assets/front_gasztro.mp4', 'assets/front_muzeum.mp4', 'assets/front_sport.mp4'];
+// The compressed header clips are loaded one at a time by initHeroVideo().
+// Keep these names in sync with the files in /assets.
+const HERO_VIDEOS = ['assets/csokk01.mp4', 'assets/csokk02.mp4', 'assets/csokk03.mp4', 'assets/csokk04.mp4', 'assets/csokk05.mp4'];
 
 const find = (selector, scope = document) => {
   if (!scope || typeof scope.querySelector !== 'function') {
@@ -84,7 +88,75 @@ let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 // A meglévő Google Sheets CSV-parser.
 function csv(text) { let rows = [], row = [], cell = '', quoted = false; for (let i = 0; i < text.length; i += 1) { const char = text[i], next = text[i + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { row.push(cell.trim()); cell = ''; } else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && next === '\n') i += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; } else cell += char; } row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); const [headers, ...data] = rows; return data.map(values => Object.fromEntries(headers.map((header, index) => [header.replace(/^\uFEFF/, '').trim(), values[index] || '']))); }
 
-function safeUrl(value) { try { const valueUrl = new URL(value); return /^https?:$/.test(valueUrl.protocol) ? valueUrl.href : ''; } catch { return ''; } }
+function safeUrl(value) {
+  const candidate = String(value || '').trim();
+  if (!candidate || candidate.length > 2048) return '';
+  try {
+    const valueUrl = new URL(candidate);
+    return valueUrl.protocol === 'https:' ? valueUrl.href : '';
+  } catch { return ''; }
+}
+
+function safeText(value, maximumLength) {
+  return String(value || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, maximumLength);
+}
+
+function safeCoordinate(value, minimum, maximum) {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) && coordinate >= minimum && coordinate <= maximum ? coordinate : undefined;
+}
+
+function sanitizeEvent(rawEvent) {
+  if (!rawEvent || typeof rawEvent !== 'object') return null;
+  return {
+    Title: safeText(rawEvent.Title, 180),
+    Location: safeText(rawEvent.Location, 240),
+    Latitude: safeCoordinate(rawEvent.Latitude, -90, 90),
+    Longitude: safeCoordinate(rawEvent.Longitude, -180, 180),
+    Date: safeText(rawEvent.Date, 64),
+    Time: safeText(rawEvent.Time, 64),
+    'Date and Time': safeText(rawEvent['Date and Time'], 128),
+    Description: safeText(rawEvent.Description, 1_200),
+    Price: safeText(rawEvent.Price, 80),
+    'Age Requirement': safeText(rawEvent['Age Requirement'], 80),
+    'Long description': safeText(rawEvent['Long description'] || rawEvent['Long Description'], 8_000),
+    'Header Image': safeUrl(rawEvent['Header Image']),
+    'Ticket Link': safeUrl(rawEvent['Ticket Link']),
+    Category: safeText(rawEvent.Category || rawEvent.Kategória, 160),
+    Featured: safeText(rawEvent.Featured || rawEvent.Kiemelt, 16),
+  };
+}
+
+async function parseJsonWithSizeLimit(response, maximumBytes) {
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
+    throw new Error('Az eseményadatok mérete túl nagy.');
+  }
+  if (!response.body?.getReader) return response.json();
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maximumBytes) {
+        await reader.cancel();
+        throw new Error('Az eseményadatok mérete túl nagy.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  chunks.forEach(chunk => { bytes.set(chunk, offset); offset += chunk.byteLength; });
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+}
 function optimizedImageUrl(value) {
   const url = safeUrl(value);
   if (!url) return '';
@@ -204,12 +276,20 @@ function initOutroMessage() {
 }
 
 function loadFavorites() {
-  try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]')); }
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || '[]');
+    if (!Array.isArray(saved)) return new Set();
+    return new Set(saved.filter(value => typeof value === 'string' && value.length <= 800).slice(0, MAX_FAVORITES));
+  }
   catch (error) { console.warn('[Bee There] A kedvencek nem olvashatók:', error); return new Set(); }
 }
 
 function saveFavorites() {
-  try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favoriteIds])); }
+  try {
+    const saved = [...favoriteIds].filter(value => typeof value === 'string' && value.length <= 800).slice(0, MAX_FAVORITES);
+    favoriteIds = new Set(saved);
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(saved));
+  }
   catch (error) { console.warn('[Bee There] A kedvencek nem menthetők:', error); }
 }
 
@@ -229,10 +309,10 @@ function triggerBounce(element) {
   }
 }
 
-function moveGooeyFilter(button) {
-  const gooey = find('.gooey-filter', filterBar);
-  if (!gooey || !button || !filterBar) return;
-  const barBounds = filterBar.getBoundingClientRect();
+function moveGooeyFilter(button, bar = filterBar) {
+  const gooey = find('.gooey-filter', bar);
+  if (!gooey || !button || !bar) return;
+  const barBounds = bar.getBoundingClientRect();
   const buttonBounds = button.getBoundingClientRect();
   gooey.style.left = `${buttonBounds.left - barBounds.left}px`;
   gooey.style.top = `${buttonBounds.top - barBounds.top}px`;
@@ -710,7 +790,8 @@ function createCalendarFilters() {
     button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
     button.setAttribute('aria-pressed', 'false');
     button.addEventListener('click', () => {
-      calendarCategory = calendarCategory === category ? '' : category;
+      const isSecondClick = calendarCategory === category;
+      calendarCategory = isSecondClick ? '' : category;
       calendarSelectedDate = '';
       findAll('.filter-button', calendarFilters).forEach(filter => {
         const active = filter === button && Boolean(calendarCategory);
@@ -718,12 +799,23 @@ function createCalendarFilters() {
         filter.setAttribute('aria-pressed', String(active));
       });
       calendarFilters.classList.toggle('has-selection', Boolean(calendarCategory));
+      const gooey = find('.gooey-filter', calendarFilters);
+      if (isSecondClick && gooey) {
+        gooey.hidden = true;
+        gooey.style.removeProperty('left');
+        gooey.style.removeProperty('top');
+        gooey.style.removeProperty('width');
+        gooey.style.removeProperty('height');
+      } else if (calendarCategory) moveGooeyFilter(button, calendarFilters);
       renderCalendar();
-      triggerBounce(button);
-      vibrate(12);
+      vibrate(10);
     });
     calendarFilters.append(button);
   });
+  const gooey = document.createElement('span');
+  gooey.className = 'gooey-filter';
+  gooey.hidden = true;
+  calendarFilters.append(gooey);
 }
 
 function setupCalendar() {
@@ -922,24 +1014,125 @@ function initPixelBlast() {
 
 function initHeroVideo() {
   if (!heroVideo || !HERO_VIDEOS.length) return;
+  const layer = heroVideo.parentElement;
+  if (!layer) return;
+
+  // Every source gets its own persistent video element. We assign each src at
+  // most once, so returning to csokk01 after csokk05 reuses the already loaded
+  // media instead of issuing another fetch for the same file.
+  const clips = HERO_VIDEOS.map((source, index) => {
+    const clip = index === 0 ? heroVideo : document.createElement('video');
+    clip.classList.add('hero-clip');
+    clip.dataset.source = source;
+    clip.muted = true;
+    clip.defaultMuted = true;
+    clip.playsInline = true;
+    clip.autoplay = true;
+    // Set the attributes as well as the DOM properties: iOS Safari bases its
+    // autoplay decision on the attributes for dynamically created videos.
+    clip.setAttribute('muted', '');
+    clip.setAttribute('playsinline', '');
+    clip.setAttribute('autoplay', '');
+    clip.preload = 'metadata';
+    clip.setAttribute('aria-hidden', 'true');
+    if (index > 0) layer.append(clip);
+    return clip;
+  });
+
   let videoIndex = 0;
   let rotationTimer = 0;
-  const playNext = () => {
-    window.clearTimeout(rotationTimer);
-    heroVideo.src = HERO_VIDEOS[videoIndex];
-    heroVideo.load();
-    heroVideo.play().catch(error => console.warn('[Bee There] A fejlécvideó nem indítható:', error));
-    videoIndex = (videoIndex + 1) % HERO_VIDEOS.length;
-    rotationTimer = window.setTimeout(playNext, 4000);
+  let preloadTimer = 0;
+
+  const loadClipOnce = index => {
+    const clip = clips[index];
+    if (!clip || clip.dataset.loaded === 'true') return clip;
+    clip.src = clip.dataset.source || '';
+    clip.dataset.loaded = 'true';
+    clip.load();
+    return clip;
   };
-  playNext();
+
+  const preloadUpcomingClip = () => {
+    const nextIndex = (videoIndex + 1) % clips.length;
+    loadClipOnce(nextIndex);
+  };
+
+  const showClip = index => {
+    window.clearTimeout(rotationTimer);
+    window.clearTimeout(preloadTimer);
+    videoIndex = index;
+    const activeClip = loadClipOnce(videoIndex);
+    if (!activeClip) return;
+
+    clips.forEach((clip, clipIndex) => {
+      const isActive = clipIndex === videoIndex;
+      clip.classList.toggle('is-active', isActive);
+      if (!isActive) clip.pause();
+    });
+
+    const startPlayback = () => {
+      if (!activeClip.classList.contains('is-active')) return;
+      activeClip.currentTime = 0;
+      activeClip.play().catch(error => console.warn('[Bee There] A fejlécvideó nem indítható:', error));
+    };
+    // Calling play before a dynamically assigned source has video data is
+    // unreliable in Safari. Wait for a playable frame when necessary.
+    if (activeClip.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) startPlayback();
+    else activeClip.addEventListener('canplay', startPlayback, { once: true });
+
+    // Metadata for just the next clip arrives while the current clip is on
+    // screen. We intentionally do not download all five videos at page load.
+    preloadTimer = window.setTimeout(preloadUpcomingClip, 2000);
+    rotationTimer = window.setTimeout(() => {
+      showClip((videoIndex + 1) % clips.length);
+    }, 4000);
+  };
+
+  showClip(0);
 }
 
 function initContactVideo() {
   if (!contactVideo) return;
-  contactVideo.play().catch(error => {
-    console.log('Autoplay blokkolva vagy energiatakarékos mód aktiválva:', error);
+  const section = contactVideo.closest('.contact-video-section');
+  let autoplayWasBlocked = false;
+
+  const hideContactVideo = () => {
+    autoplayWasBlocked = true;
+    contactVideo.pause();
+    if (section) section.hidden = true;
+  };
+
+  contactVideo.muted = true;
+  contactVideo.defaultMuted = true;
+  contactVideo.playsInline = true;
+  contactVideo.setAttribute('muted', '');
+  contactVideo.setAttribute('playsinline', '');
+  contactVideo.setAttribute('webkit-playsinline', '');
+
+  const startPlayback = () => {
+    if (autoplayWasBlocked) return;
+    const attempt = contactVideo.play();
+    if (attempt) attempt.catch(error => {
+      // Safari does not expose Low Power Mode directly. When it blocks muted
+      // inline autoplay (its usual LPM behaviour), hide the whole optional
+      // animation instead of leaving a manually playable media control.
+      console.info('[Bee There] Az alsó animáció elrejtve: autoplay tiltva.', error.name);
+      hideContactVideo();
+    });
+  };
+
+  if (contactVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) startPlayback();
+  else {
+    contactVideo.addEventListener('loadeddata', startPlayback, { once: true });
+    contactVideo.addEventListener('canplay', startPlayback, { once: true });
+  }
+
+  // Safari may pause inline media after a background/app switch. This retry is
+  // harmless when playback is allowed; blocked playback hides the section.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) startPlayback();
   });
+  window.addEventListener('pageshow', startPlayback);
 }
 
 function initSideRays() {
@@ -993,11 +1186,11 @@ function initSideRays() {
 
 async function loadEvents() {
   try {
-    const response = await fetch(EVENTS_FILE, { cache: 'no-store' });
+    const response = await fetch(EVENTS_FILE, { cache: 'default' });
     if (!response.ok) throw new Error('Az events.json fájl nem elérhető.');
-    const payload = await response.json();
+    const payload = await parseJsonWithSizeLimit(response, MAX_EVENT_RESPONSE_BYTES);
     if (!Array.isArray(payload)) throw new Error('Az events.json formátuma hibás.');
-    events = payload.filter(event => event && event.Title);
+    events = payload.map(sanitizeEvent).filter(event => event?.Title);
     renderEvents();
   } catch (error) {
     console.error('[Bee There] Eseménybetöltési hiba:', error);
