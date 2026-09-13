@@ -148,11 +148,8 @@
     <div id="search-results" class="events-grid app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
-  <section id="send-view" class="app-view wrapper app-view-centered" hidden aria-labelledby="send-view-title">
-    <span class="app-view-icon" aria-hidden="true">↗</span>
-    <p class="eyebrow">KÜLDÉS</p>
-    <h1 id="send-view-title" class="app-view-title">Hamarosan</h1>
-    <p>Dolgozunk azon, hogy pár érintéssel elküldhesd a kedvenc programjaidat a barátaidnak.</p>
+  <section id="send-view" class="app-view wrapper app-view-centered send-view" hidden aria-labelledby="send-view-title">
+    <h1 id="send-view-title" class="send-view-message">Dolgozunk rajta…</h1>
   </section>
 
   <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title"></section>
@@ -229,7 +226,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.061</span>
+      <span class="site-version">version - 01.062</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>
@@ -240,6 +237,7 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg></button>
   </nav>
+  <div id="page-transition-overlay" class="page-transition-overlay" aria-hidden="true" hidden></div>
   <script src="script.js"></script>
 </body>
 </html>

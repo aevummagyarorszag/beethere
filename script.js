@@ -86,6 +86,7 @@ const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
 const profileFavoriteCount = find('#profile-favorite-count');
 const bottomNavigation = find('#bottom-navigation');
+const pageTransitionOverlay = find('#page-transition-overlay');
 const homeContent = findAll('[data-home-content]');
 
 let events = [];
@@ -98,6 +99,9 @@ let calendarCategory = '';
 let calendarSelectedDate = '';
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let currentAppView = 'home';
+let sendReturnTimer = 0;
+let sendFadeTimer = 0;
+let sendOverlayTimer = 0;
 
 // A meglévő Google Sheets CSV-parser.
 function csv(text) { let rows = [], row = [], cell = '', quoted = false; for (let i = 0; i < text.length; i += 1) { const char = text[i], next = text[i + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { row.push(cell.trim()); cell = ''; } else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && next === '\n') i += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; } else cell += char; } row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); const [headers, ...data] = rows; return data.map(values => Object.fromEntries(headers.map((header, index) => [header.replace(/^\uFEFF/, '').trim(), values[index] || '']))); }
@@ -411,6 +415,38 @@ function navigateToAppView(view) {
   else url.searchParams.set('view', view);
   history.pushState({}, '', url);
   applyAppView(view);
+  if (view === 'send') scheduleSendReturn();
+  else cancelSendReturn();
+}
+
+function cancelSendReturn() {
+  window.clearTimeout(sendReturnTimer);
+  window.clearTimeout(sendFadeTimer);
+  window.clearTimeout(sendOverlayTimer);
+  sendReturnTimer = 0;
+  sendFadeTimer = 0;
+  sendOverlayTimer = 0;
+  if (pageTransitionOverlay) {
+    pageTransitionOverlay.classList.remove('is-visible');
+    pageTransitionOverlay.hidden = true;
+  }
+}
+
+function scheduleSendReturn() {
+  cancelSendReturn();
+  sendReturnTimer = window.setTimeout(() => {
+    if (!pageTransitionOverlay || currentAppView !== 'send') return;
+    pageTransitionOverlay.hidden = false;
+    requestAnimationFrame(() => pageTransitionOverlay.classList.add('is-visible'));
+    sendFadeTimer = window.setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('view');
+      history.replaceState({}, '', url);
+      applyAppView('home');
+      requestAnimationFrame(() => requestAnimationFrame(() => pageTransitionOverlay.classList.remove('is-visible')));
+      sendOverlayTimer = window.setTimeout(() => { pageTransitionOverlay.hidden = true; }, 560);
+    }, 520);
+  }, 2480);
 }
 
 function renderSearchResults(query) {
@@ -443,8 +479,15 @@ function setupAppNavigation() {
     }
   }));
   if (searchInput) searchInput.addEventListener('input', () => renderSearchResults(searchInput.value));
-  window.addEventListener('popstate', () => applyAppView(appViewFromUrl(), { scroll: false }));
-  applyAppView(appViewFromUrl(), { scroll: false });
+  window.addEventListener('popstate', () => {
+    const view = appViewFromUrl();
+    applyAppView(view, { scroll: false });
+    if (view === 'send') scheduleSendReturn();
+    else cancelSendReturn();
+  });
+  const initialView = appViewFromUrl();
+  applyAppView(initialView, { scroll: false });
+  if (initialView === 'send') scheduleSendReturn();
 }
 
 function setCardDistance(card, latitude, longitude) {
