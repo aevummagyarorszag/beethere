@@ -51,7 +51,6 @@ const citySelectorLabel = find('#city-selector-label');
 const cityDialog = find('#city-dialog');
 const cityDialogClose = find('#city-dialog-close');
 const heroVideo = find('#hero-video');
-const pixelBlast = find('#pixel-blast');
 const eventDetailsDialog = find('#event-details-dialog');
 const eventDetailsClose = find('#event-details-close');
 const eventDetailsDate = find('#event-details-date');
@@ -64,7 +63,6 @@ const eventDetailsTicket = find('#event-details-ticket');
 const outroWeather = find('#outro-weather');
 const outroWeatherIcon = find('#outro-weather-icon');
 const outroMessage = find('#outro-title');
-const contactVideo = find('.contact-video');
 const navMenu = find('#nav-menu');
 const navMenuToggle = find('#nav-menu-toggle');
 const calendarSection = find('#calendar-section');
@@ -1091,50 +1089,6 @@ function initHeroVideo() {
   showClip(0);
 }
 
-function initContactVideo() {
-  if (!contactVideo) return;
-  const section = contactVideo.closest('.contact-video-section');
-  let autoplayWasBlocked = false;
-
-  const hideContactVideo = () => {
-    autoplayWasBlocked = true;
-    contactVideo.pause();
-    if (section) section.hidden = true;
-  };
-
-  contactVideo.muted = true;
-  contactVideo.defaultMuted = true;
-  contactVideo.playsInline = true;
-  contactVideo.setAttribute('muted', '');
-  contactVideo.setAttribute('playsinline', '');
-  contactVideo.setAttribute('webkit-playsinline', '');
-
-  const startPlayback = () => {
-    if (autoplayWasBlocked) return;
-    const attempt = contactVideo.play();
-    if (attempt) attempt.catch(error => {
-      // Safari does not expose Low Power Mode directly. When it blocks muted
-      // inline autoplay (its usual LPM behaviour), hide the whole optional
-      // animation instead of leaving a manually playable media control.
-      console.info('[Bee There] Az alsó animáció elrejtve: autoplay tiltva.', error.name);
-      hideContactVideo();
-    });
-  };
-
-  if (contactVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) startPlayback();
-  else {
-    contactVideo.addEventListener('loadeddata', startPlayback, { once: true });
-    contactVideo.addEventListener('canplay', startPlayback, { once: true });
-  }
-
-  // Safari may pause inline media after a background/app switch. This retry is
-  // harmless when playback is allowed; blocked playback hides the section.
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) startPlayback();
-  });
-  window.addEventListener('pageshow', startPlayback);
-}
-
 function initSideRays() {
   const canvas = find('#side-rays');
   if (!canvas) return;
@@ -1208,9 +1162,6 @@ function init() {
   initOutroMessage();
   updateOutroWeather();
   initHeroVideo();
-  initContactVideo();
-  initSideRays();
-  initPixelBlast();
   window.addEventListener('resize', positionAllDetailsButtons, { passive: true });
   loadEvents();
   if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';

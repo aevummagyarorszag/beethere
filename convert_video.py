@@ -7,7 +7,7 @@ VP9 WebM with alpha.
 
 Usage:
     python -m pip install opencv-python
-    python convert_video.py
+    python convert_video.py --input assets/source-video.mp4
 
 Optional:
     python convert_video.py --threshold 10 --crop-padding 16 --crf 28
@@ -32,13 +32,17 @@ except ImportError as error:
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_INPUT = ROOT / "assets" / "animo-film-strip-720p.mp4"
 DEFAULT_OUTPUT = ROOT / "assets" / "beevid_transparent.webm"
 
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Külső fekete videóháttér eltávolítása.")
-    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT, help="Forrás MP4 fájl")
+    parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Forrás MP4 fájl (példa: assets/source-video.mp4)",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="Átlátszó WebM kimenet")
     parser.add_argument(
         "--threshold",
