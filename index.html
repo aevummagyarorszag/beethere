@@ -20,34 +20,30 @@
 <body>
   <header class="hero" id="top" data-home-content>
     <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" autoplay muted playsinline preload="metadata"></video></div>
-    <nav class="nav wrapper" aria-label="Fő navigáció">
-        <a class="brand" href="#top" aria-label="Bee There – főoldal"><img src="assets/beethere_navmark.png" alt="Bee There" loading="lazy" decoding="async"></a>
-      <div class="nav-menu-group">
-        <div id="nav-menu" class="nav-menu" hidden>
-          <a href="#esemenyek" data-app-view-link="home">Események</a>
-          <a href="?view=favorites" data-app-view-link="favorites">Kedvencek</a>
-          <a href="#calendar-section">Naptár</a>
-          <a href="#kapcsolat">Kapcsolat</a>
-        </div>
-        <button id="nav-menu-toggle" class="nav-menu-toggle" type="button" aria-label="Navigáció megnyitása" aria-expanded="false" aria-controls="nav-menu"><span></span><span></span><span></span></button>
-      </div>
-      <span class="beta-badge">BÉTA</span>
-      <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog">
-        <svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg>
-        <span id="city-selector-label">Helyzeted…</span><span class="city-selector-chevron" aria-hidden="true">⌄</span>
-      </button>
-    </nav>
     <div class="hero-content wrapper">
-      <p class="eyebrow">PROGRAMOK, AMIK MEGMOZDÍTANAK</p>
+      <div class="hero-kicker-row"><p class="eyebrow">PROGRAMOK, AMIK MEGMOZDÍTANAK</p><span class="beta-badge">BÉTA</span></div>
       <h1>Találd meg a<br><em>következő élményed.</em></h1>
       <p>Koncertek, közös esték és különleges programok — hozzád rendezve.</p>
-      <a class="cta" href="#esemenyek">Események felkutatása <span aria-hidden="true">↘</span></a>
     </div>
   </header>
 
+  <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
+    <button id="tomorrow-shortcut" class="quick-round-button quick-calendar-button" type="button" aria-label="Ugrás a holnapi eseményekhez"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span id="tomorrow-shortcut-date">--</span></button>
+    <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Engedélyezés</span></button>
+    <div class="nav-menu-group quick-menu-group">
+      <div id="nav-menu" class="nav-menu" hidden>
+        <a href="#esemenyek" data-app-view-link="home">Események</a>
+        <a href="?view=favorites" data-app-view-link="favorites">Kedvencek</a>
+        <a href="#calendar-section">Naptár</a>
+        <a href="#kapcsolat">Kapcsolat</a>
+      </div>
+      <button id="nav-menu-toggle" class="nav-menu-toggle" type="button" aria-label="Navigáció megnyitása" aria-expanded="false" aria-controls="nav-menu"><span></span><span></span><span></span></button>
+    </div>
+  </section>
+
   <main class="wrapper events-section" id="esemenyek" data-home-content>
     <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
-      <div class="section-heading">
+      <div class="section-heading featured-heading">
         <div>
           <p class="eyebrow">NE HAGYD KI</p>
           <h2 id="featured-title">Kiemelt események <span class="title-emoji" aria-hidden="true">🔥</span></h2>
@@ -233,7 +229,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.056</span>
+      <span class="site-version">version - 01.057</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>

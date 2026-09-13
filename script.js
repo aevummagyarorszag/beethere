@@ -68,6 +68,8 @@ const outroWeatherIcon = find('#outro-weather-icon');
 const outroMessage = find('#outro-title');
 const navMenu = find('#nav-menu');
 const navMenuToggle = find('#nav-menu-toggle');
+const tomorrowShortcut = find('#tomorrow-shortcut');
+const tomorrowShortcutDate = find('#tomorrow-shortcut-date');
 const calendarSection = find('#calendar-section');
 const calendarFilters = find('#calendar-filters');
 const calendarGrid = find('#calendar-grid');
@@ -363,7 +365,7 @@ function closestCity(coords) {
 
 function updateCityUI(name) {
   selectedCity = name || '';
-  if (citySelectorLabel) citySelectorLabel.textContent = name || 'Helyzeted…';
+  if (citySelectorLabel) citySelectorLabel.textContent = name || 'Engedélyezés';
   if (locationText) locationText.textContent = name ? `${name} - távolság szerint rendezve` : 'Helyzeted meghatározása…';
   findAll('.city-option').forEach(button => button.classList.toggle('active', button.dataset.city === name));
   updateProfileSummary();
@@ -825,6 +827,19 @@ function renderFavorites() {
   if (favorites.length) renderCardsIncrementally(favoritesGrid, favorites, { compact: true });
   else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs kedvelt eseményed. A szív ikonra nyomva bármelyik programot elmentheted ide.</p>';
   updateProfileSummary();
+}
+
+function setupQuickNavigation() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (tomorrowShortcutDate) tomorrowShortcutDate.textContent = String(tomorrow.getDate());
+  if (tomorrowShortcut) {
+    tomorrowShortcut.setAttribute('aria-label', `Ugrás a holnapi eseményekhez: ${tomorrow.toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}`);
+    tomorrowShortcut.addEventListener('click', () => {
+      applyAppView('home', { scroll: false });
+      window.setTimeout(() => todaySection?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    });
+  }
 }
 
 function renderToday() {
@@ -1303,6 +1318,7 @@ function init() {
   createFilters();
   attachCarouselControls();
   setupNavigationMenu();
+  setupQuickNavigation();
   setupCityChooser();
   setupEventDetailsDialog();
   setupCalendar();
@@ -1324,7 +1340,7 @@ function init() {
     }, error => {
       console.warn('[Bee There] Helymeghatározás nem elérhető:', error.message);
       if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';
-      if (citySelectorLabel) citySelectorLabel.textContent = 'Város választása';
+      if (citySelectorLabel) citySelectorLabel.textContent = 'Engedélyezés';
     }, { maximumAge: 300000, timeout: 10000 });
   }, 7000);
 }
