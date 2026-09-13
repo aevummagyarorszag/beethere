@@ -102,7 +102,7 @@ let calendarSelectedDate = '';
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let currentAppView = 'home';
 let selectedTransport = 'car';
-let profilePreferences = { categories: [], moods: [], companions: [], budget: '', times: [], spontaneity: '' };
+let profilePreferences = { categories: [], moods: [], companions: [], budget: 20000, times: [], spontaneity: '' };
 let sendReturnTimer = 0;
 let sendFadeTimer = 0;
 let sendOverlayTimer = 0;
@@ -445,9 +445,10 @@ function eventPreferenceScore(event, distance, favoriteCategories = new Set()) {
   if (profilePreferences.categories.some(category => categories.includes(category))) score += 3;
   if (eventMoodMatches(event, profilePreferences.moods)) score += 2;
   if (eventCompanionMatches(event, profilePreferences.companions)) score += 1;
-  if (profilePreferences.budget) {
+  const budget = Number(profilePreferences.budget);
+  if (Number.isFinite(budget) && budget < 20000) {
     const price = eventPriceValue(event);
-    if (profilePreferences.budget === 'any' || (profilePreferences.budget === 'free' && price === 0) || (Number(profilePreferences.budget) >= price)) score += 1;
+    if (Number.isFinite(price)) score += Math.max(0, 1 - Math.abs(price - budget) / Math.max(budget, 1000));
   }
   if (eventTimeMatches(event, profilePreferences.times)) score += 1;
   if (eventSpontaneityMatches(event, profilePreferences.spontaneity)) score += 1;
@@ -1419,7 +1420,6 @@ function setupProfileSettings() {
     categories: CATEGORIES,
     moods: ['alkotós', 'önfeledt', 'ütős', 'vicces', 'pörgős', 'szabad', 'ízes', 'inspiráló', 'energikus'],
     companions: ['egyedül', 'párban', 'barátokkal', 'családdal'],
-    budget: ['free', '5000', '10000', 'any'],
     times: ['weekday', 'weekend', 'afternoon', 'evening'],
     spontaneity: ['now', 'week', 'plan']
   };
@@ -1432,6 +1432,8 @@ function setupProfileSettings() {
         profilePreferences[group] = allowed.includes(saved[group]) ? saved[group] : '';
       }
     });
+    const savedBudget = saved.budget === 'free' ? 1000 : saved.budget === 'any' ? 20000 : Number(saved.budget);
+    profilePreferences.budget = Number.isFinite(savedBudget) && savedBudget >= 1000 && savedBudget <= 20000 ? savedBudget : 20000;
   } catch (error) {
     console.warn('[Bee There] A személyes beállítások nem olvashatók:', error);
   }
@@ -1449,6 +1451,27 @@ function setupProfileSettings() {
     });
   };
   updatePreferenceButtons();
+  const budgetSlider = find('#budget-slider');
+  const budgetSliderValue = find('#budget-slider-value');
+  const updateBudgetSlider = value => {
+    const budget = Number(value);
+    if (!budgetSlider || !Number.isFinite(budget)) return;
+    budgetSlider.value = String(budget);
+    const progress = ((budget - Number(budgetSlider.min)) / (Number(budgetSlider.max) - Number(budgetSlider.min))) * 100;
+    budgetSlider.closest('.budget-slider-wrap')?.style.setProperty('--budget-progress', `${progress}%`);
+    if (budgetSliderValue) budgetSliderValue.textContent = budget >= Number(budgetSlider.max) ? 'Mindegy' : `${budget.toLocaleString('hu-HU')} Ft`;
+  };
+  updateBudgetSlider(profilePreferences.budget);
+  if (budgetSlider) budgetSlider.addEventListener('input', () => {
+    profilePreferences.budget = Number(budgetSlider.value);
+    updateBudgetSlider(profilePreferences.budget);
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
+    } catch (error) {
+      console.warn('[Bee There] A személyes beállítások nem menthetők:', error);
+    }
+    renderEvents();
+  });
   preferenceGroups.forEach(groupElement => {
     const group = groupElement.dataset.preferenceGroup;
     const multiple = groupElement.dataset.selection === 'multiple';
