@@ -64,12 +64,12 @@ button { font: inherit; }
 .cta { min-height: 48px; display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; padding: 12px 18px; border: 1px solid rgba(255, 107, 94, 0.55); border-radius: 999px; background: linear-gradient(135deg, rgba(255, 107, 94, 0.23), rgba(255, 255, 255, 0.08)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 10px 30px rgba(0, 0, 0, 0.2); color: var(--text); font-weight: 800; cursor: pointer; backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%); transition: transform 280ms cubic-bezier(.18, 1.5, .3, 1), background 220ms ease, border-color 220ms ease; }
 .cta:hover { border-color: rgba(255, 155, 122, 0.85); background: linear-gradient(135deg, rgba(255, 107, 94, 0.38), rgba(255, 155, 122, 0.15)); transform: translateY(-2px); }
 
-.quick-navigation { position: relative; z-index: 12; display: grid; width: min(366px, calc(100% - 24px)); grid-template-columns: 52px minmax(0, 1fr) 52px; align-items: center; gap: 4px; margin-top: -25px; }
+.quick-navigation { position: relative; z-index: 12; display: flex; width: min(1180px, calc(100% - 24px)); align-items: center; justify-content: center; gap: 4px; margin-top: -25px; }
 .quick-round-button, .quick-navigation .nav-menu-toggle { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 1px solid rgba(27, 29, 34, 0.13); border-radius: 50%; background: rgba(255, 255, 255, 0.94); box-shadow: 0 8px 22px rgba(42, 31, 26, 0.12), inset 0 1px 0 #fff; color: #171717; cursor: pointer; }
 .quick-round-button svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .quick-calendar-button { position: relative; padding-top: 2px; }
 #tomorrow-shortcut-date { position: absolute; right: 8px; bottom: 7px; font-size: 9px; font-weight: 800; line-height: 1; }
-.quick-navigation .city-selector { width: 100%; max-width: 250px; justify-self: center; min-height: 50px; padding-inline: 14px; overflow: hidden; border-color: rgba(27, 29, 34, 0.13); background: rgba(255, 255, 255, 0.94); box-shadow: 0 8px 22px rgba(42, 31, 26, 0.12), inset 0 1px 0 #fff; color: var(--text); white-space: nowrap; text-overflow: ellipsis; }
+.quick-navigation .city-selector { width: auto; max-width: calc(100% - 120px); flex: 0 1 auto; min-height: 50px; padding-inline: 14px; overflow: hidden; border-color: rgba(27, 29, 34, 0.13); background: rgba(255, 255, 255, 0.94); box-shadow: 0 8px 22px rgba(42, 31, 26, 0.12), inset 0 1px 0 #fff; color: var(--text); white-space: nowrap; text-overflow: ellipsis; }
 .quick-navigation .city-selector span { overflow: hidden; text-overflow: ellipsis; }
 .quick-navigation .city-selector-chevron { display: none; }
 .quick-menu-group { position: relative; display: block; margin: 0; }
@@ -237,10 +237,8 @@ button, .ticket-button { position: relative; }
 .bottom-nav-button { display: grid; width: 52px; height: 52px; min-width: 0; min-height: 0; padding: 0; place-self: center; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #171717; cursor: pointer; transition: color 180ms ease, background 180ms ease, transform 180ms ease; }
 .bottom-nav-button:hover { color: #171717; background: #F1F1F1; transform: translateY(-1px); }
 .bottom-nav-button.is-active { background: #F0F0F0; color: #111; }
-.bottom-nav-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.bottom-nav-button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .bottom-nav-button[data-app-view="favorites"] svg { fill: transparent; }
-.bottom-nav-button[data-app-view="send"] svg { width: 26px; height: 26px; stroke-width: 2.05; }
-.bottom-nav-button[data-app-view="profile"] svg { width: 27px; height: 27px; stroke-width: 1.65; }
 .social-links { display: grid; width: 44px; gap: 8px; margin-top: 12px; }
 .social-links a { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(255, 107, 94, 0.52); border-radius: 50%; background: rgba(255, 107, 94, 0.12); color: var(--brand-lilac-bright); transition: transform 180ms ease, background 180ms ease; }
 .social-links a:hover { background: rgba(255, 107, 94, 0.24); transform: translateY(-2px); }
@@ -309,7 +307,7 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
   .hero-content { padding: 30px 0 38px; }
   .hero-kicker-row { max-width: 100%; }
   .hero-kicker-row .eyebrow { max-width: 260px; font-size: 11px; }
-  .quick-navigation { width: min(346px, calc(100% - 24px)); grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 3px; margin-top: -18px; }
+  .quick-navigation { width: calc(100% - 24px); gap: 3px; margin-top: -18px; }
   .quick-round-button, .quick-navigation .nav-menu-toggle { width: 48px; height: 48px; }
   .quick-navigation .city-selector { min-height: 46px; padding-inline: 10px; font-size: 13px; }
   .featured-heading { flex-direction: row; align-items: flex-end; gap: 10px; }
@@ -349,7 +347,7 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
   .bottom-nav-button svg { width: 21px; height: 21px; }
   .hero h1 { font-size: clamp(38px, 12vw, 48px); }
   .hero p:not(.eyebrow) { max-width: 330px; font-size: 16px; }
-  .quick-navigation .city-selector { max-width: none; padding-inline: 8px; font-size: 12px; }
+  .quick-navigation .city-selector { max-width: calc(100% - 108px); padding-inline: 10px; font-size: 12px; }
   .footer { gap: 8px; font-size: 12px; }
   .event-card, .featured-grid .event-card { flex-basis: min(88vw, 390px); }
   .event-content { padding-right: 48px; }
