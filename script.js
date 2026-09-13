@@ -11,6 +11,7 @@ const CITIES = [
 ];
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
 const TRANSPORT_STORAGE_KEY = 'bee-there-transport';
+const PROFILE_STORAGE_KEY = 'bee-there-profile-preferences';
 const MAX_FAVORITES = 100;
 const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
 const weatherCache = new Map();
@@ -86,7 +87,6 @@ const searchInput = find('#event-search');
 const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
 const profileCityButton = find('#profile-city-button');
-const profileFavoriteCount = find('#profile-favorite-count');
 const bottomNavigation = find('#bottom-navigation');
 const pageTransitionOverlay = find('#page-transition-overlay');
 const homeContent = findAll('[data-home-content]');
@@ -101,6 +101,8 @@ let calendarCategory = '';
 let calendarSelectedDate = '';
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let currentAppView = 'home';
+let selectedTransport = 'car';
+let profilePreferences = { categories: [], moods: [], companions: [], budget: '', times: [], spontaneity: '' };
 let sendReturnTimer = 0;
 let sendFadeTimer = 0;
 let sendOverlayTimer = 0;
@@ -358,8 +360,107 @@ function eventDistance(event) {
     : Number.POSITIVE_INFINITY;
 }
 
+function normalizedText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function eventSearchableText(event) {
+  return normalizedText([event.Title, event.Description, event['Long description'], event.Category, event.Location].join(' '));
+}
+
+function distancePreferencePoints(distance) {
+  if (!Number.isFinite(distance)) return 0;
+  const limits = selectedTransport === 'walk' ? [1.5, 3, 5] : selectedTransport === 'transit' ? [5, 15, 30] : [10, 30, 60];
+  if (distance <= limits[0]) return 3;
+  if (distance <= limits[1]) return 2;
+  if (distance <= limits[2]) return 1;
+  return 0;
+}
+
+function eventMoodMatches(event, selectedMoods) {
+  if (!selectedMoods.length) return false;
+  const text = eventSearchableText(event);
+  const moodKeywords = {
+    alkotos: ['alkot', 'kezmuves', 'workshop', 'fest', 'kultura'],
+    onfeledt: ['buli', 'party', 'koncert', 'tanc', 'fesztival'],
+    utos: ['techno', 'rock', 'koncert', 'meccs', 'sport', 'party'],
+    vicces: ['humor', 'vicces', 'stand-up', 'stand up', 'comedy'],
+    porgos: ['party', 'dj', 'tanc', 'sport', 'futas', 'verseny'],
+    szabad: ['szabadter', 'open air', 'park', 'tura', 'kirandulas'],
+    izes: ['gasztro', 'etel', 'kostolo', 'vacsora', 'bor', 'sor'],
+    inspiralo: ['kultura', 'kiallitas', 'muzeum', 'eloadas', 'workshop'],
+    energikus: ['sport', 'party', 'fitness', 'futas', 'tanc']
+  };
+  return selectedMoods.some(mood => (moodKeywords[normalizedText(mood)] || []).some(keyword => text.includes(keyword)));
+}
+
+function eventCompanionMatches(event, companions) {
+  if (!companions.length) return false;
+  const text = eventSearchableText(event);
+  const categories = eventCategories(event);
+  const matches = {
+    egyedul: ['kultura', 'sport', 'muzeum', 'kiallitas', 'workshop'],
+    parban: ['romantika', 'gasztro', 'kultura', 'vacsora'],
+    baratokkal: ['party', 'sport', 'gasztro', 'koncert', 'fesztival'],
+    csaladdal: ['csaladi', 'gyerek', 'csalad']
+  };
+  return companions.some(companion => (matches[normalizedText(companion)] || []).some(value => categories.includes(value) || text.includes(value)));
+}
+
+function eventPriceValue(event) {
+  if (isFree(event)) return 0;
+  const digits = String(event.Price || '').replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : Number.POSITIVE_INFINITY;
+}
+
+function eventTimeMatches(event, choices) {
+  if (!choices.length) return false;
+  const key = dateKey(eventDateValue(event));
+  const eventDate = key ? new Date(`${key}T00:00:00`) : null;
+  const day = eventDate?.getDay();
+  const hour = Number.parseInt(String(event.Time || event['Date and Time'] || '').match(/(?:^|\s)(\d{1,2}):\d{2}/)?.[1] || '', 10);
+  return choices.some(choice => (
+    (choice === 'weekday' && Number.isInteger(day) && day >= 1 && day <= 5) ||
+    (choice === 'weekend' && (day === 0 || day === 6)) ||
+    (choice === 'afternoon' && Number.isFinite(hour) && hour >= 12 && hour < 18) ||
+    (choice === 'evening' && Number.isFinite(hour) && hour >= 18)
+  ));
+}
+
+function eventSpontaneityMatches(event, choice) {
+  if (!choice) return false;
+  const key = dateKey(eventDateValue(event));
+  if (!key) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysAway = Math.round((new Date(`${key}T00:00:00`) - today) / 86400000);
+  if (choice === 'now') return daysAway >= 0 && daysAway <= 1;
+  if (choice === 'week') return daysAway >= 0 && daysAway <= 7;
+  return choice === 'plan' && daysAway > 7;
+}
+
+function eventPreferenceScore(event, distance, favoriteCategories = new Set()) {
+  let score = distancePreferencePoints(distance);
+  const categories = eventCategories(event);
+  if (profilePreferences.categories.some(category => categories.includes(category))) score += 3;
+  if (eventMoodMatches(event, profilePreferences.moods)) score += 2;
+  if (eventCompanionMatches(event, profilePreferences.companions)) score += 1;
+  if (profilePreferences.budget) {
+    const price = eventPriceValue(event);
+    if (profilePreferences.budget === 'any' || (profilePreferences.budget === 'free' && price === 0) || (Number(profilePreferences.budget) >= price)) score += 1;
+  }
+  if (eventTimeMatches(event, profilePreferences.times)) score += 1;
+  if (eventSpontaneityMatches(event, profilePreferences.spontaneity)) score += 1;
+  if (categories.some(category => favoriteCategories.has(category))) score += 1;
+  return score;
+}
+
 function sortByDistance(list) {
-  return list.map(event => ({ ...event, distance: eventDistance(event) })).sort((first, second) => first.distance - second.distance);
+  const favoriteCategories = new Set(events.filter(item => favoriteIds.has(eventKey(item))).flatMap(eventCategories));
+  return list.map(event => {
+    const distance = eventDistance(event);
+    return { ...event, distance, preferenceScore: eventPreferenceScore(event, distance, favoriteCategories) };
+  }).sort((first, second) => second.preferenceScore - first.preferenceScore || first.distance - second.distance || dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second))));
 }
 
 function closestCity(coords) {
@@ -379,10 +480,6 @@ function updateCityUI(name) {
 
 function updateProfileSummary() {
   if (profileCity) profileCity.textContent = selectedCity || 'Válassz várost';
-  if (profileFavoriteCount) {
-    const count = favoriteIds.size;
-    profileFavoriteCount.textContent = `${count} ${count === 1 ? 'esemény' : 'esemény'}`;
-  }
 }
 
 function moveFavoritesToOwnView() {
@@ -1295,8 +1392,6 @@ function initHeroVideo() {
 
 function setupProfileSettings() {
   const buttons = findAll('.transport-button');
-  if (!buttons.length) return;
-  let selectedTransport = 'car';
   try {
     const savedTransport = localStorage.getItem(TRANSPORT_STORAGE_KEY);
     if (['car', 'walk', 'transit'].includes(savedTransport)) selectedTransport = savedTransport;
@@ -1317,7 +1412,67 @@ function setupProfileSettings() {
     } catch (error) {
       console.warn('[Bee There] A közlekedési mód nem menthető:', error);
     }
+    renderEvents();
   }));
+
+  const allowedValues = {
+    categories: CATEGORIES,
+    moods: ['alkotós', 'önfeledt', 'ütős', 'vicces', 'pörgős', 'szabad', 'ízes', 'inspiráló', 'energikus'],
+    companions: ['egyedül', 'párban', 'barátokkal', 'családdal'],
+    budget: ['free', '5000', '10000', 'any'],
+    times: ['weekday', 'weekend', 'afternoon', 'evening'],
+    spontaneity: ['now', 'week', 'plan']
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY) || '{}');
+    Object.entries(allowedValues).forEach(([group, allowed]) => {
+      if (Array.isArray(profilePreferences[group])) {
+        profilePreferences[group] = Array.isArray(saved[group]) ? saved[group].filter(value => allowed.includes(value)) : [];
+      } else {
+        profilePreferences[group] = allowed.includes(saved[group]) ? saved[group] : '';
+      }
+    });
+  } catch (error) {
+    console.warn('[Bee There] A személyes beállítások nem olvashatók:', error);
+  }
+
+  const preferenceGroups = findAll('.preference-group');
+  const updatePreferenceButtons = () => {
+    preferenceGroups.forEach(groupElement => {
+      const group = groupElement.dataset.preferenceGroup;
+      findAll('[data-preference-value]', groupElement).forEach(button => {
+        const selected = Array.isArray(profilePreferences[group])
+          ? profilePreferences[group].includes(button.dataset.preferenceValue)
+          : profilePreferences[group] === button.dataset.preferenceValue;
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    });
+  };
+  updatePreferenceButtons();
+  preferenceGroups.forEach(groupElement => {
+    const group = groupElement.dataset.preferenceGroup;
+    const multiple = groupElement.dataset.selection === 'multiple';
+    findAll('[data-preference-value]', groupElement).forEach(button => button.addEventListener('click', () => {
+      const value = button.dataset.preferenceValue;
+      if (!allowedValues[group]?.includes(value)) return;
+      if (multiple) {
+        const values = new Set(profilePreferences[group]);
+        if (values.has(value)) values.delete(value); else values.add(value);
+        profilePreferences[group] = [...values];
+      } else {
+        profilePreferences[group] = profilePreferences[group] === value ? '' : value;
+      }
+      updatePreferenceButtons();
+      triggerBounce(button);
+      vibrate(8);
+      try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
+      } catch (error) {
+        console.warn('[Bee There] A személyes beállítások nem menthetők:', error);
+      }
+      renderEvents();
+    }));
+  });
 }
 
 function initSideRays() {

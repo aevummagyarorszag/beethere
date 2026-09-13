@@ -166,7 +166,44 @@
       </div>
     </div>
     <p class="transport-help">Válaszd ki, mivel mennél az eseményekre.</p>
-    <p class="profile-favorites-count">Kedvelt események: <strong id="profile-favorite-count">0 esemény</strong></p>
+    <div class="personalization-settings" aria-label="Személyre szabási beállítások">
+      <section class="preference-group" data-preference-group="categories" data-selection="multiple">
+        <div class="preference-heading"><h2>Milyen programokat szeretsz?</h2><span>+3 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="party">Party 🎉</button><button type="button" data-preference-value="kultúra">Kultúra 🎭</button><button type="button" data-preference-value="sport">Sport 🏀</button><button type="button" data-preference-value="családi">Családi 👪</button><button type="button" data-preference-value="gasztro">Gasztro 🦐</button><button type="button" data-preference-value="romantika">Romantika 🌹</button>
+        </div>
+      </section>
+      <section class="preference-group" data-preference-group="moods" data-selection="multiple">
+        <div class="preference-heading"><h2>Milyen hangulatra vágysz?</h2><span>+2 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="alkotós">Alkotós</button><button type="button" data-preference-value="önfeledt">Önfeledt</button><button type="button" data-preference-value="ütős">Ütős</button><button type="button" data-preference-value="vicces">Vicces</button><button type="button" data-preference-value="pörgős">Pörgős</button><button type="button" data-preference-value="szabad">Szabad</button><button type="button" data-preference-value="ízes">Ízes</button><button type="button" data-preference-value="inspiráló">Inspiráló</button><button type="button" data-preference-value="energikus">Energikus</button>
+        </div>
+      </section>
+      <section class="preference-group" data-preference-group="companions" data-selection="multiple">
+        <div class="preference-heading"><h2>Kivel mennél?</h2><span>+1 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="egyedül">Egyedül</button><button type="button" data-preference-value="párban">Párban</button><button type="button" data-preference-value="barátokkal">Barátokkal</button><button type="button" data-preference-value="családdal">Családdal</button>
+        </div>
+      </section>
+      <section class="preference-group" data-preference-group="budget" data-selection="single">
+        <div class="preference-heading"><h2>Mennyit költenél?</h2><span>+1 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="free">Ingyenes</button><button type="button" data-preference-value="5000">Max. 5 000 Ft</button><button type="button" data-preference-value="10000">Max. 10 000 Ft</button><button type="button" data-preference-value="any">Mindegy</button>
+        </div>
+      </section>
+      <section class="preference-group" data-preference-group="times" data-selection="multiple">
+        <div class="preference-heading"><h2>Mikor érsz rá?</h2><span>+1 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="weekday">Hétköznap</button><button type="button" data-preference-value="weekend">Hétvégén</button><button type="button" data-preference-value="afternoon">Délután</button><button type="button" data-preference-value="evening">Este</button>
+        </div>
+      </section>
+      <section class="preference-group" data-preference-group="spontaneity" data-selection="single">
+        <div class="preference-heading"><h2>Mennyire vagy spontán?</h2><span>+1 pont</span></div>
+        <div class="preference-options">
+          <button type="button" data-preference-value="now">Akár ma</button><button type="button" data-preference-value="week">Egy héten belül</button><button type="button" data-preference-value="plan">Előre tervezek</button>
+        </div>
+      </section>
+    </div>
   </section>
 
   <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title" data-home-content>
@@ -230,7 +267,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.064</span>
+      <span class="site-version">version - 01.065</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>
