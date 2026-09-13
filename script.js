@@ -75,6 +75,16 @@ const calendarMonthLabel = find('#calendar-month-label');
 const calendarPrevious = find('#calendar-prev');
 const calendarNext = find('#calendar-next');
 const calendarEvents = find('#calendar-events');
+const favoritesView = find('#favorites-view');
+const searchView = find('#search-view');
+const sendView = find('#send-view');
+const profileView = find('#profile-view');
+const searchInput = find('#event-search');
+const searchResults = find('#search-results');
+const profileCity = find('#profile-city');
+const profileFavoriteCount = find('#profile-favorite-count');
+const bottomNavigation = find('#bottom-navigation');
+const homeContent = findAll('[data-home-content]');
 
 let events = [];
 let selectedCategory = '';
@@ -85,6 +95,7 @@ let favoriteIds = loadFavorites();
 let calendarCategory = '';
 let calendarSelectedDate = '';
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let currentAppView = 'home';
 
 // A meglévő Google Sheets CSV-parser.
 function csv(text) { let rows = [], row = [], cell = '', quoted = false; for (let i = 0; i < text.length; i += 1) { const char = text[i], next = text[i + 1]; if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; } else if (char === '"') quoted = !quoted; else if (char === ',' && !quoted) { row.push(cell.trim()); cell = ''; } else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && next === '\n') i += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ''; } else cell += char; } row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); const [headers, ...data] = rows; return data.map(values => Object.fromEntries(headers.map((header, index) => [header.replace(/^\uFEFF/, '').trim(), values[index] || '']))); }
@@ -355,6 +366,83 @@ function updateCityUI(name) {
   if (citySelectorLabel) citySelectorLabel.textContent = name || 'Helyzeted…';
   if (locationText) locationText.textContent = name ? `${name} - távolság szerint rendezve` : 'Helyzeted meghatározása…';
   findAll('.city-option').forEach(button => button.classList.toggle('active', button.dataset.city === name));
+  updateProfileSummary();
+}
+
+function updateProfileSummary() {
+  if (profileCity) profileCity.textContent = selectedCity || 'Válassz várost';
+  if (profileFavoriteCount) {
+    const count = favoriteIds.size;
+    profileFavoriteCount.textContent = `${count} ${count === 1 ? 'esemény' : 'esemény'}`;
+  }
+}
+
+function moveFavoritesToOwnView() {
+  if (favoritesView && favoritesSection && favoritesSection.parentElement !== favoritesView) favoritesView.append(favoritesSection);
+}
+
+function appViewFromUrl() {
+  const value = new URLSearchParams(window.location.search).get('view');
+  return ['search', 'send', 'favorites', 'profile'].includes(value) ? value : 'home';
+}
+
+function applyAppView(view, { scroll = true } = {}) {
+  currentAppView = ['search', 'send', 'favorites', 'profile'].includes(view) ? view : 'home';
+  const isHome = currentAppView === 'home';
+  homeContent.forEach(element => { element.hidden = !isHome; });
+  const views = { search: searchView, send: sendView, favorites: favoritesView, profile: profileView };
+  Object.entries(views).forEach(([name, element]) => { if (element) element.hidden = name !== currentAppView; });
+  findAll('.bottom-nav-button', bottomNavigation).forEach(button => {
+    const active = button.dataset.appView === currentAppView;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+  if (currentAppView === 'favorites') renderFavorites();
+  if (currentAppView === 'search') renderSearchResults(searchInput?.value || '');
+  updateProfileSummary();
+  if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function navigateToAppView(view) {
+  const url = new URL(window.location.href);
+  if (view === 'home') url.searchParams.delete('view');
+  else url.searchParams.set('view', view);
+  history.pushState({}, '', url);
+  applyAppView(view);
+}
+
+function renderSearchResults(query) {
+  if (!searchResults) return;
+  const term = String(query || '').trim().toLocaleLowerCase('hu');
+  if (!term) {
+    searchResults.innerHTML = '<p class="app-view-empty">Kezdd el beírni az esemény nevét.</p>';
+    return;
+  }
+  const matches = events.filter(event => String(event.Title || '').toLocaleLowerCase('hu').includes(term));
+  if (!matches.length) {
+    searchResults.innerHTML = '<p class="app-view-empty">Nem találtunk ilyen nevű eseményt.</p>';
+    return;
+  }
+  const ordered = position ? sortByDistance(matches) : matches;
+  renderCardsIncrementally(searchResults, ordered);
+}
+
+function setupAppNavigation() {
+  moveFavoritesToOwnView();
+  findAll('.bottom-nav-button', bottomNavigation).forEach(button => button.addEventListener('click', () => {
+    navigateToAppView(button.dataset.appView || 'home');
+    vibrate(10);
+  }));
+  findAll('[data-app-view-link]').forEach(link => link.addEventListener('click', event => {
+    const view = link.dataset.appViewLink || 'home';
+    if (view !== 'home') {
+      event.preventDefault();
+      navigateToAppView(view);
+    }
+  }));
+  if (searchInput) searchInput.addEventListener('input', () => renderSearchResults(searchInput.value));
+  window.addEventListener('popstate', () => applyAppView(appViewFromUrl(), { scroll: false }));
+  applyAppView(appViewFromUrl(), { scroll: false });
 }
 
 function setCardDistance(card, latitude, longitude) {
@@ -733,9 +821,10 @@ function renderFavorites() {
   const favorites = position
     ? sortByDistance(events.filter(event => favoriteIds.has(eventKey(event))))
     : events.filter(event => favoriteIds.has(eventKey(event)));
-  favoritesSection.hidden = !favorites.length;
+  favoritesSection.hidden = currentAppView === 'favorites' ? false : !favorites.length;
   if (favorites.length) renderCardsIncrementally(favoritesGrid, favorites, { compact: true });
-  else favoritesGrid.replaceChildren();
+  else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs kedvelt eseményed. A szív ikonra nyomva bármelyik programot elmentheted ide.</p>';
+  updateProfileSummary();
 }
 
 function renderToday() {
@@ -1210,6 +1299,7 @@ async function loadEvents() {
 }
 
 function init() {
+  setupAppNavigation();
   createFilters();
   attachCarouselControls();
   setupNavigationMenu();

@@ -18,14 +18,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="hero" id="top">
+  <header class="hero" id="top" data-home-content>
     <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" autoplay muted playsinline preload="metadata"></video></div>
     <nav class="nav wrapper" aria-label="Fő navigáció">
         <a class="brand" href="#top" aria-label="Bee There – főoldal"><img src="assets/beethere_navmark.png" alt="Bee There" loading="lazy" decoding="async"></a>
       <div class="nav-menu-group">
         <div id="nav-menu" class="nav-menu" hidden>
-          <a href="#esemenyek">Események</a>
-          <a href="#favorites-section">Kedvencek</a>
+          <a href="#esemenyek" data-app-view-link="home">Események</a>
+          <a href="?view=favorites" data-app-view-link="favorites">Kedvencek</a>
           <a href="#calendar-section">Naptár</a>
           <a href="#kapcsolat">Kapcsolat</a>
         </div>
@@ -45,7 +45,7 @@
     </div>
   </header>
 
-  <main class="wrapper events-section" id="esemenyek">
+  <main class="wrapper events-section" id="esemenyek" data-home-content>
     <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
       <div class="section-heading">
         <div>
@@ -145,7 +145,34 @@
     </template>
   </main>
 
-  <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title">
+  <section id="search-view" class="app-view wrapper" hidden aria-labelledby="search-view-title">
+    <p class="eyebrow">KERESÉS</p>
+    <h1 id="search-view-title" class="app-view-title">Melyik eseményt keresed?</h1>
+    <label class="event-search-field" for="event-search"><span class="sr-only">Esemény keresése név szerint</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off"></label>
+    <div id="search-results" class="events-grid app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
+  </section>
+
+  <section id="send-view" class="app-view wrapper app-view-centered" hidden aria-labelledby="send-view-title">
+    <span class="app-view-icon" aria-hidden="true">↗</span>
+    <p class="eyebrow">KÜLDÉS</p>
+    <h1 id="send-view-title" class="app-view-title">Hamarosan</h1>
+    <p>Dolgozunk azon, hogy pár érintéssel elküldhesd a kedvenc programjaidat a barátaidnak.</p>
+  </section>
+
+  <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title"></section>
+
+  <section id="profile-view" class="app-view wrapper app-view-centered" hidden aria-labelledby="profile-view-title">
+    <span class="app-view-icon profile-view-icon" aria-hidden="true">☺</span>
+    <p class="eyebrow">PROFIL</p>
+    <h1 id="profile-view-title" class="app-view-title">A te terveid</h1>
+    <div class="profile-summary">
+      <p><span>Város</span><strong id="profile-city">Válassz várost</strong></p>
+      <p><span>Kedvencek</span><strong id="profile-favorite-count">0 esemény</strong></p>
+    </div>
+    <p>Itt később a kedvenceid és érdeklődési köreid alapján személyes programajánlókat kapsz.</p>
+  </section>
+
+  <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title" data-home-content>
     <div class="outro-content wrapper">
       <div class="outro-topline">
         <p class="outro-weather"><span id="outro-weather-icon" aria-hidden="true">🌡️</span><span id="outro-weather">Időjárás a helyzeted alapján</span></p>
@@ -203,13 +230,20 @@
     </article>
   </div>
 
-  <footer class="footer wrapper">
+  <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.055</span>
+      <span class="site-version">version - 01.056</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>
+  <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
+    <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg></button>
+    <button class="bottom-nav-button" type="button" data-app-view="send" aria-label="Küldés" title="Küldés"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.6 18-2.8-7.2L3 11 21 3Z"/><path d="m10.6 13.8 4.2-4.2"/></svg></button>
+    <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Főoldal" title="Főoldal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z"/></svg></button>
+    <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg></button>
+    <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></button>
+  </nav>
   <script src="script.js"></script>
 </body>
 </html>
