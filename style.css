@@ -233,8 +233,8 @@ button, .ticket-button { position: relative; }
 .profile-summary p { display: grid; gap: 4px; margin: 0; padding: 16px; border: 1px solid rgba(27, 29, 34, 0.1); border-radius: 18px; background: rgba(255, 255, 255, 0.72); }
 .profile-summary span { color: var(--muted); font-size: 13px; font-weight: 700; }
 .profile-summary strong { font-size: 17px; }
-.bottom-navigation { position: fixed; z-index: 900; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); left: max(14px, env(safe-area-inset-left)); display: grid; width: min(560px, calc(100% - 28px)); grid-template-columns: repeat(5, 1fr); gap: 2px; margin: 0 auto; padding: 6px 9px; border: 1px solid rgba(27, 29, 34, 0.12); border-radius: 999px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 16px 44px rgba(42, 31, 26, 0.2), inset 0 1px 0 #fff; backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%); }
-.bottom-nav-button { display: grid; min-width: 0; min-height: 52px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #171717; cursor: pointer; transition: color 180ms ease, background 180ms ease, transform 180ms ease; }
+.bottom-navigation { position: fixed; z-index: 900; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); left: max(14px, env(safe-area-inset-left)); display: grid; width: min(560px, calc(100dvw - 28px)); height: 64px; grid-template-columns: repeat(5, 1fr); gap: 2px; margin: 0 auto; padding: 5px 9px; border: 1px solid rgba(27, 29, 34, 0.12); border-radius: 999px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 16px 44px rgba(42, 31, 26, 0.2), inset 0 1px 0 #fff; backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%); }
+.bottom-nav-button { display: grid; width: 52px; height: 52px; min-width: 0; min-height: 0; padding: 0; place-self: center; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #171717; cursor: pointer; transition: color 180ms ease, background 180ms ease, transform 180ms ease; }
 .bottom-nav-button:hover { color: #171717; background: #F1F1F1; transform: translateY(-1px); }
 .bottom-nav-button.is-active { background: #F0F0F0; color: #111; }
 .bottom-nav-button svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
@@ -342,8 +342,8 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
 
 @media (max-width: 420px) {
   .hero-content { padding-top: 28px; }
-  .bottom-navigation { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; width: calc(100% - 24px); padding: 6px 8px; border-radius: 999px; }
-  .bottom-nav-button { min-height: 48px; border-radius: 50%; }
+  .bottom-navigation { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; width: calc(100dvw - 24px); height: 60px; padding: 5px 7px; border-radius: 999px; }
+  .bottom-nav-button { width: 48px; height: 48px; min-height: 0; border-radius: 50%; }
   .bottom-nav-button svg { width: 21px; height: 21px; }
   .hero h1 { font-size: clamp(38px, 12vw, 48px); }
   .hero p:not(.eyebrow) { max-width: 330px; font-size: 16px; }
