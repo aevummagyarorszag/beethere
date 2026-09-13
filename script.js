@@ -60,6 +60,9 @@ const eventDetailsTime = find('#event-details-time');
 const eventDetailsWeather = find('#event-details-weather');
 const eventDetailsDescription = find('#event-details-description');
 const eventDetailsTicket = find('#event-details-ticket');
+const eventDetailsImage = find('#event-details-image');
+const eventDetailsImageWrap = find('#event-details-image-wrap');
+const eventDetailsShare = find('#event-details-share');
 const outroWeather = find('#outro-weather');
 const outroWeatherIcon = find('#outro-weather-icon');
 const outroMessage = find('#outro-title');
@@ -176,6 +179,9 @@ function eventKey(event) { return [event.Title, eventDateValue(event), event.Loc
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
 function eventDateOnly(event) { const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
 function dateKey(value) { const match = String(value || '').match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : ''; }
+function isWithinNextDays(event, days = 3) { const key = dateKey(eventDateValue(event)); if (!key) return false; const today = new Date(); today.setHours(0, 0, 0, 0); const target = new Date(`${key}T00:00:00`); const difference = Math.round((target - today) / 86400000); return difference >= 0 && difference <= days; }
+function eventSlug(event) { return `${dateKey(eventDateValue(event)) || 'esemeny'}-${String(event.Title || 'esemeny').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 96)}`; }
+function eventShareUrl(event) { const url = new URL(window.location.href); url.searchParams.set('event', eventSlug(event)); return url.toString(); }
 function tomorrowKey() { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`; }
 function todayKey() { const today = new Date(); return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`; }
 function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
@@ -360,6 +366,10 @@ function setCardDistance(card, latitude, longitude) {
     : NaN;
   value.textContent = formatDistance(distance);
   card.classList.toggle('distance-unavailable', !Number.isFinite(distance));
+  const isNearby = Number.isFinite(distance) && distance <= 10;
+  card.classList.toggle('is-nearby', isNearby);
+  find('.event-location', card)?.classList.toggle('is-nearby', isNearby);
+  find('.distance-pill', card)?.classList.toggle('is-nearby', isNearby);
 }
 
 function updateDistanceValues() {
@@ -482,7 +492,7 @@ function closeEventDetails() {
   document.body.classList.remove('has-open-dialog');
 }
 
-function openEventDetails(event, triggerButton) {
+function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   if (!eventDetailsDialog) return;
   const detailsWindow = find('.event-details-window', eventDetailsDialog);
   if (!detailsWindow) return;
@@ -491,12 +501,34 @@ function openEventDetails(event, triggerButton) {
   setText('#event-details-title', event.Title || 'Esemény', document);
   setText('#event-details-time', event.Time || event['Date and Time'] || 'Időpont nincs megadva', document);
   setText('#event-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', document);
+  const imageUrl = optimizedImageUrl(event['Header Image']);
+  if (eventDetailsImage && eventDetailsImageWrap) {
+    eventDetailsImageWrap.hidden = !imageUrl;
+    if (imageUrl) {
+      eventDetailsImage.src = imageUrl;
+      eventDetailsImage.alt = event.Title ? `${event.Title} eseményképe` : 'Esemény képe';
+    } else {
+      eventDetailsImage.removeAttribute('src');
+    }
+  }
   if (eventDetailsWeather) eventDetailsWeather.textContent = 'Időjárás betöltése…';
   const ticketUrl = safeUrl(event['Ticket Link']);
   if (eventDetailsTicket) {
-    eventDetailsTicket.hidden = !ticketUrl || isFree(event);
-    if (ticketUrl && !isFree(event)) eventDetailsTicket.href = ticketUrl;
+    const free = isFree(event);
+    eventDetailsTicket.hidden = !ticketUrl && !free;
+    eventDetailsTicket.classList.toggle('is-free', free);
+    if (free) {
+      eventDetailsTicket.textContent = 'Ingyenes';
+      eventDetailsTicket.removeAttribute('href');
+      eventDetailsTicket.removeAttribute('target');
+    } else if (ticketUrl) {
+      eventDetailsTicket.textContent = 'Jegyvásárlás ↗';
+      eventDetailsTicket.href = ticketUrl;
+      eventDetailsTicket.target = '_blank';
+    }
   }
+  if (eventDetailsShare) eventDetailsShare.onclick = () => shareEvent(event);
+  if (updateUrl) history.replaceState({}, '', eventShareUrl(event));
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
   fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
@@ -590,6 +622,7 @@ function renderCard(event, target, { compact = false } = {}) {
   } else if (image) image.remove();
 
   if (card) setCardDistance(card, latitude, longitude);
+  find('.event-date', fragment)?.classList.toggle('is-urgent', isWithinNextDays(event));
   setText('.event-date-value', eventDateOnly(event), fragment);
   setText('.event-location-value', event.Location || 'Helyszín hamarosan', fragment);
   setText('.event-title', event.Title || 'Névtelen esemény', fragment);
@@ -814,6 +847,27 @@ function createCalendarFilters() {
   gooey.className = 'gooey-filter';
   gooey.hidden = true;
   calendarFilters.append(gooey);
+}
+
+async function shareEvent(event) {
+  const url = eventShareUrl(event);
+  const data = { title: event.Title || 'Bee there esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
+  try {
+    if (navigator.share) {
+      await navigator.share(data);
+      return;
+    }
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      if (eventDetailsShare) {
+        eventDetailsShare.classList.add('is-copied');
+        eventDetailsShare.setAttribute('aria-label', 'Link kimásolva');
+        window.setTimeout(() => { eventDetailsShare?.classList.remove('is-copied'); eventDetailsShare?.setAttribute('aria-label', 'Esemény megosztása'); }, 1800);
+      }
+    }
+  } catch (error) {
+    if (error?.name !== 'AbortError') console.warn('[Bee There] A megosztás nem sikerült:', error);
+  }
 }
 
 function setupCalendar() {
@@ -1146,6 +1200,9 @@ async function loadEvents() {
     if (!Array.isArray(payload)) throw new Error('Az events.json formátuma hibás.');
     events = payload.map(sanitizeEvent).filter(event => event?.Title);
     renderEvents();
+    const requestedEvent = new URLSearchParams(window.location.search).get('event');
+    const sharedEvent = requestedEvent ? events.find(event => eventSlug(event) === requestedEvent) : null;
+    if (sharedEvent) window.setTimeout(() => openEventDetails(sharedEvent, null, { updateUrl: false }), 0);
   } catch (error) {
     console.error('[Bee There] Eseménybetöltési hiba:', error);
     if (grid) grid.innerHTML = '<div class="location-empty">Az események betöltéséhez engedélyezd a lokációd vagy válassz várost!</div>';

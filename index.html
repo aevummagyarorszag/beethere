@@ -188,10 +188,16 @@
         <h2 id="event-details-title"></h2>
       </header>
       <div class="event-details-body">
+        <figure id="event-details-image-wrap" class="event-details-image-wrap" hidden>
+          <img id="event-details-image" alt="" loading="eager" decoding="async">
+        </figure>
         <p id="event-details-time" class="event-time"></p>
         <p id="event-details-weather" class="event-weather" aria-live="polite">Időjárás betöltése…</p>
         <p id="event-details-description" class="event-details-description"></p>
-        <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+        <div class="event-details-actions">
+          <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+          <button id="event-details-share" class="event-share-button" type="button" aria-label="Esemény megosztása" title="Megosztás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.6 18-2.8-7.2L3 11 21 3Z"/><path d="m10.6 13.8 4.2-4.2"/></svg></button>
+        </div>
       </div>
       </div>
     </article>
@@ -200,7 +206,7 @@
   <footer class="footer wrapper">
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.053</span>
+      <span class="site-version">version - 01.054</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>

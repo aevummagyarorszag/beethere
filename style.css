@@ -137,6 +137,9 @@ button, .ticket-button { position: relative; }
 .image-placeholder span, .distance-pill, .badge { font: 600 13px/1.4 var(--font-sans); }
 .image-placeholder[hidden], .ticket-button[hidden] { display: none; }
 .distance-pill { position: absolute; right: 8px; bottom: 8px; padding: 4px 8px; border-radius: 8px; background: rgba(16, 13, 22, 0.82); color: var(--accent); }
+.event-date.is-urgent, .event-location.is-nearby, .distance-pill.is-nearby { color: #D94A43; }
+.event-date.is-urgent .event-meta-icon, .event-location.is-nearby .event-meta-icon { border-color: rgba(217, 74, 67, 0.4); color: #D94A43; }
+.event-location.is-nearby .event-meta-icon svg circle { fill: #080808; }
 .favorite-button { position: absolute; top: 8px; right: 8px; z-index: 1; border-color: transparent; background: rgba(16, 13, 22, 0.78); color: #fff; }
 .favorite-button svg { width: 28px; height: 28px; fill: transparent; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: fill 180ms ease, transform 180ms ease; }
 .favorite-button.is-favorite { border-color: rgba(255, 255, 255, 0.58); background: rgba(16, 13, 22, 0.74); color: #ff4d6d; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.11), 0 0 18px rgba(255, 77, 109, 0.45); }
@@ -226,6 +229,16 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
 .event-details-header .event-details-meta { align-items: flex-start; justify-content: flex-start; flex-direction: column; gap: 8px; }
 .event-details-location { justify-content: flex-start; color: var(--text); font-weight: 650; }
 .event-details-body .ticket-button { min-height: 44px; padding: 10px 14px; }
+.event-details-image-wrap { margin: 0 0 20px; overflow: hidden; border-radius: 18px; background: #ECE9E5; aspect-ratio: 1.65; }
+.event-details-image-wrap[hidden] { display: none; }
+.event-details-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.event-details-actions { display: flex; align-items: center; gap: 10px; }
+.event-details-actions .ticket-button { min-width: 132px; }
+.ticket-button.is-free { background: rgba(255, 107, 94, 0.14); color: #C73F38; cursor: default; }
+.event-share-button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid rgba(255, 107, 94, 0.45); border-radius: 50%; background: rgba(255, 107, 94, 0.1); color: var(--accent); cursor: pointer; transition: transform 180ms ease, background 180ms ease; }
+.event-share-button:hover { transform: translateY(-1px); background: rgba(255, 107, 94, 0.18); }
+.event-share-button.is-copied { background: #D94A43; color: #fff; }
+.event-share-button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 
 /* Light surface system: media remains the visual focus, while UI layers stay quiet. */
 .calendar-shell, .event-card, .loading-card { border-color: rgba(27, 29, 34, 0.1); background: var(--glass); box-shadow: 0 14px 34px rgba(58, 43, 37, 0.09); }
