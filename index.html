@@ -154,15 +154,19 @@
 
   <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title"></section>
 
-  <section id="profile-view" class="app-view wrapper app-view-centered" hidden aria-labelledby="profile-view-title">
-    <span class="app-view-icon profile-view-icon" aria-hidden="true">☺</span>
-    <p class="eyebrow">PROFIL</p>
-    <h1 id="profile-view-title" class="app-view-title">A te terveid</h1>
-    <div class="profile-summary">
-      <p><span>Város</span><strong id="profile-city">Válassz várost</strong></p>
-      <p><span>Kedvencek</span><strong id="profile-favorite-count">0 esemény</strong></p>
+  <section id="profile-view" class="app-view wrapper profile-view" hidden aria-labelledby="profile-view-title">
+    <h1 id="profile-view-title" class="profile-title">Profil</h1>
+    <p class="profile-settings-title">Beállítások</p>
+    <div class="profile-setting-row">
+      <button id="profile-city-button" class="profile-city-button" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><span>Város</span><strong id="profile-city">Válassz várost</strong></button>
+      <div class="transport-options" role="radiogroup" aria-label="Közlekedési mód">
+        <button class="transport-button" type="button" data-transport="car" role="radio" aria-checked="true" aria-label="Autó"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 10 1.6-4.2A2 2 0 0 1 8.5 4.5h7a2 2 0 0 1 1.9 1.3L19 10"/><rect x="3.5" y="9" width="17" height="8" rx="2.5"/><circle cx="7.5" cy="13" r="1"/><circle cx="16.5" cy="13" r="1"/><path d="M6 17v2M18 17v2"/></svg></button>
+        <button class="transport-button" type="button" data-transport="walk" role="radio" aria-checked="false" aria-label="Gyalog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4.5" r="2"/><path d="m10.5 21 1.2-6-2.4-2.4 1.2-5.1 3.4 2.8 3.2.8M11.7 14.6l3 2.3 1.8 4.1M9.3 12.6 6.8 15"/></svg></button>
+        <button class="transport-button" type="button" data-transport="transit" role="radio" aria-checked="false" aria-label="Tömegközlekedés"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 9h14M8 6h8M7.5 19 6 21M16.5 19l1.5 2"/><circle cx="8.5" cy="15" r="1"/><circle cx="15.5" cy="15" r="1"/></svg></button>
+      </div>
     </div>
-    <p>Itt később a kedvenceid és érdeklődési köreid alapján személyes programajánlókat kapsz.</p>
+    <p class="transport-help">Válaszd ki, mivel mennél az eseményekre.</p>
+    <p class="profile-favorites-count">Kedvelt események: <strong id="profile-favorite-count">0 esemény</strong></p>
   </section>
 
   <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title" data-home-content>
@@ -226,7 +230,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.062</span>
+      <span class="site-version">version - 01.063</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>

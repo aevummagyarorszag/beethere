@@ -10,6 +10,7 @@ const CITIES = [
   { name: 'Székesfehérvár', latitude: 47.1860, longitude: 18.4221 }
 ];
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
+const TRANSPORT_STORAGE_KEY = 'bee-there-transport';
 const MAX_FAVORITES = 100;
 const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
 const weatherCache = new Map();
@@ -84,6 +85,7 @@ const profileView = find('#profile-view');
 const searchInput = find('#event-search');
 const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
+const profileCityButton = find('#profile-city-button');
 const profileFavoriteCount = find('#profile-favorite-count');
 const bottomNavigation = find('#bottom-navigation');
 const pageTransitionOverlay = find('#page-transition-overlay');
@@ -1121,6 +1123,7 @@ function closeCityDialog() {
 
 function setupCityChooser() {
   if (citySelector) citySelector.addEventListener('click', () => { triggerBounce(citySelector); vibrate(10); openCityDialog(); });
+  if (profileCityButton) profileCityButton.addEventListener('click', () => { triggerBounce(profileCityButton); vibrate(10); openCityDialog(); });
   if (cityDialogClose) cityDialogClose.addEventListener('click', closeCityDialog);
   if (cityDialog) cityDialog.addEventListener('click', event => { if (event.target === cityDialog) closeCityDialog(); });
   findAll('.city-option').forEach(button => button.addEventListener('click', () => {
@@ -1290,6 +1293,33 @@ function initHeroVideo() {
   showClip(0);
 }
 
+function setupProfileSettings() {
+  const buttons = findAll('.transport-button');
+  if (!buttons.length) return;
+  let selectedTransport = 'car';
+  try {
+    const savedTransport = localStorage.getItem(TRANSPORT_STORAGE_KEY);
+    if (['car', 'walk', 'transit'].includes(savedTransport)) selectedTransport = savedTransport;
+  } catch (error) {
+    console.warn('[Bee There] A közlekedési mód nem olvasható:', error);
+  }
+  const selectTransport = value => {
+    buttons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.transport === value)));
+  };
+  selectTransport(selectedTransport);
+  buttons.forEach(button => button.addEventListener('click', () => {
+    selectedTransport = button.dataset.transport || 'car';
+    selectTransport(selectedTransport);
+    triggerBounce(button);
+    vibrate(10);
+    try {
+      localStorage.setItem(TRANSPORT_STORAGE_KEY, selectedTransport);
+    } catch (error) {
+      console.warn('[Bee There] A közlekedési mód nem menthető:', error);
+    }
+  }));
+}
+
 function initSideRays() {
   const canvas = find('#side-rays');
   if (!canvas) return;
@@ -1363,6 +1393,7 @@ function init() {
   setupNavigationMenu();
   setupQuickNavigation();
   setupCityChooser();
+  setupProfileSettings();
   setupEventDetailsDialog();
   setupCalendar();
   initOutroMessage();
