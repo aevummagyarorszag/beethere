@@ -28,7 +28,7 @@
   </header>
 
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
-    <button id="tomorrow-shortcut" class="quick-round-button quick-calendar-button" type="button" aria-label="Ugrás a holnapi eseményekhez"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span id="tomorrow-shortcut-date">--</span></button>
+    <button id="tomorrow-shortcut" class="quick-round-button quick-calendar-button" type="button" aria-label="Ugrás a holnapi eseményekhez"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><span id="tomorrow-shortcut-date">--</span><span class="tomorrow-shortcut-message" aria-hidden="true">Nincs holnap esemény</span></button>
     <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Engedélyezés</span></button>
     <div class="nav-menu-group quick-menu-group">
       <div id="nav-menu" class="nav-menu" hidden>
@@ -148,8 +148,11 @@
     <div id="search-results" class="events-grid app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
-  <section id="send-view" class="app-view wrapper app-view-centered send-view" hidden aria-labelledby="send-view-title">
-    <h1 id="send-view-title" class="send-view-message">Dolgozunk rajta…</h1>
+  <section id="permanent-view" class="app-view wrapper" hidden aria-labelledby="permanent-view-title">
+    <p class="eyebrow">ÉLMÉNYEK EGÉSZ ÉVBEN</p>
+    <h1 id="permanent-view-title" class="app-view-title">Állandó lehetőségek</h1>
+    <p class="permanent-intro">Biliárd, bowling, szabadulószoba — programötletek, amikor kimozdulnál.</p>
+    <div id="permanent-grid" class="events-grid app-view-results" aria-label="Állandó lehetőségek" aria-live="polite"><p>Programok betöltése…</p></div>
   </section>
 
   <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title"></section>
@@ -259,7 +262,7 @@
         <p id="event-details-description" class="event-details-description"></p>
         <div class="event-details-actions">
           <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
-          <button id="event-details-share" class="event-share-button" type="button" aria-label="Esemény megosztása" title="Megosztás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.6 18-2.8-7.2L3 11 21 3Z"/><path d="m10.6 13.8 4.2-4.2"/></svg></button>
+          <button id="event-details-share" class="event-share-button" type="button" aria-label="Esemény megosztása" title="Megosztás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.58 3.91c1.05-.35 2.03.64 1.68 1.69l-4.63 13.63c-.34 1.01-1.68 1.2-2.3.34l-3.67-5.03-5.87-2.62c-.98-.44-.91-1.86.11-2.2l14.68-5.81Z"/><path d="m10.66 14.54 4.87-4.87"/></svg></button>
         </div>
       </div>
       </div>
@@ -275,12 +278,11 @@
   </footer>
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg></button>
-    <button class="bottom-nav-button" type="button" data-app-view="send" aria-label="Küldés" title="Küldés"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.58 3.91c1.05-.35 2.03.64 1.68 1.69l-4.63 13.63c-.34 1.01-1.68 1.2-2.3.34l-3.67-5.03-5.87-2.62c-.98-.44-.91-1.86.11-2.2l14.68-5.81Z"/><path d="m10.66 14.54 4.87-4.87"/></svg></button>
+    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c-2.5-3.5-4-5-6-5a5 5 0 0 0 0 10c2 0 3.5-1.5 6-5s4-5 6-5a5 5 0 0 1 0 10c-2 0-3.5-1.5-6-5Z"/></svg></button>
     <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Főoldal" title="Főoldal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.2 10.4 7.8-6.2 7.8 6.2v8.2a1.3 1.3 0 0 1-1.3 1.3h-3.7v-5.4H9.2v5.4H5.5a1.3 1.3 0 0 1-1.3-1.3v-8.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg></button>
   </nav>
-  <div id="page-transition-overlay" class="page-transition-overlay" aria-hidden="true" hidden></div>
   <script src="script.js"></script>
 </body>
 </html>

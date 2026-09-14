@@ -26,6 +26,7 @@ def fetch_sheet_data():
             time = (row.get("Time") or "").strip()
             events.append({
                 "Title": title,
+                "Type": (row.get("Típus") or row.get("Type") or "egyszeri").strip(),
                 "Location": (row.get("Location") or "").strip(),
                 "Latitude": decimal_or_default(row.get("Latitude"), 47.1912),
                 "Longitude": decimal_or_default(row.get("Longitude"), 18.4095),
