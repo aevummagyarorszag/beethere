@@ -74,12 +74,8 @@
           <p class="eyebrow">ELMENTVE NEKED</p>
           <h2 id="favorites-title">Kedvelt események <span class="title-emoji" aria-hidden="true">❤️</span></h2>
         </div>
-        <div class="carousel-controls" aria-label="Kedvelt események lapozása">
-          <button class="carousel-arrow" type="button" data-carousel-target="favorites-grid" data-direction="prev" aria-label="Előző kedvelt esemény">←</button>
-          <button class="carousel-arrow" type="button" data-carousel-target="favorites-grid" data-direction="next" aria-label="Következő kedvelt esemény">→</button>
-        </div>
       </div>
-      <div id="favorites-grid" class="events-grid event-carousel" tabindex="0" aria-label="Kedvelt események"></div>
+      <div id="favorites-grid" class="favorites-list" aria-label="Kedvelt események"></div>
     </section>
 
     <section id="today-section" class="today-section" aria-labelledby="today-title">
@@ -145,7 +141,7 @@
     <p class="eyebrow">KERESÉS</p>
     <h1 id="search-view-title" class="app-view-title">Melyik eseményt keresed?</h1>
     <label class="event-search-field" for="event-search"><span class="sr-only">Esemény keresése név szerint</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off"></label>
-    <div id="search-results" class="events-grid app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
+    <div id="search-results" class="app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
   <section id="permanent-view" class="app-view wrapper" hidden aria-labelledby="permanent-view-title">

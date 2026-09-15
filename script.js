@@ -10,6 +10,7 @@ const CITIES = [
   { name: 'Székesfehérvár', latitude: 47.1860, longitude: 18.4221 }
 ];
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
+const FAVORITE_NOTES_STORAGE_KEY = 'bee-there-favorite-notes';
 const TRANSPORT_STORAGE_KEY = 'bee-there-transport';
 const PROFILE_STORAGE_KEY = 'bee-there-profile-preferences';
 const MAX_FAVORITES = 100;
@@ -98,6 +99,7 @@ let activeFilterButton = null;
 let position = null;
 let selectedCity = '';
 let favoriteIds = loadFavorites();
+let favoriteNotes = loadFavoriteNotes();
 let calendarCategory = '';
 let calendarSelectedDate = '';
 let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -319,6 +321,28 @@ function saveFavorites() {
   catch (error) { console.warn('[Bee There] A kedvencek nem menthetők:', error); }
 }
 
+function loadFavoriteNotes() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITE_NOTES_STORAGE_KEY) || '{}');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return {};
+    return Object.fromEntries(Object.entries(saved)
+      .filter(([key, value]) => typeof key === 'string' && key.length <= 800 && typeof value === 'string')
+      .slice(0, MAX_FAVORITES)
+      .map(([key, value]) => [key, value.slice(0, 5000)]));
+  } catch (error) {
+    console.warn('[Bee There] A kedvencek jegyzetei nem olvashatók:', error);
+    return {};
+  }
+}
+
+function saveFavoriteNotes() {
+  try {
+    localStorage.setItem(FAVORITE_NOTES_STORAGE_KEY, JSON.stringify(favoriteNotes));
+  } catch (error) {
+    console.warn('[Bee There] A kedvencek jegyzetei nem menthetők:', error);
+  }
+}
+
 function triggerBounce(element) {
   if (!element) return;
   findAll('.gooey-particle', element).forEach(particle => particle.remove());
@@ -527,20 +551,146 @@ function renderPermanent() {
   else permanentGrid.innerHTML = '<p class="app-view-empty">Hamarosan új állandó lehetőségekkel várunk.</p>';
 }
 
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('hu')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function levenshteinDistance(first, second) {
+  const source = String(first || '');
+  const target = String(second || '');
+  if (!source) return target.length;
+  if (!target) return source.length;
+  let previous = Array.from({ length: target.length + 1 }, (_, index) => index);
+  for (let sourceIndex = 1; sourceIndex <= source.length; sourceIndex += 1) {
+    const current = [sourceIndex];
+    for (let targetIndex = 1; targetIndex <= target.length; targetIndex += 1) {
+      current[targetIndex] = Math.min(
+        current[targetIndex - 1] + 1,
+        previous[targetIndex] + 1,
+        previous[targetIndex - 1] + (source[sourceIndex - 1] === target[targetIndex - 1] ? 0 : 1)
+      );
+    }
+    previous = current;
+  }
+  return previous[target.length];
+}
+
+function numericPrice(event) {
+  if (isFree(event)) return 0;
+  const digits = String(event.Price || '').replace(/[^0-9]/g, '');
+  return digits ? Number(digits) : null;
+}
+
+function queryRelevance(event, normalizedQuery, queryWords) {
+  const title = normalizeSearchText(event.Title);
+  const titleWords = title.split(' ').filter(Boolean);
+  const searchableDetails = normalizeSearchText([
+    event.Description,
+    event['Long description'],
+    event.Location,
+    event.Price,
+    event['Age Requirement'],
+    eventCategories(event).join(' ')
+  ].join(' '));
+  const wordScore = queryWords.reduce((score, queryWord) => {
+    const closestWord = titleWords.reduce((closest, titleWord) => Math.min(closest, levenshteinDistance(queryWord, titleWord)), Infinity);
+    const likeness = Math.max(0, 1 - closestWord / Math.max(queryWord.length, 1));
+    return score + likeness;
+  }, 0);
+  const wholeTitleScore = normalizedQuery
+    ? Math.max(0, 1 - levenshteinDistance(normalizedQuery, title) / Math.max(normalizedQuery.length, title.length, 1))
+    : 0;
+  const exactTitleBonus = title === normalizedQuery ? 500 : title.includes(normalizedQuery) ? 250 : 0;
+  const detailMatches = queryWords.filter(word => searchableDetails.includes(word)).length;
+  return exactTitleBonus + wordScore * 18 + wholeTitleScore * 12 + detailMatches * 3;
+}
+
+function eventRelatedness(event, anchor) {
+  if (!anchor || event === anchor) return 0;
+  const sharedCategories = eventCategories(event).filter(category => eventCategories(anchor).includes(category)).length;
+  const eventPrice = numericPrice(event);
+  const anchorPrice = numericPrice(anchor);
+  let priceScore = 0;
+  if (eventPrice !== null && anchorPrice !== null) {
+    priceScore = eventPrice === anchorPrice ? 5 : Math.max(0, 4 - Math.abs(eventPrice - anchorPrice) / 5000);
+  }
+  const ageScore = event['Age Requirement'] && event['Age Requirement'] === anchor['Age Requirement'] ? 2 : 0;
+  const locationScore = event.Location && event.Location === anchor.Location ? 2 : 0;
+  return sharedCategories * 12 + priceScore + ageScore + locationScore;
+}
+
+function rankedSearchEvents(query) {
+  const normalizedQuery = normalizeSearchText(query);
+  const queryWords = normalizedQuery.split(' ').filter(Boolean);
+  const uniqueEvents = [...events, ...permanentEvents].filter((event, index, list) =>
+    list.findIndex(candidate => eventKey(candidate) === eventKey(event)) === index
+  );
+  const scored = uniqueEvents.map((event, index) => ({ event, index, queryScore: queryRelevance(event, normalizedQuery, queryWords) }));
+  scored.sort((first, second) => second.queryScore - first.queryScore || first.index - second.index);
+  const anchor = scored[0]?.event;
+  return scored
+    .map(item => ({ ...item, finalScore: item.queryScore * 5 + eventRelatedness(item.event, anchor) }))
+    .sort((first, second) => second.finalScore - first.finalScore || first.index - second.index)
+    .map(item => item.event);
+}
+
 function renderSearchResults(query) {
   if (!searchResults) return;
-  const term = String(query || '').trim().toLocaleLowerCase('hu');
+  const term = normalizeSearchText(query);
   if (!term) {
     searchResults.innerHTML = '<p class="app-view-empty">Kezdd el beírni az esemény nevét.</p>';
     return;
   }
-  const matches = [...events, ...permanentEvents].filter(event => String(event.Title || '').toLocaleLowerCase('hu').includes(term));
-  if (!matches.length) {
-    searchResults.innerHTML = '<p class="app-view-empty">Nem találtunk ilyen nevű eseményt.</p>';
-    return;
+  const ranked = rankedSearchEvents(query);
+  const directMatches = ranked.filter(event => normalizeSearchText(event.Title).includes(term));
+  searchResults.replaceChildren();
+  if (!directMatches.length) {
+    const empty = document.createElement('p');
+    empty.className = 'app-view-empty search-empty-message';
+    empty.textContent = 'Nem találtunk ilyen nevű eseményt.';
+    searchResults.append(empty);
   }
-  const ordered = position ? sortByDistance(matches) : matches;
-  renderCardsIncrementally(searchResults, ordered);
+  const section = document.createElement('section');
+  section.className = 'search-suggestions';
+  section.setAttribute('aria-label', 'Eseményjavaslatok');
+  const heading = document.createElement('p');
+  heading.className = 'search-suggestions-title';
+  heading.textContent = directMatches.length ? 'Legjobb találatok:' : 'Lehet, hogy ezekre gondoltál:';
+  const list = document.createElement('div');
+  list.className = 'search-suggestions-list';
+  ranked.slice(0, Math.min(5, ranked.length)).forEach(event => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'search-suggestion';
+    const title = document.createElement('strong');
+    title.textContent = event.Title;
+    const details = document.createElement('span');
+    details.textContent = `${eventDateOnly(event)} · ${event.Location || 'Helyszín hamarosan'}`;
+    button.append(title, details);
+    button.addEventListener('click', () => {
+      if (!searchInput) return;
+      searchInput.value = event.Title;
+      searchInput.focus();
+      renderSearchResults(event.Title);
+    });
+    list.append(button);
+  });
+  section.append(heading, list);
+  searchResults.append(section);
+  const relatedHeading = document.createElement('p');
+  relatedHeading.className = 'search-related-title';
+  relatedHeading.textContent = 'Kapcsolódó események';
+  const rail = document.createElement('div');
+  rail.className = 'events-grid event-carousel search-related-events';
+  rail.tabIndex = 0;
+  rail.setAttribute('aria-label', 'Kapcsolódó események');
+  searchResults.append(relatedHeading, rail);
+  renderCardsIncrementally(rail, ranked.slice(0, 12));
 }
 
 function setupAppNavigation() {
@@ -700,6 +850,11 @@ function closeEventDetails() {
     detailsWindow.style.removeProperty('left');
   }
   document.body.classList.remove('has-open-dialog');
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('event')) {
+    url.searchParams.delete('event');
+    history.replaceState({}, '', url);
+  }
 }
 
 function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
@@ -864,7 +1019,11 @@ function renderCard(event, target, { compact = false } = {}) {
     favoriteButton.dataset.eventKey = key;
     syncFavoriteButton(favoriteButton, favoriteIds.has(key));
     favoriteButton.addEventListener('click', () => {
-      favoriteIds.has(key) ? favoriteIds.delete(key) : favoriteIds.add(key);
+      if (favoriteIds.has(key)) {
+        favoriteIds.delete(key);
+        delete favoriteNotes[key];
+        saveFavoriteNotes();
+      } else favoriteIds.add(key);
       saveFavorites();
       triggerBounce(favoriteButton);
       vibrate(18);
@@ -950,13 +1109,79 @@ function renderFeatured() {
   else featuredGrid.replaceChildren();
 }
 
+function createFavoriteNoteCard(event) {
+  const key = eventKey(event);
+  const noteCard = document.createElement('article');
+  noteCard.className = 'favorite-note-card';
+  noteCard.innerHTML = `
+    <header class="favorite-note-header">
+      <div class="event-meta">
+        <time class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span class="favorite-note-date"></span></time>
+        <span class="event-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span class="favorite-note-location"></span></span>
+      </div>
+      <h3>Jegyzetek</h3>
+    </header>
+    <textarea class="favorite-note-input" maxlength="5000" aria-label="Jegyzet az eseményhez" placeholder="Írj ide bármit az eseményről…"></textarea>
+    <footer class="favorite-note-footer">
+      <div class="badges"><span class="badge favorite-note-category"></span><span class="badge favorite-note-price"></span><span class="badge favorite-note-age"></span></div>
+      <button class="favorite-note-copy" type="button" aria-label="Jegyzet másolása" title="Jegyzet másolása">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+      </button>
+    </footer>`;
+  setText('.favorite-note-date', eventDateOnly(event), noteCard);
+  setText('.favorite-note-location', event.Location || 'Helyszín hamarosan', noteCard);
+  setText('.favorite-note-category', eventCategories(event)[0] || 'program', noteCard);
+  setText('.favorite-note-price', event.Price || 'Ár nincs megadva', noteCard);
+  setText('.favorite-note-age', event['Age Requirement'] || 'Korhatár nincs megadva', noteCard);
+  const input = find('.favorite-note-input', noteCard);
+  const copyButton = find('.favorite-note-copy', noteCard);
+  if (input) {
+    input.value = favoriteNotes[key] || '';
+    if (copyButton) copyButton.disabled = !input.value.trim();
+    input.addEventListener('input', () => {
+      favoriteNotes[key] = input.value.slice(0, 5000);
+      saveFavoriteNotes();
+      if (copyButton) copyButton.disabled = !input.value.trim();
+    });
+  }
+  if (copyButton && input) copyButton.addEventListener('click', async () => {
+    const note = input.value.trim();
+    if (!note) return;
+    try {
+      await navigator.clipboard.writeText(note);
+    } catch {
+      input.select();
+      document.execCommand('copy');
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    copyButton.classList.add('is-copied');
+    copyButton.setAttribute('aria-label', 'Jegyzet kimásolva');
+    window.setTimeout(() => {
+      copyButton.classList.remove('is-copied');
+      copyButton.setAttribute('aria-label', 'Jegyzet másolása');
+    }, 1400);
+  });
+  return noteCard;
+}
+
+function renderFavoritePair(event) {
+  const pair = document.createElement('div');
+  pair.className = 'favorite-pair';
+  pair.tabIndex = 0;
+  pair.setAttribute('aria-label', `${event.Title || 'Esemény'} és jegyzetei`);
+  renderCard(event, pair);
+  pair.append(createFavoriteNoteCard(event));
+  favoritesGrid.append(pair);
+}
+
 function renderFavorites() {
   if (!favoritesGrid || !favoritesSection) return;
   const favorites = position
     ? sortByDistance([...events, ...permanentEvents].filter(event => favoriteIds.has(eventKey(event))))
     : [...events, ...permanentEvents].filter(event => favoriteIds.has(eventKey(event)));
   favoritesSection.hidden = currentAppView === 'favorites' ? false : !favorites.length;
-  if (favorites.length) renderCardsIncrementally(favoritesGrid, favorites, { compact: true });
+  favoritesGrid.replaceChildren();
+  if (favorites.length) favorites.forEach(renderFavoritePair);
   else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs kedvelt eseményed. A szív ikonra nyomva bármelyik programot elmentheted ide.</p>';
   updateProfileSummary();
 }
@@ -1586,7 +1811,8 @@ async function loadEvents() {
     renderPermanent();
     if (currentAppView === 'search') renderSearchResults(searchInput?.value || '');
     renderEvents();
-    const requestedEvent = new URLSearchParams(window.location.search).get('event');
+    const navigationEntry = performance.getEntriesByType?.('navigation')?.[0];
+    const requestedEvent = navigationEntry?.type === 'reload' ? null : new URLSearchParams(window.location.search).get('event');
     const sharedEvent = requestedEvent ? [...events, ...permanentEvents].find(event => eventSlug(event) === requestedEvent) : null;
     if (sharedEvent) window.setTimeout(() => openEventDetails(sharedEvent, null, { updateUrl: false }), 0);
   } catch (error) {
