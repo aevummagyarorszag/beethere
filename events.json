@@ -1,6 +1,7 @@
 [
   {
     "Title": "Székesfehérvári Királyi Napok - Nyitógála==",
+    "Type": "egyszeri",
     "Location": "Városháza tér, Székesfehérvár",
     "Latitude": 47.1912,
     "Longitude": 18.4095,
@@ -18,6 +19,7 @@
   },
   {
     "Title": "FEZEN Fesztivál - Rock & Elektronikus Est",
+    "Type": "egyszeri",
     "Location": "First Field / FEZEN Klub, Takarodó út 5.",
     "Latitude": 47.1785,
     "Longitude": 18.421,
@@ -35,6 +37,7 @@
   },
   {
     "Title": "Alba Fehérvár vs. Falco Kosárlabda Mérkőzés",
+    "Type": "egyszeri",
     "Location": "Alba Regia Sportcsarnok, Gáz utca 19.",
     "Latitude": 47.1852,
     "Longitude": 18.4201,
@@ -52,6 +55,7 @@
   },
   {
     "Title": "Jazz a Bory-várban - Esti Koncert és Séta",
+    "Type": "egyszeri",
     "Location": "Bory-vár, Máriavölgy út 54.",
     "Latitude": 47.2061,
     "Longitude": 18.4589,
@@ -69,6 +73,7 @@
   },
   {
     "Title": "Fehérvári Gasztro & Kézműves Sörfesztivál",
+    "Type": "egyszeri",
     "Location": "Csónakázó-tó partja, Ligetsor",
     "Latitude": 47.1895,
     "Longitude": 18.401,
@@ -86,6 +91,7 @@
   },
   {
     "Title": "A Pál utcai fiúk - Zenés Játék",
+    "Type": "egyszeri",
     "Location": "Vörösmarty Színház, Fő utca 8.",
     "Latitude": 47.1902,
     "Longitude": 18.411,
@@ -103,6 +109,7 @@
   },
   {
     "Title": "Királyok Csatája - Családi Hagyományőrző Nap",
+    "Type": "egyszeri",
     "Location": "Koronás Park, Ligetsor",
     "Latitude": 47.1982,
     "Longitude": 18.4035,
@@ -120,6 +127,7 @@
   },
   {
     "Title": "Fehérvár FC Bajnoki Mérkőzés",
+    "Type": "egyszeri",
     "Location": "MOL Aréna Sóstó, Csíkvári út 10.",
     "Latitude": 47.1738,
     "Longitude": 18.4132,
@@ -137,6 +145,7 @@
   },
   {
     "Title": "Sóstói Éjszakai Túra & Csillagnézés",
+    "Type": "egyszeri",
     "Location": "Sóstó Látogatóközpont, Csíkvári út 10.",
     "Latitude": 47.17,
     "Longitude": 18.412,
@@ -154,6 +163,7 @@
   },
   {
     "Title": "Fehérvári Termelői Piac és Borünnep",
+    "Type": "egyszeri",
     "Location": "Jókai utca / Piac tér",
     "Latitude": 47.192,
     "Longitude": 18.407,
@@ -171,6 +181,7 @@
   },
   {
     "Title": "Retro Disco & 90-es Évek Party",
+    "Type": "egyszeri",
     "Location": "KÖFÉM Művelődési Ház, Verseci u. 1.",
     "Latitude": 47.1725,
     "Longitude": 18.441,
@@ -188,6 +199,7 @@
   },
   {
     "Title": "Gorsium Floralia - Római Tavaszünnep",
+    "Type": "egyszeri",
     "Location": "Gorsium Régészeti Park, Tác (Fehérvár mellett)",
     "Latitude": 47.0911,
     "Longitude": 18.4205,
@@ -205,6 +217,7 @@
   },
   {
     "Title": "Stand-up Comedy: Dumaszínház Est",
+    "Type": "egyszeri",
     "Location": "Fehérvári Közösségi Ház, Fő utca 67.",
     "Latitude": 47.1925,
     "Longitude": 18.4082,
@@ -222,6 +235,7 @@
   },
   {
     "Title": "Múzeumok Éjszakája Székesfehérváron",
+    "Type": "egyszeri",
     "Location": "Szent István Király Múzeum, Fő utca 6.",
     "Latitude": 47.1906,
     "Longitude": 18.4088,
@@ -239,6 +253,7 @@
   },
   {
     "Title": "Fehérvári Félmaraton & Családi Futónap",
+    "Type": "egyszeri",
     "Location": "Bregyó közi Regionális Atlétikai Központ",
     "Latitude": 47.1995,
     "Longitude": 18.398,
@@ -256,6 +271,7 @@
   },
   {
     "Title": "Alba Regia Szimfonikus Zenekar Hangversenye",
+    "Type": "egyszeri",
     "Location": "Bartók Béla Kamaraterem, Prohászka O. út 6.",
     "Latitude": 47.1888,
     "Longitude": 18.415,
@@ -273,6 +289,7 @@
   },
   {
     "Title": "Salsa & Bachata Open Air Táncest",
+    "Type": "egyszeri",
     "Location": "Zichy-liget Zenepavilon",
     "Latitude": 47.194,
     "Longitude": 18.409,
@@ -290,6 +307,7 @@
   },
   {
     "Title": "Kézműves Csokoládé és Kávé Fesztivál",
+    "Type": "egyszeri",
     "Location": "Hiemer-ház, Oskola utca 2.",
     "Latitude": 47.1915,
     "Longitude": 18.4085,
@@ -307,6 +325,7 @@
   },
   {
     "Title": "Underground Rock & Metal Night",
+    "Type": "egyszeri",
     "Location": "Nyolcas Műhely, Zámoly u. 5.",
     "Latitude": 47.1945,
     "Longitude": 18.418,
@@ -324,6 +343,7 @@
   },
   {
     "Title": "Orgonaverseny a Székesegyházban",
+    "Type": "egyszeri",
     "Location": "Szent István-székesegyház (Bazilika)",
     "Latitude": 47.1908,
     "Longitude": 18.4098,
@@ -341,6 +361,7 @@
   },
   {
     "Title": "Barátság Mozi: Művészfilm Klub & Pódium",
+    "Type": "egyszeri",
     "Location": "Barátság Mozi, Bartók Béla tér 1.",
     "Latitude": 47.1932,
     "Longitude": 18.4122,
@@ -358,6 +379,7 @@
   },
   {
     "Title": "Fehérvári Sárkányhajó Fesztivál",
+    "Type": "egyszeri",
     "Location": "Csónakázó-tó, Ligetsor",
     "Latitude": 47.1895,
     "Longitude": 18.401,
@@ -375,6 +397,7 @@
   },
   {
     "Title": "Romantikus Esti Csónakázás & Élő Zene",
+    "Type": "egyszeri",
     "Location": "Csónakázó-tó csónakház, Ligetsor",
     "Latitude": 47.189,
     "Longitude": 18.4005,
@@ -392,6 +415,7 @@
   },
   {
     "Title": "Street Food & Truck Show Fehérvár",
+    "Type": "egyszeri",
     "Location": "Palotai út / Alba Plaza mellett",
     "Latitude": 47.191,
     "Longitude": 18.404,
@@ -409,6 +433,7 @@
   },
   {
     "Title": "Hetedhét Játékmúzeum Családi Hétvége",
+    "Type": "egyszeri",
     "Location": "Hetedhét Játékmúzeum, Oskola u. 2.",
     "Latitude": 47.1915,
     "Longitude": 18.4085,
@@ -426,6 +451,7 @@
   },
   {
     "Title": "Piramisok és Csillagok - Planetárium",
+    "Type": "egyszeri",
     "Location": "Székesfehérvári Planetárium, Fürdő u. 1.",
     "Latitude": 47.189,
     "Longitude": 18.4115,
@@ -443,6 +469,7 @@
   },
   {
     "Title": "Néptáncgála és Táncház",
+    "Type": "egyszeri",
     "Location": "Malomerdő Táncház, Rákóczi u. 25.",
     "Latitude": 47.1942,
     "Longitude": 18.416,
@@ -460,6 +487,7 @@
   },
   {
     "Title": "Techno & Electronic Beats Night",
+    "Type": "egyszeri",
     "Location": "FEZEN Klub, Takarodó út 5.",
     "Latitude": 47.1785,
     "Longitude": 18.421,
@@ -477,6 +505,7 @@
   },
   {
     "Title": "Adventi Vásár és Gyertyagyújtás",
+    "Type": "egyszeri",
     "Location": "Városháza tér, Székesfehérvár",
     "Latitude": 47.1912,
     "Longitude": 18.4095,
@@ -494,6 +523,7 @@
   },
   {
     "Title": "Klasszikus Filmvetítés: Casablanca",
+    "Type": "egyszeri",
     "Location": "Barátság Mozi, Bartók Béla tér 1.",
     "Latitude": 47.1932,
     "Longitude": 18.4122,
