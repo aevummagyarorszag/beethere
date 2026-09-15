@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260915-1">
+  <link rel="stylesheet" href="style.css?v=20260915-2">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -76,6 +76,9 @@
         </div>
       </div>
       <div id="favorites-grid" class="favorites-list" aria-label="Kedvelt események"></div>
+      <button id="favorites-to-top" class="favorites-to-top" type="button" aria-label="Vissza a kedvencek tetejére" title="Vissza a tetejére">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+      </button>
     </section>
 
     <section id="today-section" class="today-section" aria-labelledby="today-title">
@@ -99,6 +102,13 @@
       </div>
       <div id="calendar-events" class="calendar-events" aria-live="polite"><p class="calendar-empty">Válassz egy napot a programok megtekintéséhez.</p></div>
     </section>
+
+    <div class="events-refresh-wrap">
+      <button id="events-refresh" class="events-refresh-button" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg>
+        <span>Frissítés</span>
+      </button>
+    </div>
 
     <template id="event-template">
       <article class="event-card">
@@ -140,7 +150,7 @@
   <section id="search-view" class="app-view wrapper" hidden aria-labelledby="search-view-title">
     <p class="eyebrow">KERESÉS</p>
     <h1 id="search-view-title" class="app-view-title">Melyik eseményt keresed?</h1>
-    <label class="event-search-field" for="event-search"><span class="sr-only">Esemény keresése név szerint</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off"></label>
+    <label class="event-search-field" for="event-search"><span class="sr-only">Esemény keresése név szerint</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off" enterkeyhint="search"></label>
     <div id="search-results" class="app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
@@ -268,7 +278,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.066</span>
+      <span class="site-version">version - 01.067</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>
@@ -279,6 +289,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg></button>
   </nav>
-  <script src="script.js?v=20260915-1"></script>
+  <script src="script.js?v=20260915-2"></script>
 </body>
 </html>
