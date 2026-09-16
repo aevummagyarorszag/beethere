@@ -1070,53 +1070,60 @@ function setupCarousel(carousel) {
   let startX = 0;
   let startScrollLeft = 0;
   let forwardLimit = Infinity;
-  let gestureTimer = 0;
+  let lastPointerX = 0;
+  let lastPointerTime = 0;
+  let dragVelocity = 0;
+  const setDirection = delta => {
+    if (Math.abs(delta) > 3) carousel.dataset.scrollDirection = delta > 0 ? 'forward' : 'backward';
+  };
   const beginGesture = () => {
     const cards = findAll('.event-card, .favorite-note-card', carousel);
     const bounds = carousel.getBoundingClientRect();
     const positions = cards.map(card => card.getBoundingClientRect().left - bounds.left + carousel.scrollLeft);
     forwardLimit = positions.find(left => left > carousel.scrollLeft + 12) ?? carousel.scrollWidth;
-    window.clearTimeout(gestureTimer);
-  };
-  const finishGesture = () => {
-    window.clearTimeout(gestureTimer);
-    gestureTimer = window.setTimeout(() => { forwardLimit = Infinity; }, 220);
   };
 
   carousel.addEventListener('pointerdown', event => {
-    if (event.target.closest('button, a')) return;
+    if (event.button !== 0 || event.target.closest('button, a, input, textarea')) return;
     beginGesture();
     isDragging = true;
     startX = event.clientX;
     startScrollLeft = carousel.scrollLeft;
-    carousel.setPointerCapture?.(event.pointerId);
-    carousel.classList.add('is-dragging');
+    lastPointerX = event.clientX;
+    lastPointerTime = performance.now();
+    dragVelocity = 0;
   });
   carousel.addEventListener('pointermove', event => {
     if (!isDragging) return;
     if (Math.abs(event.clientX - startX) < 10) return;
     carousel.setPointerCapture?.(event.pointerId);
+    carousel.classList.add('is-dragging');
+    setDirection(startX - event.clientX);
+    const now = performance.now();
+    dragVelocity = (lastPointerX - event.clientX) / Math.max(1, now - lastPointerTime);
+    lastPointerX = event.clientX;
+    lastPointerTime = now;
     event.preventDefault();
     carousel.scrollLeft = Math.min(forwardLimit, startScrollLeft - (event.clientX - startX));
   });
   const stopDragging = () => {
-    if (isDragging && carousel.scrollLeft > startScrollLeft + 12 && forwardLimit !== Infinity) {
+    const wasDragging = carousel.classList.contains('is-dragging');
+    carousel.classList.remove('is-dragging');
+    if (wasDragging && isDragging && carousel.scrollLeft > startScrollLeft + 12 && forwardLimit !== Infinity) {
       carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
+    } else if (wasDragging && isDragging && carousel.scrollLeft < startScrollLeft) {
+      const momentum = performance.now() - lastPointerTime < 100 ? Math.min(0, dragVelocity) * 240 : 0;
+      carousel.scrollTo({ left: Math.max(0, carousel.scrollLeft + momentum), behavior: 'smooth' });
     }
     isDragging = false;
-    carousel.classList.remove('is-dragging');
-    finishGesture();
   };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
-  carousel.addEventListener('wheel', () => {
-    if (forwardLimit === Infinity) beginGesture();
-    finishGesture();
+  carousel.addEventListener('wheel', event => {
+    setDirection(event.deltaX || (event.shiftKey ? event.deltaY : 0));
   }, { passive: true });
 
   const updateReturnButton = () => {
-    if (carousel.scrollLeft > forwardLimit + 1) carousel.scrollLeft = forwardLimit;
-    if (forwardLimit !== Infinity && !isDragging) finishGesture();
     const overflow = carousel.scrollWidth - carousel.clientWidth;
     const atEnd = carousel._hasMultipleCards && overflow > 36 && carousel.scrollLeft >= overflow - 28;
     returnButton.hidden = !atEnd;
@@ -1129,7 +1136,6 @@ function setupCarousel(carousel) {
     event.preventDefault();
     beginGesture();
     carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
-    finishGesture();
   });
   window.requestAnimationFrame(updateReturnButton);
 }
@@ -1600,7 +1606,7 @@ function renderFavoritePair(event, index) {
     promoteButton.className = 'promote-favorite-button';
     promoteButton.setAttribute('aria-label', `${event.Title || 'Esemény'} előre helyezése`);
     promoteButton.title = 'Legyen ez az első';
-    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.7 3.2 6.1 6.1-2.2 2.2-1.7-.5-4.1 4.1.7 2.2-1.9 1.9-2.7-2.7-4 4-1.4-1.4 4-4-2.7-2.7 1.9-1.9 2.2.7 4.1-4.1-.5-1.7 2.2-2.2Z"/></svg>';
+    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(45 12 12)"><path d="M8 3a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2h-1v6l3 3v2H6v-2l3-3V3H8Z"/><path d="M11 15h2v6l-1 2-1-2v-6Z"/></g></svg>';
     promoteButton.addEventListener('click', () => promoteFavorite(event, pair));
     imageWrap?.append(promoteButton);
   }

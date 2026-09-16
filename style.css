@@ -597,9 +597,11 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
 }
 
 /* A swipe to the right always settles on the following card, even during a fast gesture. */
-.events-grid { scroll-snap-type: x mandatory; touch-action: pan-y; }
+.events-grid { scroll-snap-type: x mandatory; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
 .events-grid > .event-card, .events-grid > .favorite-note-card { scroll-snap-stop: always; }
-.events-grid.is-dragging { scroll-snap-type: x mandatory; }
+.events-grid.is-dragging { scroll-snap-type: none; scroll-behavior: auto; }
+.events-grid[data-scroll-direction="backward"] > .event-card { scroll-snap-stop: normal; }
+.events-grid:active:not(.is-dragging) { scroll-snap-type: x mandatory; }
 
 /* Settings remain part of the profile flow, after the personalization questions. */
 .account-settings-panel { width: min(100%, 720px); margin: 12px 0 52px; padding: 22px; border: 1px solid rgba(27, 29, 34, .12); border-radius: 24px; background: var(--surface); box-shadow: 0 12px 30px rgba(42, 31, 26, .08); }
@@ -637,4 +639,7 @@ html[data-theme="dark"] .settings-sheet-close { background: #34343B; color: #F7F
 
 .promote-favorite-button { color: #ff4d6d; }
 .promote-favorite-button svg { width: 25px; height: 25px; fill: currentColor; stroke: none; }
+.event-details-location { overflow: hidden; }
+#event-details-location { display: block; min-width: 0; overflow-x: auto; white-space: nowrap; text-overflow: clip; scrollbar-width: none; touch-action: pan-x; }
+#event-details-location::-webkit-scrollbar { display: none; }
 .social-share-messenger svg { display: block; width: 22px; height: 22px; aspect-ratio: 1; }
