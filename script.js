@@ -918,12 +918,41 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
   if (!searchResults) return;
   const term = normalizeSearchText(query);
   if (!term) {
-    searchResults.innerHTML = '<p class="app-view-empty">Kezdd el beírni az esemény nevét.</p>';
+    searchResults.replaceChildren();
+    const picker = document.createElement('section');
+    picker.className = 'search-category-picker';
+    picker.setAttribute('aria-label', 'Böngészés kategória szerint');
+    const heading = document.createElement('p');
+    heading.className = 'search-category-picker-title';
+    heading.textContent = 'Válassz egy témát';
+    const buttons = document.createElement('div');
+    buttons.className = 'search-category-buttons';
+    CATEGORIES.forEach(category => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'search-category-button';
+      button.innerHTML = `<span>${category}</span><span aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
+      button.addEventListener('click', () => {
+        if (!searchInput) return;
+        searchInput.value = category;
+        renderSearchResults(category, { showSuggestions: false });
+        searchInput.focus();
+      });
+      buttons.append(button);
+    });
+    picker.append(heading, buttons);
+    searchResults.append(picker);
     return;
   }
   const ranked = rankedSearchEvents(query);
   const directMatches = ranked.filter(event => normalizeSearchText(event.Title).includes(term));
   searchResults.replaceChildren();
+  const rail = document.createElement('div');
+  rail.className = 'events-grid event-carousel search-related-events';
+  rail.tabIndex = 0;
+  rail.setAttribute('aria-label', showSuggestions ? 'Keresési eredmények' : 'Keresési eredmények');
+  searchResults.append(rail);
+  renderCardsIncrementally(rail, ranked.slice(0, 12));
   if (showSuggestions && !directMatches.length) {
     const empty = document.createElement('p');
     empty.className = 'app-view-empty search-empty-message';
@@ -958,17 +987,7 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     });
     section.append(heading, list);
     searchResults.append(section);
-    const relatedHeading = document.createElement('p');
-    relatedHeading.className = 'search-related-title';
-    relatedHeading.textContent = 'Kapcsolódó események';
-    searchResults.append(relatedHeading);
   }
-  const rail = document.createElement('div');
-  rail.className = 'events-grid event-carousel search-related-events';
-  rail.tabIndex = 0;
-  rail.setAttribute('aria-label', showSuggestions ? 'Kapcsolódó események' : 'Keresési eredmények');
-  searchResults.append(rail);
-  renderCardsIncrementally(rail, ranked.slice(0, 12));
 }
 
 function setupAppNavigation() {
@@ -1005,14 +1024,15 @@ function setupAppNavigation() {
 
 function setupGenerousButtonHitAreas() {
   const starts = new Map();
+  const hasBlockingOverlay = () => document.body.classList.contains('has-open-dialog') || Boolean(document.querySelector('dialog[open], .settings-sheet-backdrop:not([hidden])'));
   document.addEventListener('pointerdown', event => {
-    if (!event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
+    if (hasBlockingOverlay() || !event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
     starts.set(event.pointerId, { x: event.clientX, y: event.clientY });
   }, true);
   document.addEventListener('pointerup', event => {
     const start = starts.get(event.pointerId);
     starts.delete(event.pointerId);
-    if (!start || !event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
+    if (!start || hasBlockingOverlay() || !event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) return;
     const hit = findAll('button:not(:disabled):not([hidden])')
       .filter(button => {
@@ -1034,6 +1054,27 @@ function setupGenerousButtonHitAreas() {
     hit.click();
   }, true);
   document.addEventListener('pointercancel', event => starts.delete(event.pointerId), true);
+}
+
+function refreshLocationOverflowCue(element) {
+  if (!element) return;
+  const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
+  const scrollable = maxScroll > 1;
+  element.classList.toggle('has-overflow', scrollable);
+  element.classList.toggle('has-more-right', scrollable && element.scrollLeft < maxScroll - 1);
+  element.classList.toggle('has-more-left', scrollable && element.scrollLeft > 1);
+  const location = element.closest('.event-location');
+  location?.classList.toggle('has-overflow', scrollable);
+  location?.classList.toggle('has-more-right', scrollable && element.scrollLeft < maxScroll - 1);
+  location?.classList.toggle('has-more-left', scrollable && element.scrollLeft > 1);
+}
+
+function setupLocationOverflowCues() {
+  const selector = '#event-details-location, .inline-location-value';
+  document.addEventListener('scroll', event => {
+    if (event.target instanceof Element && event.target.matches(selector)) refreshLocationOverflowCue(event.target);
+  }, true);
+  window.addEventListener('resize', () => findAll(selector).forEach(refreshLocationOverflowCue), { passive: true });
 }
 
 function setCardDistance(card, latitude, longitude) {
@@ -1333,6 +1374,10 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   detailsWindow.classList.toggle('is-past-event', isPast);
   setText('#event-details-date', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event), document);
   setText('#event-details-location', event.Location || 'Helyszín hamarosan', document);
+  if (eventDetailsLocation) {
+    eventDetailsLocation.scrollLeft = 0;
+    window.requestAnimationFrame(() => refreshLocationOverflowCue(eventDetailsLocation));
+  }
   setText('#event-details-title', event.Title || 'Esemény', document);
   setText('#event-details-time', eventStartTimeText(event), document);
   setText('#event-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', document);
@@ -1374,7 +1419,12 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
 
 function setupEventDetailsDialog() {
   if (eventDetailsClose) eventDetailsClose.addEventListener('click', closeEventDetails);
-  if (eventDetailsDialog) eventDetailsDialog.addEventListener('click', event => { if (event.target === eventDetailsDialog) closeEventDetails(); });
+  if (eventDetailsDialog) eventDetailsDialog.addEventListener('click', event => {
+    if (event.target !== eventDetailsDialog) return;
+    event.preventDefault();
+    event.stopPropagation();
+    closeEventDetails();
+  });
   if (eventDetailsTicket) eventDetailsTicket.addEventListener('click', () => triggerBounce(eventDetailsTicket));
 }
 
@@ -1546,6 +1596,7 @@ function renderCard(event, target, { compact = false } = {}) {
     }
   }
   target.append(fragment);
+  window.requestAnimationFrame(() => refreshLocationOverflowCue(find('.inline-location-value', card)));
   if (card) eventVisibilityObserver?.observe(card);
   window.requestAnimationFrame(() => positionDetailsButton(card));
 }
@@ -1696,6 +1747,8 @@ function createFavoriteNoteCard(event) {
     const note = input.value.trim();
     if (!note) return;
     const copyText = [
+      event.Title || 'Esemény',
+      '',
       `Időpont: ${isPastEvent(event) ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event)} · ${eventStartTimeText(event)}`,
       `Helyszín: ${event.Location || 'Helyszín hamarosan'}`,
       '',
@@ -1802,8 +1855,12 @@ function updateFavoritesToTopButton() {
   const isScrolled = currentScrollY > 220;
   const isNearBottom = currentScrollY + window.innerHeight >= document.documentElement.scrollHeight - 100;
   const isScrollingUp = currentScrollY < lastFavoritesScrollY - 3;
+  const isScrollingDown = currentScrollY > lastFavoritesScrollY + 3;
   const shouldShow = isFavorites && isScrolled && (isNearBottom || isScrollingUp);
-  if (shouldShow) {
+  if (isScrollingDown) {
+    window.clearTimeout(favoritesToTopHideTimer);
+    favoritesToTop.classList.remove('is-visible');
+  } else if (shouldShow) {
     window.clearTimeout(favoritesToTopHideTimer);
     favoritesToTop.classList.add('is-visible');
   } else if (!isFavorites || !isScrolled) {
@@ -1811,7 +1868,7 @@ function updateFavoritesToTopButton() {
     favoritesToTop.classList.remove('is-visible');
   } else if (favoritesToTop.classList.contains('is-visible')) {
     window.clearTimeout(favoritesToTopHideTimer);
-    favoritesToTopHideTimer = window.setTimeout(() => favoritesToTop?.classList.remove('is-visible'), 2000);
+    favoritesToTopHideTimer = window.setTimeout(() => favoritesToTop?.classList.remove('is-visible'), 1200);
   }
   lastFavoritesScrollY = currentScrollY;
 }
@@ -2635,6 +2692,7 @@ async function loadEvents() {
 
 function init() {
   setupGenerousButtonHitAreas();
+  setupLocationOverflowCues();
   setupAppNavigation();
   createFilters();
   attachCarouselControls();
