@@ -839,25 +839,50 @@ function numericPrice(event) {
 function queryRelevance(event, normalizedQuery, queryWords) {
   const title = normalizeSearchText(event.Title);
   const titleWords = title.split(' ').filter(Boolean);
+  const categoryTerms = eventCategories(event).map(normalizeSearchText);
+  const categoryAliases = {
+    party: ['buli', 'bulizas', 'tanc', 'zene', 'koncert'],
+    kultura: ['kulturalis', 'szinhaz', 'kiallitas', 'muzeum', 'film', 'mozi'],
+    sport: ['edzes', 'futball', 'meccs', 'mozgas', 'tura'],
+    csaladi: ['gyerek', 'gyerekek', 'csalad', 'baba'],
+    gasztro: ['etel', 'ital', 'bor', 'kave', 'vacsora', 'food'],
+    romantika: ['par', 'randi', 'szerelmes'],
+  };
   const searchableDetails = normalizeSearchText([
     event.Description,
     event['Long description'],
     event.Location,
     event.Price,
     event['Age Requirement'],
-    eventCategories(event).join(' ')
+    categoryTerms.join(' '),
+    categoryTerms.flatMap(category => categoryAliases[category] || []).join(' '),
+    isFree(event) ? 'ingyenes free' : 'fizetos jegy vasarlas',
+    eventStartTimeText(event),
+    eventDateOnly(event)
   ].join(' '));
+  const detailWords = searchableDetails.split(/\s+/).filter(Boolean);
+  const categoryIntentBonus = queryWords.reduce((score, queryWord) => {
+    return score + categoryTerms.reduce((categoryScore, category) => {
+      const candidates = [category, ...(categoryAliases[category] || [])];
+      const closest = candidates.reduce((best, candidate) => Math.min(best, levenshteinDistance(queryWord, candidate)), Infinity);
+      const likeness = Math.max(0, 1 - closest / Math.max(queryWord.length, ...candidates.map(candidate => candidate.length), 1));
+      return categoryScore + (likeness >= 0.68 ? likeness * 140 : 0);
+    }, 0);
+  }, 0);
   const wordScore = queryWords.reduce((score, queryWord) => {
-    const closestWord = titleWords.reduce((closest, titleWord) => Math.min(closest, levenshteinDistance(queryWord, titleWord)), Infinity);
-    const likeness = Math.max(0, 1 - closestWord / Math.max(queryWord.length, 1));
-    return score + likeness;
+    const nearestTitle = titleWords.reduce((closest, word) => Math.min(closest, levenshteinDistance(queryWord, word)), Infinity);
+    const nearestDetail = detailWords.reduce((closest, word) => Math.min(closest, levenshteinDistance(queryWord, word)), Infinity);
+    const titleLikeness = Math.max(0, 1 - nearestTitle / Math.max(queryWord.length, 1));
+    const detailLikeness = Math.max(0, 1 - nearestDetail / Math.max(queryWord.length, 1));
+    const directDetailMatch = detailWords.some(word => word.includes(queryWord) || queryWord.includes(word));
+    return score + titleLikeness * 1.5 + detailLikeness + (directDetailMatch ? 2.4 : 0);
   }, 0);
   const wholeTitleScore = normalizedQuery
     ? Math.max(0, 1 - levenshteinDistance(normalizedQuery, title) / Math.max(normalizedQuery.length, title.length, 1))
     : 0;
   const exactTitleBonus = title === normalizedQuery ? 500 : title.includes(normalizedQuery) ? 250 : 0;
   const detailMatches = queryWords.filter(word => searchableDetails.includes(word)).length;
-  return exactTitleBonus + wordScore * 18 + wholeTitleScore * 12 + detailMatches * 3;
+  return exactTitleBonus + wordScore * 28 + wholeTitleScore * 12 + detailMatches * 30 + categoryIntentBonus;
 }
 
 function eventRelatedness(event, anchor) {
@@ -976,6 +1001,39 @@ function setupAppNavigation() {
   const initialView = appViewFromUrl();
   applyAppView(initialView, { scroll: false });
 
+}
+
+function setupGenerousButtonHitAreas() {
+  const starts = new Map();
+  document.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
+    starts.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  }, true);
+  document.addEventListener('pointerup', event => {
+    const start = starts.get(event.pointerId);
+    starts.delete(event.pointerId);
+    if (!start || !event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) return;
+    const hit = findAll('button:not(:disabled):not([hidden])')
+      .filter(button => {
+        const rect = button.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0
+          && event.clientX >= rect.left - 7 && event.clientX <= rect.right + 7
+          && event.clientY >= rect.top - 7 && event.clientY <= rect.bottom + 7;
+      })
+      .sort((first, second) => {
+        const firstRect = first.getBoundingClientRect();
+        const secondRect = second.getBoundingClientRect();
+        return Math.hypot(event.clientX - (firstRect.left + firstRect.width / 2), event.clientY - (firstRect.top + firstRect.height / 2))
+          - Math.hypot(event.clientX - (secondRect.left + secondRect.width / 2), event.clientY - (secondRect.top + secondRect.height / 2));
+      })[0];
+    if (!hit) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    hit.focus({ preventScroll: true });
+    hit.click();
+  }, true);
+  document.addEventListener('pointercancel', event => starts.delete(event.pointerId), true);
 }
 
 function setCardDistance(card, latitude, longitude) {
@@ -1640,19 +1698,37 @@ function createFavoriteNoteCard(event) {
     const copyText = [
       `Időpont: ${isPastEvent(event) ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event)} · ${eventStartTimeText(event)}`,
       `Helyszín: ${event.Location || 'Helyszín hamarosan'}`,
+      '',
       note,
+      '',
+      `Esemény linkje: ${eventShareUrl(event)}`,
       `Téma: ${eventCategories(event)[0] || 'program'}`,
       `Ár: ${event.Price || 'Ár nincs megadva'}`,
       `Korhatár: ${event['Age Requirement'] || 'Korhatár nincs megadva'}`,
     ].join('\n');
     try {
-      await navigator.clipboard.writeText(copyText);
+      const imageUrl = safeUrl(optimizedImageUrl(event['Header Image']));
+      const payload = { 'text/plain': new Blob([copyText], { type: 'text/plain' }) };
+      if (imageUrl) {
+        payload['text/html'] = new Blob([`<p>${copyText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>')}</p><img src="${imageUrl}">`], { type: 'text/html' });
+        try {
+          const imageResponse = await fetch(imageUrl, { mode: 'cors' });
+          const imageBlob = await imageResponse.blob();
+          if (imageResponse.ok && imageBlob.type.startsWith('image/')) payload[imageBlob.type] = imageBlob;
+        } catch { /* The text and HTML fallback still include the event image URL. */ }
+      }
+      if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') await navigator.clipboard.write([new ClipboardItem(payload)]);
+      else if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(copyText);
+      else throw new Error('Clipboard unavailable');
     } catch {
-      input.value = copyText;
-      input.select();
+      const fallback = document.createElement('textarea');
+      fallback.value = copyText;
+      fallback.setAttribute('readonly', '');
+      fallback.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.append(fallback);
+      fallback.select();
       document.execCommand('copy');
-      input.value = note;
-      input.setSelectionRange(note.length, note.length);
+      fallback.remove();
     }
     copyButton.classList.add('is-copied');
     copyButton.setAttribute('aria-label', 'Jegyzet kimásolva');
@@ -2558,6 +2634,7 @@ async function loadEvents() {
 }
 
 function init() {
+  setupGenerousButtonHitAreas();
   setupAppNavigation();
   createFilters();
   attachCarouselControls();

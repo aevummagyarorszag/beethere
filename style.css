@@ -22,6 +22,9 @@ body { position: relative; margin: 0; min-width: 320px; overflow-x: hidden; padd
 body > * { position: relative; z-index: 1; }
 [data-home-content][hidden] { display: none !important; }
 button, a { -webkit-tap-highlight-color: transparent; }
+button { position: relative; }
+button::before { position: absolute; z-index: 1; inset: -7px; content: ""; }
+button > * { position: relative; z-index: 2; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 :focus-visible { outline: 2px solid var(--brand-lilac-bright); outline-offset: 3px; }
@@ -635,9 +638,42 @@ html[data-theme="dark"] .settings-summary .settings-summary-delete { color: #FF5
 html[data-theme="dark"] .settings-sheet { border-color: rgba(255,255,255,.14); background: #202025; }
 html[data-theme="dark"] .settings-sheet-close { background: #34343B; color: #F7F4F7; }
 
+/* The search field and every card use the same opaque dark surface.  Icons are
+   deliberately inverted so their small shapes stay legible against the cards. */
+html[data-theme="dark"] .event-search-field {
+  border-color: rgba(255,255,255,.16);
+  background: #202025;
+  box-shadow: 0 12px 32px rgba(0,0,0,.32);
+}
+html[data-theme="dark"] .event-search-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(255,107,94,.22);
+}
+html[data-theme="dark"] .event-search-field input,
+html[data-theme="dark"] .event-search-field input::placeholder { color: #F7F4F7; }
+html[data-theme="dark"] .event-search-field input::placeholder { color: #BDB7C0; }
+html[data-theme="dark"] .event-search-field svg { stroke: #F7F4F7; }
+html[data-theme="dark"] .event-card,
+html[data-theme="dark"] .loading-card,
+html[data-theme="dark"] .favorite-pair .event-card,
+html[data-theme="dark"] .favorite-note-card {
+  background: #202025;
+  color: #F7F4F7;
+}
+html[data-theme="dark"] .event-meta-icon {
+  border-color: rgba(18,18,20,.16);
+  background: #F7F4F7;
+  color: #17171B;
+  box-shadow: 0 2px 7px rgba(0,0,0,.36);
+}
+html[data-theme="dark"] .event-location .event-meta-icon svg circle { fill: #F7F4F7; }
+html[data-theme="dark"] .event-date.is-urgent .event-date-value,
+html[data-theme="dark"] .event-location.is-nearby .event-location-value,
+html[data-theme="dark"] .distance-pill.is-nearby .distance-value { color: #FF887D; }
+
 .promote-favorite-button { color: #ff4d6d; }
 .promote-favorite-button svg { width: 25px; height: 25px; fill: currentColor; stroke: none; }
-.event-details-location { overflow: hidden; }
-#event-details-location { display: block; min-width: 0; overflow-x: auto; white-space: nowrap; text-overflow: clip; scrollbar-width: none; touch-action: pan-x; }
-#event-details-location::-webkit-scrollbar { display: none; }
+.event-details-location, .inline-details-meta .event-location { width: 100%; max-width: 100%; overflow: hidden; }
+#event-details-location, .inline-location-value { display: block; min-width: 0; flex: 1 1 auto; overflow-x: auto; white-space: nowrap; text-overflow: clip; scrollbar-width: none; touch-action: pan-x; overscroll-behavior-x: contain; }
+#event-details-location::-webkit-scrollbar, .inline-location-value::-webkit-scrollbar { display: none; }
 .social-share-messenger svg { display: block; width: 22px; height: 22px; aspect-ratio: 1; }
