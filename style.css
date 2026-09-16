@@ -595,3 +595,24 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
     --page-title-size: clamp(38px, 12vw, 48px);
   }
 }
+
+/* A swipe to the right always settles on the following card, even during a fast gesture. */
+.events-grid { scroll-snap-type: x mandatory; touch-action: pan-y; }
+.events-grid.is-dragging { scroll-snap-type: x mandatory; }
+
+/* Settings remain part of the profile flow, after the personalization questions. */
+.account-settings-panel { width: min(100%, 720px); margin: 12px 0 52px; padding: 22px; border: 1px solid rgba(27, 29, 34, .12); border-radius: 24px; background: var(--surface); box-shadow: 0 12px 30px rgba(42, 31, 26, .08); }
+.account-settings-panel[hidden] { display: none; }
+.account-settings-panel .account-settings-header { padding-bottom: 12px; }
+.account-settings-panel .settings-block:last-child { padding-bottom: 0; }
+
+/* Dark mode uses opaque surfaces and high-contrast text for every interactive area. */
+html[data-theme="dark"] body { background: radial-gradient(ellipse 72% 28% at 90% 9%, rgba(255, 107, 94, .14), transparent 72%), #121214; }
+html[data-theme="dark"] .event-card, html[data-theme="dark"] .loading-card, html[data-theme="dark"] .favorite-pair .event-card, html[data-theme="dark"] .favorite-note-card, html[data-theme="dark"] .calendar-shell, html[data-theme="dark"] .account-settings-panel { background: #202025; border-color: rgba(255,255,255,.14); box-shadow: 0 12px 32px rgba(0,0,0,.32); }
+html[data-theme="dark"] .event-card h3, html[data-theme="dark"] .event-meta, html[data-theme="dark"] .event-location, html[data-theme="dark"] .event-long-description, html[data-theme="dark"] .event-weather, html[data-theme="dark"] .outro-weather, html[data-theme="dark"] .outro-contact a { color: #F7F4F7; }
+html[data-theme="dark"] .event-description, html[data-theme="dark"] .event-group-header h3, html[data-theme="dark"] .outro-contact, html[data-theme="dark"] .transport-help { color: #CDC7D0; }
+html[data-theme="dark"] .profile-city-button, html[data-theme="dark"] .transport-button, html[data-theme="dark"] .preference-options button, html[data-theme="dark"] .quick-round-button, html[data-theme="dark"] .quick-navigation .city-selector, html[data-theme="dark"] .quick-navigation .nav-menu-toggle, html[data-theme="dark"] .nav-menu, html[data-theme="dark"] .filter-button { background: #29292F; border-color: rgba(255,255,255,.16); color: #F7F4F7; box-shadow: none; }
+html[data-theme="dark"] .transport-button[aria-checked="true"], html[data-theme="dark"] .preference-options button[aria-pressed="true"], html[data-theme="dark"] .filter-button.active { background: var(--brand-lilac); color: #171217; }
+html[data-theme="dark"] .settings-input, html[data-theme="dark"] .favorite-note-input { background: #151519; border-color: rgba(255,255,255,.18); color: #F7F4F7; }
+html[data-theme="dark"] .event-details-window, html[data-theme="dark"] .event-details-header, html[data-theme="dark"] .inline-details, html[data-theme="dark"] .inline-details-header { background: #202025; color: #F7F4F7; }
+html[data-theme="dark"] .outro-section { background: #121214; border-color: rgba(255,255,255,.12); }

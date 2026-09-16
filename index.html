@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260916-6">
+  <link rel="stylesheet" href="style.css?v=20260916-7">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -156,7 +156,7 @@
 
   <section id="profile-view" class="app-view wrapper profile-view" hidden aria-labelledby="profile-view-title">
     <div class="profile-heading">
-      <div class="profile-kicker-row"><p class="eyebrow">BEÁLLÍTÁSOK</p><button id="account-settings-button" class="account-settings-button" type="button" aria-haspopup="dialog" aria-controls="account-settings-dialog" aria-label="Beállítások" title="Beállítások"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.1a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Z"/><path d="M19.4 13.5a7.8 7.8 0 0 0 .05-1.5 7.8 7.8 0 0 0-.05-1.5l2-1.55-2-3.46-2.37.96a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.34 2.9a7.8 7.8 0 0 0-2.6 1.5l-2.37-.96-2 3.46 2 1.55a7.8 7.8 0 0 0-.05 1.5 7.8 7.8 0 0 0 .05 1.5l-2 1.55 2 3.46 2.37-.96a7.8 7.8 0 0 0 2.6 1.5l.34 2.9h4l.34-2.9a7.8 7.8 0 0 0 2.6-1.5l2.37.96 2-3.46-2-1.55Z"/></svg></button></div>
+      <div class="profile-kicker-row"><p class="eyebrow">BEÁLLÍTÁSOK</p><button id="account-settings-button" class="account-settings-button" type="button" aria-expanded="false" aria-controls="account-settings-panel" aria-label="Beállítások" title="Beállítások"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.1a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Z"/><path d="M19.4 13.5a7.8 7.8 0 0 0 .05-1.5 7.8 7.8 0 0 0-.05-1.5l2-1.55-2-3.46-2.37.96a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.34 2.9a7.8 7.8 0 0 0-2.6 1.5l-2.37-.96-2 3.46 2 1.55a7.8 7.8 0 0 0-.05 1.5 7.8 7.8 0 0 0 .05 1.5l-2 1.55 2 3.46 2.37-.96a7.8 7.8 0 0 0 2.6 1.5l.34 2.9h4l.34-2.9a7.8 7.8 0 0 0 2.6-1.5l2.37.96 2-3.46-2-1.55Z"/></svg></button></div>
       <h1 id="profile-view-title" class="profile-title">Profil</h1>
     </div>
     <div class="profile-setting-row">
@@ -208,6 +208,15 @@
         </div>
       </section>
     </div>
+    <section id="account-settings-panel" class="account-settings-panel" hidden aria-labelledby="account-settings-title">
+      <header class="account-settings-header"><div><p class="eyebrow">FIÓK ÉS ADATVÉDELEM</p><h2 id="account-settings-title">Beállítások</h2></div></header>
+      <section class="settings-block"><label class="settings-label" for="account-username">Felhasználónév</label><input id="account-username" class="settings-input" type="text" maxlength="40" autocomplete="nickname" placeholder="Adj meg egy nevet"></section>
+      <section class="settings-block"><h3>Megjelenés</h3><div class="theme-options" role="radiogroup" aria-label="Megjelenés"><button type="button" data-theme-choice="system" role="radio">Rendszer</button><button type="button" data-theme-choice="light" role="radio">Világos</button><button type="button" data-theme-choice="dark" role="radio">Sötét</button></div></section>
+      <section class="settings-block"><div class="settings-row"><div><h3>Helymeghatározás</h3><p>Engedélyezéskor a telefon vagy böngésző rákérdezhet.</p></div><button id="location-permission-toggle" class="settings-toggle" type="button" role="switch" aria-checked="true"><span></span></button></div></section>
+      <section class="settings-block settings-links"><button type="button" disabled>Terms and conditions <span>Hamarosan</span></button><button type="button" disabled>Privacy policy <span>Hamarosan</span></button></section>
+      <section class="settings-block contact-settings"><h3>Kapcsolat</h3><a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a><a class="organizer-link" href="#" aria-disabled="true">Program szervezőknek <span>Hamarosan</span></a></section>
+      <section class="settings-block delete-settings"><h3>Profil és adataim törlése</h3><p>A kedvencek, jegyzetek, ajánlási beállítások és a helyi profiladatok is törlődnek erről a készülékről.</p><button id="delete-profile-button" class="delete-profile-button" type="button">Profil és adataim törlése</button></section>
+    </section>
   </section>
 
   <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title" data-home-content>
@@ -238,18 +247,6 @@
         <button class="city-option" type="button" data-city="Pécs">Pécs</button>
         <button class="city-option" type="button" data-city="Székesfehérvár">Székesfehérvár</button>
       </div>
-    </div>
-  </dialog>
-
-  <dialog id="account-settings-dialog" class="account-settings-dialog" aria-labelledby="account-settings-title">
-    <div class="account-settings-content">
-      <header class="account-settings-header"><div><p class="eyebrow">FIÓK ÉS ADATVÉDELEM</p><h2 id="account-settings-title">Beállítások</h2></div><button id="account-settings-close" class="dialog-close" type="button" aria-label="Bezárás">×</button></header>
-      <section class="settings-block"><label class="settings-label" for="account-username">Felhasználónév</label><input id="account-username" class="settings-input" type="text" maxlength="40" autocomplete="nickname" placeholder="Adj meg egy nevet"></section>
-      <section class="settings-block"><h3>Megjelenés</h3><div class="theme-options" role="radiogroup" aria-label="Megjelenés"><button type="button" data-theme-choice="system" role="radio">Rendszer</button><button type="button" data-theme-choice="light" role="radio">Világos</button><button type="button" data-theme-choice="dark" role="radio">Sötét</button></div></section>
-      <section class="settings-block"><div class="settings-row"><div><h3>Helymeghatározás</h3><p>Engedélyezéskor a telefon vagy böngésző rákérdezhet.</p></div><button id="location-permission-toggle" class="settings-toggle" type="button" role="switch" aria-checked="true"><span></span></button></div></section>
-      <section class="settings-block settings-links"><button type="button" disabled>Terms and conditions <span>Hamarosan</span></button><button type="button" disabled>Privacy policy <span>Hamarosan</span></button></section>
-      <section class="settings-block contact-settings"><h3>Kapcsolat</h3><a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a><a class="organizer-link" href="#" aria-disabled="true">Program szervezőknek <span>Hamarosan</span></a></section>
-      <section class="settings-block delete-settings"><h3>Profil és adataim törlése</h3><p>A kedvencek, jegyzetek, ajánlási beállítások és a helyi profiladatok is törlődnek erről a készülékről.</p><button id="delete-profile-button" class="delete-profile-button" type="button">Profil és adataim törlése</button></section>
     </div>
   </dialog>
 
@@ -298,6 +295,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg></button>
   </nav>
-  <script src="script.js?v=20260916-6"></script>
+  <script src="script.js?v=20260916-7"></script>
 </body>
 </html>

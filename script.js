@@ -96,8 +96,7 @@ const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
 const profileCityButton = find('#profile-city-button');
 const accountSettingsButton = find('#account-settings-button');
-const accountSettingsDialog = find('#account-settings-dialog');
-const accountSettingsClose = find('#account-settings-close');
+const accountSettingsPanel = find('#account-settings-panel');
 const accountUsername = find('#account-username');
 const locationPermissionToggle = find('#location-permission-toggle');
 const deleteProfileButton = find('#delete-profile-button');
@@ -1086,10 +1085,10 @@ function setupCarousel(carousel) {
   carousel.addEventListener('pointerdown', event => {
     if (event.target.closest('button, a')) return;
     beginGesture();
-    if (event.pointerType !== 'mouse') return;
     isDragging = true;
     startX = event.clientX;
     startScrollLeft = carousel.scrollLeft;
+    carousel.setPointerCapture?.(event.pointerId);
     carousel.classList.add('is-dragging');
   });
   carousel.addEventListener('pointermove', event => {
@@ -1099,7 +1098,14 @@ function setupCarousel(carousel) {
     event.preventDefault();
     carousel.scrollLeft = Math.min(forwardLimit, startScrollLeft - (event.clientX - startX));
   });
-  const stopDragging = () => { isDragging = false; carousel.classList.remove('is-dragging'); finishGesture(); };
+  const stopDragging = () => {
+    if (isDragging && carousel.scrollLeft > startScrollLeft + 12 && forwardLimit !== Infinity) {
+      carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
+    }
+    isDragging = false;
+    carousel.classList.remove('is-dragging');
+    finishGesture();
+  };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
   carousel.addEventListener('wheel', () => {
@@ -1578,7 +1584,7 @@ function renderFavoritePair(event, index) {
     promoteButton.className = 'promote-favorite-button';
     promoteButton.setAttribute('aria-label', `${event.Title || 'Esemény'} előre helyezése`);
     promoteButton.title = 'Legyen ez az első';
-    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.2 8.1a3.6 3.6 0 0 0-5.1 0L7.5 8.7l-.7-.6a3.6 3.6 0 0 0-5.1 5.1l5.8 5.8 5.7-5.8a3.6 3.6 0 0 0 0-5.1Z"/><path d="M21.1 4.7a2.8 2.8 0 0 0-4 0l-.5.5-.5-.5a2.8 2.8 0 0 0-4 4l4.5 4.5 4.5-4.5a2.8 2.8 0 0 0 0-4Z"/></svg>';
+    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h8l-.7 6.1 2.4 2.4-2 2-2.4-2.4L12 12.9l-1.3-1.3-2.4 2.4-2-2 2.4-2.4L8 3.5Z"/><path d="m10.1 13.1-4.7 4.7"/></svg>';
     promoteButton.addEventListener('click', () => promoteFavorite(event, pair));
     imageWrap?.append(promoteButton);
   }
@@ -1605,9 +1611,8 @@ function updateFavoritesToTopButton() {
   const currentScrollY = window.scrollY;
   const isFavorites = currentAppView === 'favorites';
   const isScrolled = currentScrollY > 220;
-  const isNearBottom = currentScrollY + window.innerHeight >= document.documentElement.scrollHeight - 120;
   const isScrollingUp = currentScrollY < lastFavoritesScrollY - 3;
-  favoritesToTop.classList.toggle('is-visible', isFavorites && isScrolled && (isNearBottom || isScrollingUp));
+  favoritesToTop.classList.toggle('is-visible', isFavorites && isScrolled && isScrollingUp);
   lastFavoritesScrollY = currentScrollY;
 }
 
@@ -1830,8 +1835,8 @@ function setupSocialShareButtons(event) {
   const actions = eventDetailsShare?.parentElement;
   if (!actions) return;
   const platforms = [
-    { name: 'messenger', label: 'Küldés Messengerre', url: 'https://www.messenger.com/', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.6 7.2V22l3.4-1.9c1 .3 2 .4 3 .4 5.5 0 10-4.1 10-9.3S17.5 2 12 2Z"/><path fill="var(--social-background)" stroke="none" d="m6 14 4.3-4.5 3.1 2.3L18 8l-4.3 5.9-3.1-2.3Z"/></svg>' },
-    { name: 'instagram', label: 'Küldés Instagramra', url: 'https://www.instagram.com/direct/inbox/', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>' },
+    { name: 'messenger', label: 'Küldés Messengerre', deepLink: url => `fb-messenger://share/?link=${encodeURIComponent(url)}`, icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.6 7.2V22l3.4-1.9c1 .3 2 .4 3 .4 5.5 0 10-4.1 10-9.3S17.5 2 12 2Z"/><path fill="var(--social-background)" stroke="none" d="m6 14 4.3-4.5 3.1 2.3L18 8l-4.3 5.9-3.1-2.3Z"/></svg>' },
+    { name: 'instagram', label: 'Küldés Instagramra', deepLink: () => 'instagram://camera', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>' },
   ];
   platforms.forEach(platform => {
     let button = find(`[data-share-platform="${platform.name}"]`, actions);
@@ -1846,17 +1851,17 @@ function setupSocialShareButtons(event) {
     button.setAttribute('aria-label', platform.label);
     button.title = platform.label;
     button.onclick = async () => {
-      const popup = window.open(platform.url, '_blank', 'noopener,noreferrer');
       try {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
         await navigator.clipboard.writeText(eventShareUrl(event));
         recordShareInterest(event);
-        button.title = 'Link kimásolva – illeszd be az üzenetbe';
+        button.title = 'Az alkalmazás megnyílik – illeszd be a linket';
         button.setAttribute('aria-label', button.title);
         button.classList.add('is-copied');
+        window.location.href = platform.deepLink(eventShareUrl(event));
         window.setTimeout(() => { button.classList.remove('is-copied'); button.title = platform.label; button.setAttribute('aria-label', platform.label); }, 2200);
       } catch {
-        if (window.prompt('Másold ki, majd illeszd be az üzenetbe:', eventShareUrl(event)) !== null) recordShareInterest(event);
+        window.location.href = platform.deepLink(eventShareUrl(event));
       }
     };
   });
@@ -2313,10 +2318,14 @@ function setupAccountSettings() {
     if (locationPermissionToggle) locationPermissionToggle.setAttribute('aria-checked', String(accountSettings.locationEnabled));
   };
   sync();
-  accountSettingsButton?.addEventListener('click', () => { accountSettingsDialog?.showModal(); });
-  accountSettingsClose?.addEventListener('click', () => accountSettingsDialog?.close());
-  accountSettingsDialog?.addEventListener('click', event => { if (event.target === accountSettingsDialog) accountSettingsDialog.close(); });
-  find('.organizer-link', accountSettingsDialog)?.addEventListener('click', event => event.preventDefault());
+  accountSettingsButton?.addEventListener('click', () => {
+    if (!accountSettingsPanel) return;
+    const willOpen = accountSettingsPanel.hidden;
+    accountSettingsPanel.hidden = !willOpen;
+    accountSettingsButton.setAttribute('aria-expanded', String(willOpen));
+    if (willOpen) accountSettingsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  find('.organizer-link', accountSettingsPanel)?.addEventListener('click', event => event.preventDefault());
   if (accountUsername) accountUsername.addEventListener('change', () => { accountSettings.username = accountUsername.value.trim().slice(0, 40); accountUsername.value = accountSettings.username; saveAccountSettings(); });
   findAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => {
     accountSettings.theme = button.dataset.themeChoice || 'system';
