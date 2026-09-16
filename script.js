@@ -15,6 +15,7 @@ const NEGATIVE_FEEDBACK_STORAGE_KEY = 'bee-there-negative-feedback';
 const DETAIL_INTEREST_STORAGE_KEY = 'bee-there-detail-interest';
 const TRANSPORT_STORAGE_KEY = 'bee-there-transport';
 const PROFILE_STORAGE_KEY = 'bee-there-profile-preferences';
+const ACCOUNT_SETTINGS_STORAGE_KEY = 'bee-there-account-settings';
 const MAX_FAVORITES = 100;
 const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
 const weatherCache = new Map();
@@ -94,6 +95,15 @@ const searchInput = find('#event-search');
 const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
 const profileCityButton = find('#profile-city-button');
+const accountSettingsButton = find('#account-settings-button');
+const accountSettingsDialog = find('#account-settings-dialog');
+const accountSettingsClose = find('#account-settings-close');
+const accountUsername = find('#account-username');
+const locationPermissionToggle = find('#location-permission-toggle');
+const deleteProfileButton = find('#delete-profile-button');
+const deleteProfileDialog = find('#delete-profile-dialog');
+const cancelDeleteProfile = find('#cancel-delete-profile');
+const confirmDeleteProfile = find('#confirm-delete-profile');
 const bottomNavigation = find('#bottom-navigation');
 const homeContent = findAll('[data-home-content]');
 
@@ -112,15 +122,74 @@ let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 let currentAppView = 'home';
 let selectedTransport = 'car';
 let profilePreferences = { categories: [], moods: [], companions: [], budget: 20000, times: [], spontaneity: '' };
+let accountSettings = loadAccountSettings();
 let tomorrowFeedbackTimer = 0;
 let tomorrowFeedbackCleanupTimer = 0;
 let lastFavoritesScrollY = window.scrollY;
 let favoritesScrollFrame = 0;
 const skippedEventKeysThisSession = new Set();
 const viewedEventKeys = new Set();
+const viewedSinceRefreshKeys = new Set();
 const detailedEventKeysThisSession = new Set();
-const refreshCategoryPenalties = new Map();
+const detailedEventKeys = new Set();
+const refreshTraitPenalties = new Map();
+const refreshEventPenalties = new Map();
+const shareInterestScores = new Map();
+const VIEW_LEARNING_STORAGE_KEY = 'beethere-view-learning-v2';
 const refreshShuffleBoosts = new Map();
+let refreshSeenEventKeys = new Set();
+try {
+  const saved = JSON.parse(localStorage.getItem(VIEW_LEARNING_STORAGE_KEY) || localStorage.getItem('beethere-view-learning-v1') || '{}');
+  (saved.seen || []).forEach(key => viewedEventKeys.add(key));
+  (saved.pending || []).forEach(key => viewedSinceRefreshKeys.add(key));
+  (saved.detailed || []).forEach(key => detailedEventKeys.add(key));
+  [[refreshTraitPenalties, saved.traitPenalties], [refreshEventPenalties, saved.eventPenalties], [shareInterestScores, saved.shareScores]].forEach(([target, scores]) => {
+    Object.entries(scores || {}).forEach(([key, value]) => {
+      if (Number.isFinite(value) && value >= 0) target.set(key, value);
+    });
+  });
+} catch { /* Browsing still works when storage is unavailable. */ }
+
+function saveViewLearning() {
+  try {
+    localStorage.setItem(VIEW_LEARNING_STORAGE_KEY, JSON.stringify({
+      seen: [...viewedEventKeys], pending: [...viewedSinceRefreshKeys], detailed: [...detailedEventKeys],
+      traitPenalties: Object.fromEntries(refreshTraitPenalties),
+      eventPenalties: Object.fromEntries(refreshEventPenalties),
+      shareScores: Object.fromEntries(shareInterestScores),
+    }));
+  } catch { /* Learning remains available for this session. */ }
+}
+
+function recordVisibleEvent(key) {
+  if (!key) return;
+  const event = [...events, ...permanentEvents].find(item => eventKey(item) === key);
+  if (!event) return;
+  if (viewedSinceRefreshKeys.has(key)) return;
+  viewedEventKeys.add(key);
+  viewedSinceRefreshKeys.add(key);
+  saveViewLearning();
+}
+
+function applyRefreshPenalties() {
+  const programsByKey = new Map([...events, ...permanentEvents].map(event => [eventKey(event), event]));
+  viewedSinceRefreshKeys.forEach(key => {
+    const event = programsByKey.get(key);
+    if (!event || favoriteIds.has(key) || detailedEventKeys.has(key)) return;
+    eventPreferenceTraits(event).forEach(trait => {
+      refreshTraitPenalties.set(trait, (refreshTraitPenalties.get(trait) || 0) + 0.05);
+    });
+    refreshEventPenalties.set(key, (refreshEventPenalties.get(key) || 0) + 3);
+  });
+  viewedSinceRefreshKeys.clear();
+  saveViewLearning();
+}
+
+function recordShareInterest(event) {
+  const key = eventKey(event);
+  shareInterestScores.set(key, (shareInterestScores.get(key) || 0) + 0.5);
+  saveViewLearning();
+}
 const eventVisibilityObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
   if (currentAppView !== 'home') return;
   entries.forEach(entry => {
@@ -128,7 +197,7 @@ const eventVisibilityObserver = 'IntersectionObserver' in window ? new Intersect
     const card = entry.target;
     if (!card.closest('[data-home-content]')) return;
     const key = card.dataset.eventKey;
-    if (key) viewedEventKeys.add(key);
+    recordVisibleEvent(key);
   });
 }, { threshold: [0.55] }) : null;
 
@@ -407,10 +476,12 @@ function loadDetailInterestWeights() {
 
 function recordDetailInterest(event) {
   const key = eventKey(event);
+  detailedEventKeys.add(key);
+  saveViewLearning();
   if (detailedEventKeysThisSession.has(key)) return;
   detailedEventKeysThisSession.add(key);
   eventPreferenceTraits(event).forEach(trait => {
-    detailInterestWeights[trait] = Math.min(5, (detailInterestWeights[trait] ?? 0.1) * 1.05);
+    detailInterestWeights[trait] = Math.min(5, (detailInterestWeights[trait] ?? 0.1) * 1.1);
   });
   try {
     localStorage.setItem(DETAIL_INTEREST_STORAGE_KEY, JSON.stringify(detailInterestWeights));
@@ -564,6 +635,17 @@ function eventDayTrait(event) {
   return day === 0 || day === 6 ? 'day:weekend' : 'day:weekday';
 }
 
+function eventStartTimeText(event) {
+  const value = String(event.Time || event['Date and Time'] || '').trim();
+  const match = value.match(/(?:^|[T\s])(\d{1,2}):(\d{2})(?=$|\D)/);
+  if (match && Number(match[1]) < 24 && Number(match[2]) < 60) {
+    return `Kezdés: ${match[1].padStart(2, '0')}:${match[2]}`;
+  }
+  return event.Permanent
+    ? event.Time || 'Nyitvatartás és szabad időpontok a szolgáltatónál.'
+    : 'Időpont nincs megadva';
+}
+
 function eventPreferenceTraits(event) {
   const traits = eventCategories(event).map(category => `category:${category}`);
   const price = eventPriceTrait(event);
@@ -583,7 +665,7 @@ function favoritePreferenceTraits() {
     .filter(item => favoriteIds.has(eventKey(item)))
     .forEach(item => eventPreferenceTraits(item).forEach(trait => {
       const currentWeight = traitWeights.get(trait);
-      traitWeights.set(trait, currentWeight === undefined ? 0.1 : currentWeight * 1.1);
+      traitWeights.set(trait, currentWeight === undefined ? 0.5 : currentWeight * 1.4);
     }));
   Object.entries(detailInterestWeights).forEach(([trait, weight]) => {
     traitWeights.set(trait, (traitWeights.get(trait) || 0) + weight);
@@ -594,24 +676,37 @@ function favoritePreferenceTraits() {
 function eventPreferenceScore(event, distance, favoriteTraits = new Map()) {
   let score = distancePreferencePoints(distance);
   const categories = eventCategories(event);
-  if (profilePreferences.categories.some(category => categories.includes(category))) score += 3;
+  const traitScores = new Map();
+  const addTraitScore = (trait, points) => {
+    if (trait) traitScores.set(trait, (traitScores.get(trait) || 0) + points);
+  };
+  const matchingCategories = categories.filter(category => profilePreferences.categories.includes(category));
+  matchingCategories.forEach(category => addTraitScore(`category:${category}`, 3 / matchingCategories.length));
   if (eventMoodMatches(event, profilePreferences.moods)) score += 2;
   if (eventCompanionMatches(event, profilePreferences.companions)) score += 1;
   const budget = Number(profilePreferences.budget);
   if (Number.isFinite(budget) && budget < 20000) {
     const price = eventPriceValue(event);
-    if (Number.isFinite(price)) score += Math.max(0, 1 - Math.abs(price - budget) / Math.max(budget, 1000));
+    if (Number.isFinite(price)) addTraitScore(eventPriceTrait(event), Math.max(0, 1 - Math.abs(price - budget) / Math.max(budget, 1000)));
   }
-  if (eventTimeMatches(event, profilePreferences.times)) score += 1;
+  if (eventTimeMatches(event, profilePreferences.times)) {
+    const matchingTimeTraits = [eventTimeTrait(event), eventDayTrait(event)]
+      .filter(trait => trait && profilePreferences.times.includes(trait.split(':')[1]));
+    matchingTimeTraits.forEach(trait => addTraitScore(trait, 1 / matchingTimeTraits.length));
+  }
   if (eventSpontaneityMatches(event, profilePreferences.spontaneity)) score += 1;
   const matchedFavoriteWeights = eventPreferenceTraits(event)
     .map(trait => favoriteTraits.get(trait) || 0)
     .filter(Boolean);
-  const favoriteAffinity = matchedFavoriteWeights.reduce((sum, weight) => sum + weight, 0);
+
   const combinationMultiplier = 1 + Math.max(0, matchedFavoriteWeights.length - 2) * 0.1;
-  score += favoriteAffinity * combinationMultiplier;
-  score -= Math.min(1.5, Math.max(0, (negativeFeedback[eventKey(event)] || 0) - 1) * 0.1);
-  score -= categories.reduce((sum, category) => sum + (refreshCategoryPenalties.get(category) || 0), 0);
+  eventPreferenceTraits(event).forEach(trait => addTraitScore(trait, (favoriteTraits.get(trait) || 0) * combinationMultiplier));
+  traitScores.forEach((points, trait) => {
+    score += Math.max(0, points - (refreshTraitPenalties.get(trait) || 0));
+  });
+  score += shareInterestScores.get(eventKey(event)) || 0;
+  score -= Math.min(1.5, (negativeFeedback[eventKey(event)] || 0) * 0.1);
+  score -= refreshEventPenalties.get(eventKey(event)) || 0;
   score = Math.max(0, score);
   return score + (refreshShuffleBoosts.get(eventKey(event)) || 0);
 }
@@ -621,7 +716,7 @@ function diversifyEqualScoreEvents(sortedEvents) {
   let index = 0;
   while (index < sortedEvents.length) {
     let end = index + 1;
-    while (end < sortedEvents.length && Math.abs(sortedEvents[end].preferenceScore - sortedEvents[index].preferenceScore) < 0.0001) end += 1;
+    while (end < sortedEvents.length && refreshSeenEventKeys.has(eventKey(sortedEvents[end])) === refreshSeenEventKeys.has(eventKey(sortedEvents[index])) && Math.abs(sortedEvents[end].preferenceScore - sortedEvents[index].preferenceScore) < 0.0001) end += 1;
     const group = sortedEvents.slice(index, end);
     while (group.length) {
       const previousCategory = eventCategories(result.at(-1) || {})[0] || '';
@@ -638,7 +733,7 @@ function sortByDistance(list) {
   const sorted = list.map(event => {
     const distance = eventDistance(event);
     return { ...event, distance, preferenceScore: eventPreferenceScore(event, distance, favoriteTraits) };
-  }).sort((first, second) => second.preferenceScore - first.preferenceScore || first.distance - second.distance || dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second))));
+  }).sort((first, second) => Number(refreshSeenEventKeys.has(eventKey(first))) - Number(refreshSeenEventKeys.has(eventKey(second))) || second.preferenceScore - first.preferenceScore || first.distance - second.distance || dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second))));
   return diversifyEqualScoreEvents(sorted);
 }
 
@@ -907,9 +1002,10 @@ function updateDistanceValues() {
 function positionDetailsButton(card) {
   if (!card) return;
   const button = find('.details-button', card);
-  const imageWrap = find('.image-wrap', card);
-  if (!button || !imageWrap) return;
-  button.style.top = `${Math.round(imageWrap.offsetTop + imageWrap.offsetHeight + 10)}px`;
+  const content = find('.event-content', card);
+  if (!button || !content) return;
+  if (button.parentElement !== content) content.append(button);
+  button.style.top = '0px';
 }
 
 function positionAllDetailsButtons() {
@@ -973,26 +1069,47 @@ function setupCarousel(carousel) {
   let isDragging = false;
   let startX = 0;
   let startScrollLeft = 0;
+  let forwardLimit = Infinity;
+  let gestureTimer = 0;
+  const beginGesture = () => {
+    const cards = findAll('.event-card, .favorite-note-card', carousel);
+    const bounds = carousel.getBoundingClientRect();
+    const positions = cards.map(card => card.getBoundingClientRect().left - bounds.left + carousel.scrollLeft);
+    forwardLimit = positions.find(left => left > carousel.scrollLeft + 12) ?? carousel.scrollWidth;
+    window.clearTimeout(gestureTimer);
+  };
+  const finishGesture = () => {
+    window.clearTimeout(gestureTimer);
+    gestureTimer = window.setTimeout(() => { forwardLimit = Infinity; }, 220);
+  };
 
   carousel.addEventListener('pointerdown', event => {
     if (event.target.closest('button, a')) return;
+    beginGesture();
     if (event.pointerType !== 'mouse') return;
     isDragging = true;
     startX = event.clientX;
     startScrollLeft = carousel.scrollLeft;
     carousel.classList.add('is-dragging');
-    carousel.setPointerCapture?.(event.pointerId);
   });
   carousel.addEventListener('pointermove', event => {
     if (!isDragging) return;
+    if (Math.abs(event.clientX - startX) < 10) return;
+    carousel.setPointerCapture?.(event.pointerId);
     event.preventDefault();
-    carousel.scrollLeft = startScrollLeft - (event.clientX - startX);
+    carousel.scrollLeft = Math.min(forwardLimit, startScrollLeft - (event.clientX - startX));
   });
-  const stopDragging = () => { isDragging = false; carousel.classList.remove('is-dragging'); };
+  const stopDragging = () => { isDragging = false; carousel.classList.remove('is-dragging'); finishGesture(); };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
+  carousel.addEventListener('wheel', () => {
+    if (forwardLimit === Infinity) beginGesture();
+    finishGesture();
+  }, { passive: true });
 
   const updateReturnButton = () => {
+    if (carousel.scrollLeft > forwardLimit + 1) carousel.scrollLeft = forwardLimit;
+    if (forwardLimit !== Infinity && !isDragging) finishGesture();
     const overflow = carousel.scrollWidth - carousel.clientWidth;
     const atEnd = carousel._hasMultipleCards && overflow > 36 && carousel.scrollLeft >= overflow - 28;
     returnButton.hidden = !atEnd;
@@ -1000,6 +1117,13 @@ function setupCarousel(carousel) {
   };
   carousel._updateReturnButton = updateReturnButton;
   carousel.addEventListener('scroll', updateReturnButton, { passive: true });
+  carousel.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowRight' || event.target !== carousel) return;
+    event.preventDefault();
+    beginGesture();
+    carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
+    finishGesture();
+  });
   window.requestAnimationFrame(updateReturnButton);
 }
 
@@ -1048,7 +1172,7 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   setText('#event-details-date', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event), document);
   setText('#event-details-location', event.Location || 'Helyszín hamarosan', document);
   setText('#event-details-title', event.Title || 'Esemény', document);
-  setText('#event-details-time', event.Time || (event.Permanent ? 'Nyitvatartás és szabad időpontok a szolgáltatónál.' : event['Date and Time'] || 'Időpont nincs megadva'), document);
+  setText('#event-details-time', eventStartTimeText(event), document);
   setText('#event-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', document);
   const imageUrl = optimizedImageUrl(event['Header Image']);
   if (eventDetailsImage && eventDetailsImageWrap) {
@@ -1077,6 +1201,7 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
     }
   }
   if (eventDetailsShare) eventDetailsShare.onclick = () => shareEvent(event);
+  setupSocialShareButtons(event);
   if (updateUrl) history.replaceState({}, '', eventShareUrl(event));
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
@@ -1184,7 +1309,7 @@ function renderCard(event, target, { compact = false } = {}) {
   setText('.inline-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event), fragment);
   setText('.inline-location-value', event.Location || 'Helyszín hamarosan', fragment);
   setText('.inline-details-title', event.Title || 'Esemény', fragment);
-  setText('.inline-details-time', event.Time || event['Date and Time'] || 'Időpont nincs megadva', fragment);
+  setText('.inline-details-time', eventStartTimeText(event), fragment);
   setText('.inline-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', fragment);
   const inlineTicket = find('.inline-details-ticket', fragment);
   const inlineTicketUrl = safeUrl(event['Ticket Link']);
@@ -1202,6 +1327,25 @@ function renderCard(event, target, { compact = false } = {}) {
   });
 
   const favoriteButton = find('.favorite-button', fragment);
+  if (card && favoriteButton) {
+    let lastTap = 0;
+    let pointerStart = null;
+    card.addEventListener('pointerdown', input => {
+      pointerStart = { x: input.clientX, y: input.clientY };
+    }, { passive: true });
+    card.addEventListener('pointerup', input => {
+      if (!pointerStart || input.target.closest('button, a, textarea, input') || Math.hypot(input.clientX - pointerStart.x, input.clientY - pointerStart.y) > 10) {
+        lastTap = 0;
+        return;
+      }
+      const now = performance.now();
+      if (lastTap && now - lastTap < 350) {
+        if (!favoriteIds.has(key)) favoriteButton.click();
+        lastTap = 0;
+      } else lastTap = now;
+    }, { passive: true });
+    card.addEventListener('pointercancel', () => { pointerStart = null; lastTap = 0; });
+  }
   if (favoriteButton) {
     favoriteButton.dataset.eventKey = key;
     syncFavoriteButton(favoriteButton, favoriteIds.has(key));
@@ -1251,7 +1395,7 @@ function updateFavoriteButtons() {
 
 function rerankEventRows(excludedCarousel = null) {
   if (!position) return;
-  const upcomingEvents = sortByDistance(events.filter(event => !isPastEvent(event)));
+  const upcomingEvents = sortByDistance(events.filter(event => !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory))));
   const rerender = (target, items, options = {}) => {
     if (target && target !== excludedCarousel) renderCardsIncrementally(target, items, options);
   };
@@ -1272,20 +1416,15 @@ function setupEventsRefresh() {
   if (!eventsRefreshButton) return;
   eventsRefreshButton.addEventListener('click', () => {
     const allPrograms = [...events, ...permanentEvents];
-    viewedEventKeys.forEach(key => {
-      const viewedEvent = allPrograms.find(event => eventKey(event) === key);
-      if (!viewedEvent) return;
-      eventCategories(viewedEvent).forEach(category => {
-        refreshCategoryPenalties.set(category, (refreshCategoryPenalties.get(category) || 0) + 0.1);
-      });
-    });
+    applyRefreshPenalties();
+    refreshSeenEventKeys = new Set(viewedEventKeys);
     refreshShuffleBoosts.clear();
     allPrograms.forEach(event => refreshShuffleBoosts.set(eventKey(event), Math.random() * 0.12));
-    viewedEventKeys.clear();
     eventsRefreshButton.classList.remove('is-refreshed');
     triggerBounce(eventsRefreshButton);
     vibrate(16);
     renderEvents();
+    allSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const label = find('span', eventsRefreshButton);
     if (label) label.textContent = 'Frissítve';
     eventsRefreshButton.classList.add('is-refreshed');
@@ -1327,7 +1466,7 @@ function createEventGroup(target, title, items, id) {
   const group = document.createElement('section');
   group.className = 'event-group';
   const emoji = EVENT_GROUP_EMOJIS[title] || '';
-  group.innerHTML = `<div class="event-group-header"><h3>${title}${emoji ? ` <span class="event-group-emoji" aria-hidden="true">${emoji}</span>` : ''}</h3><div class="carousel-controls" aria-label="${title} lapozása"><button class="carousel-arrow" type="button" data-carousel-target="${id}" data-direction="prev" aria-label="Előző esemény">←</button><button class="carousel-arrow" type="button" data-carousel-target="${id}" data-direction="next" aria-label="Következő esemény">→</button></div></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
+  group.innerHTML = `<div class="event-group-header"><h3>${title}${emoji ? ` <span class="event-group-emoji" aria-hidden="true">${emoji}</span>` : ''}</h3></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
   target.append(group);
   const carousel = find(`#${id}`, group);
   if (items.length) renderCardsIncrementally(carousel, items, { compact: true });
@@ -1341,7 +1480,7 @@ function createEventGroup(target, title, items, id) {
 
 function renderFeatured() {
   if (!featuredGrid || !featuredSection) return;
-  const upcomingFeatured = events.filter(event => isFeatured(event) && !isPastEvent(event));
+  const upcomingFeatured = events.filter(event => isFeatured(event) && !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)));
   const featured = position
     ? sortByDistance(upcomingFeatured)
     : upcomingFeatured.sort((first, second) => (first['Date and Time'] || '').localeCompare(second['Date and Time'] || ''));
@@ -1687,16 +1826,54 @@ function createCalendarFilters() {
   calendarFilters.append(gooey);
 }
 
+function setupSocialShareButtons(event) {
+  const actions = eventDetailsShare?.parentElement;
+  if (!actions) return;
+  const platforms = [
+    { name: 'messenger', label: 'Küldés Messengerre', url: 'https://www.messenger.com/', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.6 7.2V22l3.4-1.9c1 .3 2 .4 3 .4 5.5 0 10-4.1 10-9.3S17.5 2 12 2Z"/><path fill="var(--social-background)" stroke="none" d="m6 14 4.3-4.5 3.1 2.3L18 8l-4.3 5.9-3.1-2.3Z"/></svg>' },
+    { name: 'instagram', label: 'Küldés Instagramra', url: 'https://www.instagram.com/direct/inbox/', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>' },
+  ];
+  platforms.forEach(platform => {
+    let button = find(`[data-share-platform="${platform.name}"]`, actions);
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.className = `event-share-button social-share-button social-share-${platform.name}`;
+      button.dataset.sharePlatform = platform.name;
+      button.innerHTML = platform.icon;
+      actions.append(button);
+    }
+    button.setAttribute('aria-label', platform.label);
+    button.title = platform.label;
+    button.onclick = async () => {
+      const popup = window.open(platform.url, '_blank', 'noopener,noreferrer');
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(eventShareUrl(event));
+        recordShareInterest(event);
+        button.title = 'Link kimásolva – illeszd be az üzenetbe';
+        button.setAttribute('aria-label', button.title);
+        button.classList.add('is-copied');
+        window.setTimeout(() => { button.classList.remove('is-copied'); button.title = platform.label; button.setAttribute('aria-label', platform.label); }, 2200);
+      } catch {
+        if (window.prompt('Másold ki, majd illeszd be az üzenetbe:', eventShareUrl(event)) !== null) recordShareInterest(event);
+      }
+    };
+  });
+}
+
 async function shareEvent(event) {
   const url = eventShareUrl(event);
   const data = { title: event.Title || 'Bee there esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
   try {
     if (navigator.share) {
       await navigator.share(data);
+      recordShareInterest(event);
       return;
     }
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(url);
+      recordShareInterest(event);
       if (eventDetailsShare) {
         eventDetailsShare.classList.add('is-copied');
         eventDetailsShare.setAttribute('aria-label', 'Link kimásolva');
@@ -2093,6 +2270,73 @@ function setupProfileSettings() {
   });
 }
 
+function loadAccountSettings() {
+  const defaults = { username: '', theme: 'system', locationEnabled: true };
+  try {
+    const saved = JSON.parse(localStorage.getItem(ACCOUNT_SETTINGS_STORAGE_KEY) || '{}');
+    return {
+      username: typeof saved.username === 'string' ? saved.username.slice(0, 40) : defaults.username,
+      theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : defaults.theme,
+      locationEnabled: typeof saved.locationEnabled === 'boolean' ? saved.locationEnabled : defaults.locationEnabled,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function saveAccountSettings() {
+  try { localStorage.setItem(ACCOUNT_SETTINGS_STORAGE_KEY, JSON.stringify(accountSettings)); } catch (error) { console.warn('[Bee There] A fiókbeállítások nem menthetők:', error); }
+}
+
+function applyTheme() {
+  const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = accountSettings.theme === 'system' ? (systemDark ? 'dark' : 'light') : accountSettings.theme;
+}
+
+function requestGeolocation() {
+  if (!accountSettings.locationEnabled || position || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(coordsResult => {
+    const nearest = closestCity(coordsResult.coords);
+    setCity({ latitude: coordsResult.coords.latitude, longitude: coordsResult.coords.longitude, name: nearest?.name || 'GPS-helyzet' });
+  }, error => {
+    console.warn('[Bee There] Helymeghatározás nem elérhető:', error.message);
+    if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';
+    if (citySelectorLabel) citySelectorLabel.textContent = 'Engedélyezés';
+  }, { maximumAge: 300000, timeout: 10000 });
+}
+
+function setupAccountSettings() {
+  applyTheme();
+  const sync = () => {
+    if (accountUsername) accountUsername.value = accountSettings.username;
+    findAll('[data-theme-choice]').forEach(button => button.setAttribute('aria-checked', String(button.dataset.themeChoice === accountSettings.theme)));
+    if (locationPermissionToggle) locationPermissionToggle.setAttribute('aria-checked', String(accountSettings.locationEnabled));
+  };
+  sync();
+  accountSettingsButton?.addEventListener('click', () => { accountSettingsDialog?.showModal(); });
+  accountSettingsClose?.addEventListener('click', () => accountSettingsDialog?.close());
+  accountSettingsDialog?.addEventListener('click', event => { if (event.target === accountSettingsDialog) accountSettingsDialog.close(); });
+  find('.organizer-link', accountSettingsDialog)?.addEventListener('click', event => event.preventDefault());
+  if (accountUsername) accountUsername.addEventListener('change', () => { accountSettings.username = accountUsername.value.trim().slice(0, 40); accountUsername.value = accountSettings.username; saveAccountSettings(); });
+  findAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => {
+    accountSettings.theme = button.dataset.themeChoice || 'system';
+    saveAccountSettings(); applyTheme(); sync();
+  }));
+  locationPermissionToggle?.addEventListener('click', () => {
+    accountSettings.locationEnabled = !accountSettings.locationEnabled;
+    saveAccountSettings(); sync();
+    if (accountSettings.locationEnabled) requestGeolocation();
+  });
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (accountSettings.theme === 'system') applyTheme(); });
+  deleteProfileButton?.addEventListener('click', () => deleteProfileDialog?.showModal());
+  cancelDeleteProfile?.addEventListener('click', () => deleteProfileDialog?.close());
+  deleteProfileDialog?.addEventListener('click', event => { if (event.target === deleteProfileDialog) deleteProfileDialog.close(); });
+  confirmDeleteProfile?.addEventListener('click', () => {
+    Object.keys(localStorage).filter(key => key.startsWith('bee-there-') || key.startsWith('beethere-')).forEach(key => localStorage.removeItem(key));
+    window.location.replace(window.location.pathname);
+  });
+}
+
 function initSideRays() {
   const canvas = find('#side-rays');
   if (!canvas) return;
@@ -2175,6 +2419,7 @@ function init() {
   setupEventsRefresh();
   setupCityChooser();
   setupProfileSettings();
+  setupAccountSettings();
   setupEventDetailsDialog();
   setupCalendar();
   initOutroMessage();
@@ -2187,16 +2432,13 @@ function init() {
     if (locationText) locationText.textContent = 'Helymeghatározás nem támogatott — válassz várost';
     return;
   }
+  if (!accountSettings.locationEnabled) {
+    if (locationText) locationText.textContent = 'A helymeghatározás ki van kapcsolva — válassz várost';
+    return;
+  }
   window.setTimeout(() => {
     if (position) return;
-    navigator.geolocation.getCurrentPosition(coordsResult => {
-      const nearest = closestCity(coordsResult.coords);
-      setCity({ latitude: coordsResult.coords.latitude, longitude: coordsResult.coords.longitude, name: nearest?.name || 'GPS-helyzet' });
-    }, error => {
-      console.warn('[Bee There] Helymeghatározás nem elérhető:', error.message);
-      if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';
-      if (citySelectorLabel) citySelectorLabel.textContent = 'Engedélyezés';
-    }, { maximumAge: 300000, timeout: 10000 });
+    requestGeolocation();
   }, 7000);
 }
 
