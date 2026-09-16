@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260916-7">
+  <link rel="stylesheet" href="style.css?v=20260916-10">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -210,12 +210,18 @@
     </div>
     <section id="account-settings-panel" class="account-settings-panel" hidden aria-labelledby="account-settings-title">
       <header class="account-settings-header"><div><p class="eyebrow">FIÓK ÉS ADATVÉDELEM</p><h2 id="account-settings-title">Beállítások</h2></div></header>
-      <section class="settings-block"><label class="settings-label" for="account-username">Felhasználónév</label><input id="account-username" class="settings-input" type="text" maxlength="40" autocomplete="nickname" placeholder="Adj meg egy nevet"></section>
-      <section class="settings-block"><h3>Megjelenés</h3><div class="theme-options" role="radiogroup" aria-label="Megjelenés"><button type="button" data-theme-choice="system" role="radio">Rendszer</button><button type="button" data-theme-choice="light" role="radio">Világos</button><button type="button" data-theme-choice="dark" role="radio">Sötét</button></div></section>
-      <section class="settings-block"><div class="settings-row"><div><h3>Helymeghatározás</h3><p>Engedélyezéskor a telefon vagy böngésző rákérdezhet.</p></div><button id="location-permission-toggle" class="settings-toggle" type="button" role="switch" aria-checked="true"><span></span></button></div></section>
-      <section class="settings-block settings-links"><button type="button" disabled>Terms and conditions <span>Hamarosan</span></button><button type="button" disabled>Privacy policy <span>Hamarosan</span></button></section>
-      <section class="settings-block contact-settings"><h3>Kapcsolat</h3><a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a><a class="organizer-link" href="#" aria-disabled="true">Program szervezőknek <span>Hamarosan</span></a></section>
-      <section class="settings-block delete-settings"><h3>Profil és adataim törlése</h3><p>A kedvencek, jegyzetek, ajánlási beállítások és a helyi profiladatok is törlődnek erről a készülékről.</p><button id="delete-profile-button" class="delete-profile-button" type="button">Profil és adataim törlése</button></section>
+      <div class="settings-summary" aria-label="Fiókbeállítások">
+        <button type="button" data-settings-sheet="username">Felhasználónév</button><button type="button" data-settings-sheet="appearance">Megjelenés</button><button type="button" data-settings-sheet="location">Helymeghatározás</button><button type="button" data-settings-sheet="terms">Terms and conditions</button><button type="button" data-settings-sheet="privacy">Privacy policy</button><button type="button" data-settings-sheet="contact">Kapcsolat</button><button type="button" data-settings-sheet="organizers">Program szervezőknek</button><button class="settings-summary-delete" type="button" data-settings-sheet="delete">Profil és adataim törlése</button>
+      </div>
+      <div id="settings-sheet-backdrop" class="settings-sheet-backdrop" hidden></div>
+      <section id="settings-sheet-username" class="settings-block settings-sheet" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><label class="settings-label" for="account-username">Felhasználónév</label><input id="account-username" class="settings-input" type="text" maxlength="40" autocomplete="nickname" placeholder="Adj meg egy nevet"></section>
+      <section id="settings-sheet-appearance" class="settings-block settings-sheet" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Megjelenés</h3><div class="theme-options" role="radiogroup" aria-label="Megjelenés"><button type="button" data-theme-choice="system" role="radio">Rendszer</button><button type="button" data-theme-choice="light" role="radio">Világos</button><button type="button" data-theme-choice="dark" role="radio">Sötét</button></div></section>
+      <section id="settings-sheet-location" class="settings-block settings-sheet" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><div class="settings-row"><div><h3>Helymeghatározás</h3><p>Engedélyezéskor a telefon vagy böngésző rákérdezhet.</p></div><button id="location-permission-toggle" class="settings-toggle" type="button" role="switch" aria-checked="true"><span></span></button></div></section>
+      <section id="settings-sheet-terms" class="settings-block settings-sheet" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Terms and conditions</h3><p>Hamarosan elérhető.</p></section>
+      <section id="settings-sheet-privacy" class="settings-block settings-sheet" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Privacy policy</h3><p>Hamarosan elérhető.</p></section>
+      <section id="settings-sheet-contact" class="settings-block settings-sheet contact-settings" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Kapcsolat</h3><a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a></section>
+      <section id="settings-sheet-organizers" class="settings-block settings-sheet contact-settings" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Program szervezőknek</h3><a class="organizer-link" href="#" aria-disabled="true">Hamarosan</a></section>
+      <section id="settings-sheet-delete" class="settings-block settings-sheet delete-settings" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Profil és adataim törlése</h3><p>A kedvencek, jegyzetek, ajánlási beállítások és a helyi profiladatok is törlődnek erről a készülékről.</p><button id="delete-profile-button" class="delete-profile-button" type="button">Profil és adataim törlése</button></section>
     </section>
   </section>
 
@@ -295,6 +301,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedvencek" title="Kedvencek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg></button>
   </nav>
-  <script src="script.js?v=20260916-7"></script>
+  <script src="script.js?v=20260916-10"></script>
 </body>
 </html>

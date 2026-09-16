@@ -126,6 +126,7 @@ let tomorrowFeedbackTimer = 0;
 let tomorrowFeedbackCleanupTimer = 0;
 let lastFavoritesScrollY = window.scrollY;
 let favoritesScrollFrame = 0;
+let favoritesToTopHideTimer = 0;
 const skippedEventKeysThisSession = new Set();
 const viewedEventKeys = new Set();
 const viewedSinceRefreshKeys = new Set();
@@ -174,7 +175,7 @@ function applyRefreshPenalties() {
   const programsByKey = new Map([...events, ...permanentEvents].map(event => [eventKey(event), event]));
   viewedSinceRefreshKeys.forEach(key => {
     const event = programsByKey.get(key);
-    if (!event || favoriteIds.has(key) || detailedEventKeys.has(key)) return;
+    if (!event || detailedEventKeys.has(key)) return;
     eventPreferenceTraits(event).forEach(trait => {
       refreshTraitPenalties.set(trait, (refreshTraitPenalties.get(trait) || 0) + 0.05);
     });
@@ -1351,6 +1352,11 @@ function renderCard(event, target, { compact = false } = {}) {
       } else lastTap = now;
     }, { passive: true });
     card.addEventListener('pointercancel', () => { pointerStart = null; lastTap = 0; });
+    card.addEventListener('dblclick', input => {
+      if (input.target.closest('button, a, textarea, input') || favoriteIds.has(key)) return;
+      input.preventDefault();
+      favoriteButton.click();
+    });
   }
   if (favoriteButton) {
     favoriteButton.dataset.eventKey = key;
@@ -1534,12 +1540,22 @@ function createFavoriteNoteCard(event) {
   if (copyButton && input) copyButton.addEventListener('click', async () => {
     const note = input.value.trim();
     if (!note) return;
+    const copyText = [
+      `Időpont: ${isPastEvent(event) ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event)} · ${eventStartTimeText(event)}`,
+      `Helyszín: ${event.Location || 'Helyszín hamarosan'}`,
+      note,
+      `Téma: ${eventCategories(event)[0] || 'program'}`,
+      `Ár: ${event.Price || 'Ár nincs megadva'}`,
+      `Korhatár: ${event['Age Requirement'] || 'Korhatár nincs megadva'}`,
+    ].join('\n');
     try {
-      await navigator.clipboard.writeText(note);
+      await navigator.clipboard.writeText(copyText);
     } catch {
+      input.value = copyText;
       input.select();
       document.execCommand('copy');
-      input.setSelectionRange(input.value.length, input.value.length);
+      input.value = note;
+      input.setSelectionRange(note.length, note.length);
     }
     copyButton.classList.add('is-copied');
     copyButton.setAttribute('aria-label', 'Jegyzet kimásolva');
@@ -1584,7 +1600,7 @@ function renderFavoritePair(event, index) {
     promoteButton.className = 'promote-favorite-button';
     promoteButton.setAttribute('aria-label', `${event.Title || 'Esemény'} előre helyezése`);
     promoteButton.title = 'Legyen ez az első';
-    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5h8l-.7 6.1 2.4 2.4-2 2-2.4-2.4L12 12.9l-1.3-1.3-2.4 2.4-2-2 2.4-2.4L8 3.5Z"/><path d="m10.1 13.1-4.7 4.7"/></svg>';
+    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.7 3.2 6.1 6.1-2.2 2.2-1.7-.5-4.1 4.1.7 2.2-1.9 1.9-2.7-2.7-4 4-1.4-1.4 4-4-2.7-2.7 1.9-1.9 2.2.7 4.1-4.1-.5-1.7 2.2-2.2Z"/></svg>';
     promoteButton.addEventListener('click', () => promoteFavorite(event, pair));
     imageWrap?.append(promoteButton);
   }
@@ -1611,8 +1627,19 @@ function updateFavoritesToTopButton() {
   const currentScrollY = window.scrollY;
   const isFavorites = currentAppView === 'favorites';
   const isScrolled = currentScrollY > 220;
+  const isNearBottom = currentScrollY + window.innerHeight >= document.documentElement.scrollHeight - 100;
   const isScrollingUp = currentScrollY < lastFavoritesScrollY - 3;
-  favoritesToTop.classList.toggle('is-visible', isFavorites && isScrolled && isScrollingUp);
+  const shouldShow = isFavorites && isScrolled && (isNearBottom || isScrollingUp);
+  if (shouldShow) {
+    window.clearTimeout(favoritesToTopHideTimer);
+    favoritesToTop.classList.add('is-visible');
+  } else if (!isFavorites || !isScrolled) {
+    window.clearTimeout(favoritesToTopHideTimer);
+    favoritesToTop.classList.remove('is-visible');
+  } else if (favoritesToTop.classList.contains('is-visible')) {
+    window.clearTimeout(favoritesToTopHideTimer);
+    favoritesToTopHideTimer = window.setTimeout(() => favoritesToTop?.classList.remove('is-visible'), 2000);
+  }
   lastFavoritesScrollY = currentScrollY;
 }
 
@@ -1834,9 +1861,9 @@ function createCalendarFilters() {
 function setupSocialShareButtons(event) {
   const actions = eventDetailsShare?.parentElement;
   if (!actions) return;
+  find('[data-share-platform="instagram"]', actions)?.remove();
   const platforms = [
     { name: 'messenger', label: 'Küldés Messengerre', deepLink: url => `fb-messenger://share/?link=${encodeURIComponent(url)}`, icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.5 3.6 7.2V22l3.4-1.9c1 .3 2 .4 3 .4 5.5 0 10-4.1 10-9.3S17.5 2 12 2Z"/><path fill="var(--social-background)" stroke="none" d="m6 14 4.3-4.5 3.1 2.3L18 8l-4.3 5.9-3.1-2.3Z"/></svg>' },
-    { name: 'instagram', label: 'Küldés Instagramra', deepLink: () => 'instagram://camera', icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>' },
   ];
   platforms.forEach(platform => {
     let button = find(`[data-share-platform="${platform.name}"]`, actions);
@@ -2325,6 +2352,21 @@ function setupAccountSettings() {
     accountSettingsButton.setAttribute('aria-expanded', String(willOpen));
     if (willOpen) accountSettingsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  const settingsBackdrop = find('#settings-sheet-backdrop', accountSettingsPanel);
+  const closeSettingsSheet = () => {
+    findAll('.settings-sheet', accountSettingsPanel).forEach(sheet => { sheet.hidden = true; sheet.classList.remove('is-open'); });
+    if (settingsBackdrop) settingsBackdrop.hidden = true;
+  };
+  findAll('[data-settings-sheet]', accountSettingsPanel).forEach(button => button.addEventListener('click', () => {
+    const sheet = find(`#settings-sheet-${button.dataset.settingsSheet}`, accountSettingsPanel);
+    if (!sheet) return;
+    closeSettingsSheet();
+    if (settingsBackdrop) settingsBackdrop.hidden = false;
+    sheet.hidden = false;
+    window.requestAnimationFrame(() => sheet.classList.add('is-open'));
+  }));
+  settingsBackdrop?.addEventListener('click', closeSettingsSheet);
+  findAll('.settings-sheet-close', accountSettingsPanel).forEach(button => button.addEventListener('click', closeSettingsSheet));
   find('.organizer-link', accountSettingsPanel)?.addEventListener('click', event => event.preventDefault());
   if (accountUsername) accountUsername.addEventListener('change', () => { accountSettings.username = accountUsername.value.trim().slice(0, 40); accountUsername.value = accountSettings.username; saveAccountSettings(); });
   findAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => {
