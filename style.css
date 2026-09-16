@@ -598,10 +598,8 @@ body > #event-details-dialog .event-details-window { position: fixed !important;
 
 /* A swipe to the right always settles on the following card, even during a fast gesture. */
 .events-grid { scroll-snap-type: x mandatory; touch-action: pan-y pinch-zoom; -webkit-overflow-scrolling: touch; }
-.events-grid > .event-card, .events-grid > .favorite-note-card { scroll-snap-stop: always; }
-.events-grid.is-dragging { scroll-snap-type: none; scroll-behavior: auto; }
-.events-grid[data-scroll-direction="backward"] > .event-card { scroll-snap-stop: normal; }
-.events-grid:active:not(.is-dragging) { scroll-snap-type: x mandatory; }
+.events-grid[data-carousel-ready="true"], .events-grid[data-carousel-ready="true"]:active { scroll-snap-type: none; scroll-behavior: auto; }
+.events-grid.is-dragging { user-select: none; }
 
 /* Settings remain part of the profile flow, after the personalization questions. */
 .account-settings-panel { width: min(100%, 720px); margin: 12px 0 52px; padding: 22px; border: 1px solid rgba(27, 29, 34, .12); border-radius: 24px; background: var(--surface); box-shadow: 0 12px 30px rgba(42, 31, 26, .08); }

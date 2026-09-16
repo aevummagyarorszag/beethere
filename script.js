@@ -1051,7 +1051,8 @@ function setupCarousel(carousel) {
     returnButton.addEventListener('click', () => {
       triggerBounce(returnButton);
       vibrate(10);
-      carousel.scrollTo({ left: 0, behavior: 'smooth' });
+      if (carousel._smoothScrollTo) carousel._smoothScrollTo(0);
+      else carousel.scrollTo({ left: 0, behavior: 'smooth' });
     });
     carousel._returnButton = returnButton;
   }
@@ -1067,75 +1068,165 @@ function setupCarousel(carousel) {
   }
   carousel.dataset.carouselReady = 'true';
   let isDragging = false;
+  let pointerId = null;
   let startX = 0;
+  let startY = 0;
   let startScrollLeft = 0;
   let forwardLimit = Infinity;
-  let lastPointerX = 0;
-  let lastPointerTime = 0;
-  let dragVelocity = 0;
-  const setDirection = delta => {
-    if (Math.abs(delta) > 3) carousel.dataset.scrollDirection = delta > 0 ? 'forward' : 'backward';
-  };
-  const beginGesture = () => {
-    const cards = findAll('.event-card, .favorite-note-card', carousel);
+  let samples = [];
+  let animationFrame = 0;
+  let wheelTimer = 0;
+  let wheelActive = false;
+  let suppressClickUntil = 0;
+  const maximum = () => Math.max(0, carousel.scrollWidth - carousel.clientWidth);
+  const clamp = value => Math.max(0, Math.min(maximum(), value));
+  const snapPositions = () => {
     const bounds = carousel.getBoundingClientRect();
-    const positions = cards.map(card => card.getBoundingClientRect().left - bounds.left + carousel.scrollLeft);
-    forwardLimit = positions.find(left => left > carousel.scrollLeft + 12) ?? carousel.scrollWidth;
+    const padding = parseFloat(getComputedStyle(carousel).scrollPaddingLeft) || 0;
+    return [...new Set([0, ...findAll('.event-card, .favorite-note-card', carousel)
+      .map(card => Math.round(clamp(card.getBoundingClientRect().left - bounds.left + carousel.scrollLeft - padding))), maximum()])].sort((a, b) => a - b);
+  };
+  const nearest = value => snapPositions().reduce((best, point) => Math.abs(point - value) < Math.abs(best - value) ? point : best, 0);
+  const cancelAnimation = () => {
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    carousel.classList.remove('is-settling');
+  };
+  const velocity = () => {
+    const now = performance.now();
+    const recent = samples.filter(sample => now - sample.time < 100);
+    if (recent.length < 2) return 0;
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+    return Math.max(-4, Math.min(4, (last.left - first.left) / Math.max(1, last.time - first.time)));
+  };
+  const sample = () => {
+    const now = performance.now();
+    samples = samples.filter(item => now - item.time < 100);
+    samples.push({ time: now, left: carousel.scrollLeft });
+  };
+  // One frame-driven animation owns settling; CSS snapping never interrupts it.
+  const animateTo = (destination, initialVelocity = 0) => {
+    cancelAnimation();
+    const from = carousel.scrollLeft;
+    const target = clamp(destination);
+    const distance = target - from;
+    if (Math.abs(distance) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      carousel.scrollLeft = target;
+      return;
+    }
+    const duration = Math.max(220, Math.min(460, 240 + Math.abs(distance) * 0.16));
+    const tangent = initialVelocity * distance > 0
+      ? Math.max(0.8, Math.min(3, initialVelocity * duration / distance)) : 2.6;
+    const started = performance.now();
+    carousel.classList.add('is-settling');
+    const frame = now => {
+      if (!carousel.isConnected) { cancelAnimation(); return; }
+      const t = Math.min(1, (now - started) / duration);
+      const progress = (tangent - 2) * t * t * t + (3 - 2 * tangent) * t * t + tangent * t;
+      carousel.scrollLeft = from + distance * progress;
+      if (t < 1) animationFrame = window.requestAnimationFrame(frame);
+      else { carousel.scrollLeft = target; cancelAnimation(); }
+    };
+    animationFrame = window.requestAnimationFrame(frame);
+  };
+  carousel._smoothScrollTo = animateTo;
+  const beginGesture = () => {
+    cancelAnimation();
+    startScrollLeft = carousel.scrollLeft;
+    forwardLimit = snapPositions().find(left => left > startScrollLeft + 12) ?? maximum();
+    samples = [];
+    sample();
+  };
+  const settleGesture = () => {
+    const speed = velocity();
+    const moved = carousel.scrollLeft - startScrollLeft;
+    if (moved > 0) {
+      const threshold = Math.min(60, (forwardLimit - startScrollLeft) * 0.18);
+      animateTo(moved >= threshold || speed > 0.35 ? forwardLimit : nearest(startScrollLeft), speed);
+    } else {
+      // Backward flicks retain momentum and can cross several cards.
+      const step = findAll('.event-card', carousel)[0]?.getBoundingClientRect().width || carousel.clientWidth;
+      const momentum = Math.max(-step * 3, Math.min(0, speed * 260));
+      animateTo(nearest(clamp(carousel.scrollLeft + momentum)), speed);
+    }
   };
 
   carousel.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || event.target.closest('button, a, input, textarea')) return;
+    if (!event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, textarea')) return;
+    window.clearTimeout(wheelTimer);
+    wheelActive = false;
     beginGesture();
     isDragging = true;
+    pointerId = event.pointerId;
     startX = event.clientX;
-    startScrollLeft = carousel.scrollLeft;
-    lastPointerX = event.clientX;
-    lastPointerTime = performance.now();
-    dragVelocity = 0;
+    startY = event.clientY;
   });
   carousel.addEventListener('pointermove', event => {
-    if (!isDragging) return;
-    if (Math.abs(event.clientX - startX) < 10) return;
+    if (!isDragging || event.pointerId !== pointerId) return;
+    const dx = startX - event.clientX;
+    const dy = startY - event.clientY;
+    if (!carousel.classList.contains('is-dragging')) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) { isDragging = false; return; }
+      if (Math.abs(dx) < 6) return;
+    }
     carousel.setPointerCapture?.(event.pointerId);
     carousel.classList.add('is-dragging');
-    setDirection(startX - event.clientX);
-    const now = performance.now();
-    dragVelocity = (lastPointerX - event.clientX) / Math.max(1, now - lastPointerTime);
-    lastPointerX = event.clientX;
-    lastPointerTime = now;
     event.preventDefault();
-    carousel.scrollLeft = Math.min(forwardLimit, startScrollLeft - (event.clientX - startX));
+    carousel.scrollLeft = clamp(Math.min(forwardLimit, startScrollLeft + dx));
+    sample();
   });
-  const stopDragging = () => {
+  const stopDragging = event => {
+    if (event.pointerId !== pointerId) return;
     const wasDragging = carousel.classList.contains('is-dragging');
     carousel.classList.remove('is-dragging');
-    if (wasDragging && isDragging && carousel.scrollLeft > startScrollLeft + 12 && forwardLimit !== Infinity) {
-      carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
-    } else if (wasDragging && isDragging && carousel.scrollLeft < startScrollLeft) {
-      const momentum = performance.now() - lastPointerTime < 100 ? Math.min(0, dragVelocity) * 240 : 0;
-      carousel.scrollTo({ left: Math.max(0, carousel.scrollLeft + momentum), behavior: 'smooth' });
+    if (wasDragging) {
+      suppressClickUntil = performance.now() + 350;
+      if (event.type === 'pointercancel') animateTo(nearest(carousel.scrollLeft));
+      else settleGesture();
     }
     isDragging = false;
+    pointerId = null;
+    if (carousel.hasPointerCapture?.(event.pointerId)) carousel.releasePointerCapture(event.pointerId);
   };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
   carousel.addEventListener('wheel', event => {
-    setDirection(event.deltaX || (event.shiftKey ? event.deltaY : 0));
-  }, { passive: true });
+    if (isDragging || event.target.closest('input, textarea')) return;
+    if (!event.shiftKey && Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+    const delta = (event.deltaX || event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1);
+    if (!delta) return;
+    event.preventDefault();
+    if (!wheelActive) { beginGesture(); wheelActive = true; }
+    carousel.scrollLeft = clamp(Math.min(forwardLimit, carousel.scrollLeft + delta));
+    sample();
+    window.clearTimeout(wheelTimer);
+    wheelTimer = window.setTimeout(() => { wheelActive = false; settleGesture(); }, 140);
+  }, { passive: false });
+  carousel.addEventListener('click', event => {
+    if (performance.now() < suppressClickUntil) { event.preventDefault(); event.stopPropagation(); }
+  }, true);
+  carousel.addEventListener('dragstart', event => event.preventDefault());
 
+  let feedbackTimer = 0;
   const updateReturnButton = () => {
     const overflow = carousel.scrollWidth - carousel.clientWidth;
     const atEnd = carousel._hasMultipleCards && overflow > 36 && carousel.scrollLeft >= overflow - 28;
     returnButton.hidden = !atEnd;
-    recordSkippedCards(carousel);
+    // Recommendation bookkeeping must not measure every card on each animation frame.
+    if (!feedbackTimer) feedbackTimer = window.setTimeout(() => {
+      feedbackTimer = 0;
+      if (carousel.isConnected) recordSkippedCards(carousel);
+    }, 120);
   };
   carousel._updateReturnButton = updateReturnButton;
   carousel.addEventListener('scroll', updateReturnButton, { passive: true });
   carousel.addEventListener('keydown', event => {
-    if (event.key !== 'ArrowRight' || event.target !== carousel) return;
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key) || event.target !== carousel) return;
     event.preventDefault();
     beginGesture();
-    carousel.scrollTo({ left: forwardLimit, behavior: 'smooth' });
+    const previous = snapPositions().filter(left => left < carousel.scrollLeft - 12).pop() ?? 0;
+    animateTo(event.key === 'Home' ? 0 : event.key === 'End' ? maximum() : event.key === 'ArrowLeft' ? previous : forwardLimit);
   });
   window.requestAnimationFrame(updateReturnButton);
 }
