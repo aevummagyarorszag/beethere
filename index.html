@@ -15,13 +15,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927-30">
+  <link rel="stylesheet" href="style.css?v=20260927-40">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
     <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" autoplay muted playsinline preload="metadata"></video></div>
     <div class="hero-content wrapper">
-      <h1 class="current-events-title"><span class="current-title-top">TALÁLD MEG A</span><span class="current-title-bottom"><strong>KÖVETKEZŐ</strong><em>élményed</em></span></h1>
+      <h1 class="current-events-title"><span class="current-title-top">TALÁLD MEG A</span><span class="current-title-bottom"><strong>KÖVETKEZŐ</strong><em>élményed</em></span></h1><span class="points-counter" aria-label="0 csillagpontod van" title="Pontjaid"><span aria-hidden="true">⭐</span><strong id="points-counter">0</strong></span>
     </div>
   </header>
 
@@ -50,12 +50,7 @@
       <div id="featured-grid" class="events-grid featured-grid event-carousel" tabindex="0" aria-label="Kiemelt események"><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article></div>
     </section>
 
-    <section class="all-events" aria-labelledby="events-title">
-      <div class="section-heading">
-        <div>
-          <h2 id="events-title">Összes <span class="title-emoji" aria-hidden="true">⚡</span></h2>
-        </div>
-      </div>
+    <section class="all-events" aria-label="Események">
       <div id="category-filters" class="filter-bar" aria-label="Kategóriaszűrők"></div>
       <div id="events-grid" aria-live="polite"><div class="events-grid"><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article></div></div>
     </section>
@@ -75,7 +70,7 @@
 
     <section id="today-section" class="today-section" hidden aria-labelledby="today-title">
       <div class="section-heading">
-        <div><p class="eyebrow">HOLNAPI TERV</p><h2 id="today-title">Holnapi események</h2></div>
+        <div><p id="today-eyebrow" class="eyebrow">HOLNAPI TERV</p><h2 id="today-title">Holnapi események</h2></div>
       </div>
       <div id="today-grid" class="events-grid event-carousel" tabindex="0" aria-label="Holnapi események"></div>
     </section>
@@ -291,7 +286,7 @@
   <footer class="footer wrapper" data-home-content>
     <div class="footer-brand">
       <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.068</span>
+      <span class="site-version">version - 01.069</span>
     </div>
     <span>Találkozzunk a városban.</span>
   </footer>
@@ -302,6 +297,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20260927-30"></script>
+  <script src="script.js?v=20260927-40"></script>
 </body>
 </html>
