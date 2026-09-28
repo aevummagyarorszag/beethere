@@ -80,13 +80,13 @@ const outroWeatherIcon = find('#outro-weather-icon');
 const outroMessage = find('#outro-title');
 const navMenu = document.querySelector('#nav-menu');
 const navMenuToggle = document.querySelector('#nav-menu-toggle');
-const tomorrowShortcut = find('#tomorrow-shortcut');
-const tomorrowShortcutMonth = find('#tomorrow-shortcut-month');
-const tomorrowShortcutDate = find('#tomorrow-shortcut-date');
-const freeEventsShortcut = find('#free-events-shortcut');
-const paidEventsShortcut = find('#paid-events-shortcut');
-const monthCalendarShortcut = find('#month-calendar-shortcut');
-const monthCalendarLabel = find('#month-calendar-label');
+const tomorrowShortcut = document.querySelector('#tomorrow-shortcut');
+const tomorrowShortcutMonth = document.querySelector('#tomorrow-shortcut-month');
+const tomorrowShortcutDate = document.querySelector('#tomorrow-shortcut-date');
+const freeEventsShortcut = document.querySelector('#free-events-shortcut');
+const paidEventsShortcut = document.querySelector('#paid-events-shortcut');
+const monthCalendarShortcut = document.querySelector('#month-calendar-shortcut');
+const monthCalendarLabel = document.querySelector('#month-calendar-label');
 const pointsCounter = find('#points-counter');
 const quickWeather = find('#quick-weather');
 const quickWeatherIcon = find('#quick-weather-icon');
@@ -1288,7 +1288,7 @@ function setupCarousel(carousel) {
   let animationFrame = 0;
   let wheelTimer = 0;
   let wheelActive = false;
-  let suppressClickUntil = 0;
+  let suppressGestureClick = false;
   const maximum = () => Math.max(0, carousel.scrollWidth - carousel.clientWidth);
   const clamp = value => Math.max(0, Math.min(maximum(), value));
   const snapPositions = () => {
@@ -1364,8 +1364,15 @@ function setupCarousel(carousel) {
   };
 
   carousel.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.button !== 0) return;
+    // A new deliberate press must work immediately, even while the carousel is
+    // still settling from the previous swipe.
+    suppressGestureClick = false;
     const interactive = event.target.closest('button, a, input, textarea');
-    if (!event.isPrimary || event.button !== 0 || (interactive && !interactive.classList.contains('details-button'))) return;
+    if (interactive && !interactive.classList.contains('details-button')) {
+      cancelAnimation();
+      return;
+    }
     window.clearTimeout(wheelTimer);
     wheelActive = false;
     beginGesture();
@@ -1393,13 +1400,13 @@ function setupCarousel(carousel) {
     const wasDragging = carousel.classList.contains('is-dragging');
     carousel.classList.remove('is-dragging');
     if (wasDragging) {
-      suppressClickUntil = performance.now() + 350;
+      suppressGestureClick = true;
       if (event.type === 'pointercancel') animateTo(nearest(carousel.scrollLeft));
       else settleGesture();
     }
+    if (carousel.hasPointerCapture?.(event.pointerId)) carousel.releasePointerCapture(event.pointerId);
     isDragging = false;
     pointerId = null;
-    if (carousel.hasPointerCapture?.(event.pointerId)) carousel.releasePointerCapture(event.pointerId);
   };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
@@ -1416,13 +1423,12 @@ function setupCarousel(carousel) {
     wheelTimer = window.setTimeout(() => { wheelActive = false; settleGesture(); }, 140);
   }, { passive: false });
   carousel.addEventListener('click', event => {
-    // A post-swipe click must not open the card, but the next deliberate tap on
-    // an action (especially the heart) must work immediately.
-    const interactive = event.target.closest('button, a, input, textarea');
-    if (performance.now() < suppressClickUntil && (!interactive || interactive.classList.contains('details-button'))) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+    // Suppress only the synthetic click belonging to the swipe itself. A new
+    // pointerdown clears this flag, so every deliberate follow-up tap is instant.
+    if (!suppressGestureClick) return;
+    suppressGestureClick = false;
+    event.preventDefault();
+    event.stopPropagation();
   }, true);
   carousel.addEventListener('dragstart', event => event.preventDefault());
 
@@ -1699,10 +1705,12 @@ function renderCard(event, target, { compact = false } = {}) {
     card.classList.add('featured-card');
     const imageWrap = find('.image-wrap', card);
     const eventContent = find('.event-content', card);
+    const meta = find('.event-meta', eventContent);
+    const title = find('.event-title', eventContent);
     const priceBadge = find('.price-badge', card);
     const distance = find('.distance-pill', card);
     const badges = find('.badges', card);
-    find('.event-meta', eventContent)?.remove();
+    if (meta && title) title.after(meta);
     if (priceBadge && imageWrap) {
       priceBadge.classList.add('featured-price');
       imageWrap.append(priceBadge);
@@ -2235,7 +2243,7 @@ function renderCalendarEvents() {
   if (!calendarEvents) return;
   calendarEvents.replaceChildren();
   if (!calendarSelectedDate) {
-    calendarEvents.innerHTML = '<p class="calendar-empty">Válassz egy lila jelölésű napot a programok megtekintéséhez.</p>';
+    calendarEvents.innerHTML = '<p class="calendar-empty">Válassz egy narancssárga jelölésű napot a programok megtekintéséhez.</p>';
     return;
   }
   const selectedEvents = position ? sortByDistance(calendarEventsForSelection()) : calendarEventsForSelection();
@@ -2827,12 +2835,17 @@ function setupProfileSettings() {
   const updatePreferenceButtons = () => {
     preferenceGroups.forEach(groupElement => {
       const group = groupElement.dataset.preferenceGroup;
+      const options = find('.preference-options', groupElement);
+      let hasSelection = false;
       findAll('[data-preference-value]', groupElement).forEach(button => {
         const selected = Array.isArray(profilePreferences[group])
           ? profilePreferences[group].includes(button.dataset.preferenceValue)
           : profilePreferences[group] === button.dataset.preferenceValue;
         button.setAttribute('aria-pressed', String(selected));
+        button.classList.toggle('active', selected);
+        hasSelection ||= selected;
       });
+      options?.classList.toggle('has-selection', hasSelection);
     });
   };
   updatePreferenceButtons();
@@ -2866,7 +2879,6 @@ function setupProfileSettings() {
     findAll('[data-preference-value]', groupElement).forEach(button => button.addEventListener('click', () => {
       const value = button.dataset.preferenceValue;
       if (!allowedValues[group]?.includes(value)) return;
-      const wasSelected = button.getAttribute('aria-pressed') === 'true';
       if (multiple) {
         const values = new Set(profilePreferences[group]);
         if (values.has(value)) values.delete(value); else values.add(value);
@@ -2875,8 +2887,7 @@ function setupProfileSettings() {
         profilePreferences[group] = profilePreferences[group] === value ? '' : value;
       }
       updatePreferenceButtons();
-      if (!wasSelected) triggerBounce(button);
-      vibrate(8);
+      vibrate(10);
       try {
         localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
       } catch (error) {

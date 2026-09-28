@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260927-40">
+  <link rel="stylesheet" href="style.css?v=20260928-47">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -26,18 +26,8 @@
   </header>
 
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
-    <div class="quick-actions-main">
-      <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Engedélyezés</span></button>
-      <div class="quick-action-row">
-        <div class="quick-buttons-cluster">
-          <button id="free-events-shortcut" class="quick-round-button quick-emoji-button" type="button" aria-label="Ugrás az ingyenes eseményekhez" title="Ingyenes"><span aria-hidden="true">🎟️</span></button>
-          <button id="paid-events-shortcut" class="quick-round-button quick-emoji-button" type="button" aria-label="Ugrás a fizetős eseményekhez" title="Fizetős"><span aria-hidden="true">💸</span></button>
-          <p class="quick-weather" aria-label="Aktuális időjárás"><span id="quick-weather-icon" aria-hidden="true">🌤️</span><strong id="quick-weather">--°C</strong></p>
-          <button id="tomorrow-shortcut" class="quick-round-button quick-calendar-button" type="button" aria-label="Mai vagy holnapi események"><span class="calendar-sheet calendar-sheet-small" aria-hidden="true"><span id="tomorrow-shortcut-month" class="calendar-sheet-header">---</span><span id="tomorrow-shortcut-date" class="calendar-sheet-value">--</span></span><span class="tomorrow-shortcut-message" aria-hidden="true">Ma és holnap nincs esemény</span></button>
-        </div>
-      </div>
-    </div>
-    <button id="month-calendar-shortcut" class="month-calendar-shortcut" type="button" aria-label="Ugrás az eseménynaptárhoz"><span class="calendar-sheet calendar-sheet-large" aria-hidden="true"><span class="calendar-sheet-header"></span><span id="month-calendar-label" class="calendar-sheet-value">---</span></span></button>
+    <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Engedélyezés</span></button>
+    <p class="quick-weather" aria-label="Aktuális időjárás"><span id="quick-weather-icon" aria-hidden="true">🌤️</span><strong id="quick-weather">--°C</strong></p>
   </section>
 
   <main class="wrapper events-section" id="esemenyek" data-home-content>
@@ -163,20 +153,20 @@
     <div class="personalization-settings" aria-label="Személyre szabási beállítások">
       <section class="preference-group" data-preference-group="categories" data-selection="multiple">
         <div class="preference-heading"><h2>Milyen programokat szeretsz?</h2></div>
-        <div class="preference-options">
-          <button type="button" data-preference-value="party">Party 🎉</button><button type="button" data-preference-value="kultúra">Kultúra 🎭</button><button type="button" data-preference-value="sport">Sport 🏀</button><button type="button" data-preference-value="családi">Családi 👪</button><button type="button" data-preference-value="gasztro">Gasztro 🦐</button><button type="button" data-preference-value="romantika">Romantika 🌹</button>
+        <div class="preference-options filter-bar event-group-filters">
+          <button class="filter-button" type="button" data-preference-value="romantika">Romantika 🌹</button><button class="filter-button" type="button" data-preference-value="party">Party 🎉</button><button class="filter-button" type="button" data-preference-value="családi">Családi 👪</button><button class="filter-button" type="button" data-preference-value="gasztro">Gasztro 🦐</button><button class="filter-button" type="button" data-preference-value="kultúra">Kultúra 🎭</button><button class="filter-button" type="button" data-preference-value="sport">Sport 🏀</button>
         </div>
       </section>
       <section class="preference-group" data-preference-group="moods" data-selection="multiple">
         <div class="preference-heading"><h2>Milyen hangulatra vágysz?</h2></div>
-        <div class="preference-options">
-          <button type="button" data-preference-value="alkotós">Alkotós</button><button type="button" data-preference-value="önfeledt">Önfeledt</button><button type="button" data-preference-value="ütős">Ütős</button><button type="button" data-preference-value="vicces">Vicces</button><button type="button" data-preference-value="pörgős">Pörgős</button><button type="button" data-preference-value="szabad">Szabad</button><button type="button" data-preference-value="ízes">Ízes</button><button type="button" data-preference-value="inspiráló">Inspiráló</button><button type="button" data-preference-value="energikus">Energikus</button>
+        <div class="preference-options filter-bar event-group-filters">
+          <button class="filter-button" type="button" data-preference-value="alkotós">Alkotós</button><button class="filter-button" type="button" data-preference-value="önfeledt">Önfeledt</button><button class="filter-button" type="button" data-preference-value="ütős">Ütős</button><button class="filter-button" type="button" data-preference-value="vicces">Vicces</button><button class="filter-button" type="button" data-preference-value="pörgős">Pörgős</button><button class="filter-button" type="button" data-preference-value="szabad">Szabad</button><button class="filter-button" type="button" data-preference-value="ízes">Ízes</button><button class="filter-button" type="button" data-preference-value="inspiráló">Inspiráló</button><button class="filter-button" type="button" data-preference-value="energikus">Energikus</button>
         </div>
       </section>
       <section class="preference-group" data-preference-group="companions" data-selection="multiple">
         <div class="preference-heading"><h2>Kivel mennél?</h2></div>
-        <div class="preference-options">
-          <button type="button" data-preference-value="egyedül">Egyedül</button><button type="button" data-preference-value="párban">Párban</button><button type="button" data-preference-value="barátokkal">Barátokkal</button><button type="button" data-preference-value="családdal">Családdal</button>
+        <div class="preference-options filter-bar event-group-filters">
+          <button class="filter-button" type="button" data-preference-value="barátokkal">Barátokkal</button><button class="filter-button" type="button" data-preference-value="párban">Párban</button><button class="filter-button" type="button" data-preference-value="egyedül">Egyedül</button><button class="filter-button" type="button" data-preference-value="családdal">Családdal</button>
         </div>
       </section>
       <section class="preference-group budget-preference-group" data-preference-group="budget">
@@ -189,14 +179,14 @@
       </section>
       <section class="preference-group" data-preference-group="times" data-selection="multiple">
         <div class="preference-heading"><h2>Mikor érsz rá?</h2></div>
-        <div class="preference-options">
-          <button type="button" data-preference-value="weekday">Hétköznap</button><button type="button" data-preference-value="weekend">Hétvégén</button><button type="button" data-preference-value="afternoon">Délután</button><button type="button" data-preference-value="evening">Este</button>
+        <div class="preference-options filter-bar event-group-filters">
+          <button class="filter-button" type="button" data-preference-value="weekday">Hétköznap</button><button class="filter-button" type="button" data-preference-value="evening">Este</button><button class="filter-button" type="button" data-preference-value="weekend">Hétvégén</button><button class="filter-button" type="button" data-preference-value="afternoon">Délután</button>
         </div>
       </section>
       <section class="preference-group" data-preference-group="spontaneity" data-selection="single">
         <div class="preference-heading"><h2>Mennyire vagy spontán?</h2></div>
-        <div class="preference-options">
-          <button type="button" data-preference-value="now">Akár ma</button><button type="button" data-preference-value="week">Egy héten belül</button><button type="button" data-preference-value="plan">Előre tervezek</button>
+        <div class="preference-options filter-bar event-group-filters">
+          <button class="filter-button" type="button" data-preference-value="week">Egy héten belül</button><button class="filter-button" type="button" data-preference-value="now">Akár ma</button><button class="filter-button" type="button" data-preference-value="plan">Előre tervezek</button>
         </div>
       </section>
     </div>
@@ -216,23 +206,6 @@
       <section id="settings-sheet-organizers" class="settings-block settings-sheet contact-settings" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Program szervezőknek</h3><a class="organizer-link" href="#" aria-disabled="true">Hamarosan</a></section>
       <section id="settings-sheet-delete" class="settings-block settings-sheet delete-settings" hidden><button class="settings-sheet-close" type="button" aria-label="Bezárás">×</button><h3>Profil és adataim törlése</h3><p>A kedvencek, jegyzetek, ajánlási beállítások és a helyi profiladatok is törlődnek erről a készülékről.</p><button id="delete-profile-button" class="delete-profile-button" type="button">Profil és adataim törlése</button></section>
     </section>
-  </section>
-
-  <section id="kapcsolat" class="outro-section" aria-labelledby="outro-title" data-home-content>
-    <div class="outro-content wrapper">
-      <div class="outro-topline">
-        <p class="outro-weather"><span id="outro-weather-icon" aria-hidden="true">🌡️</span><span id="outro-weather">Időjárás a helyzeted alapján</span></p>
-        <div class="outro-contact">
-          <span>Kapcsolat</span>
-          <a href="mailto:aevummagyarorszag@gmail.com">aevummagyarorszag@gmail.com</a>
-          <div class="social-links" aria-label="Közösségi oldalak">
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
-            <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 21v-8h3l.45-3H14V8.1c0-.87.25-1.46 1.5-1.46H17.6V4.02c-.37-.05-1.13-.16-2.15-.16-2.13 0-3.59 1.3-3.59 3.69V10H9v3h2.86v8H14Z"/></svg></a>
-          </div>
-        </div>
-      </div>
-        <h2 id="outro-title" class="outro-message" aria-label="A Bee there segít, hogy jól érezd magad bármikor, bárkivel."></h2>
-    </div>
   </section>
 
   <dialog id="city-dialog" class="city-dialog" aria-labelledby="city-dialog-title">
@@ -283,13 +256,6 @@
     </article>
   </div>
 
-  <footer class="footer wrapper" data-home-content>
-    <div class="footer-brand">
-      <img class="footer-logo" src="assets/beethere_logo-lilac-transparent.png" alt="Bee There" loading="lazy" decoding="async">
-      <span class="site-version">version - 01.069</span>
-    </div>
-    <span>Találkozzunk a városban.</span>
-  </footer>
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c-2.5-3.5-4-5-6-5a5 5 0 0 0 0 10c2 0 3.5-1.5 6-5s4-5 6-5a5 5 0 0 1 0 10c-2 0-3.5-1.5-6-5Z"/></svg><span class="bottom-nav-label">Mindig</span></button>
@@ -297,6 +263,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20260927-40"></script>
+  <script src="script.js?v=20260928-43"></script>
 </body>
 </html>
