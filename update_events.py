@@ -5,6 +5,17 @@ import urllib.request
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSPfSI82U3LFTE93Wj_ZaGSqNHyxpmAXnnt6ixl2XBgqNUfHkbXZeS4TV_WEY3DB1mESAsRZRtOY8HZ/pub?output=csv"
 MEMORY_FILE = "events.json"
 
+PRICE_OVERRIDES = {
+    ("Deák Bill Blues Band – Rossz vér turné", "2026.10.17"): "8 800 Ft-tól",
+    ("Koncz Zsuzsa Nagykoncert", "2026.10.20"): "13 990 Ft-tól",
+    ("Charlie - Mindenen túl...", "2026.11.15"): "13 990–16 990 Ft",
+    ("Hans Zimmer gyertyafényes koncert", "2026.12.15"): "13 687–15 747 Ft",
+    ("Noches de España", "2026.10.03"): "9 670 Ft",
+    ("Marica grófnő", "2026.10.04"): "6 000–7 300 Ft",
+    ("Csárdáskirálynő", "2026.10.24"): "8 990–13 990 Ft",
+    ("Vivaldi: A négy évszak - gyertyafényes koncert", "2026.10.24"): "12 900–14 900 Ft",
+}
+
 
 def decimal_or_default(value, default):
     try:
@@ -34,7 +45,7 @@ def fetch_sheet_data():
                 "Time": time,
                 "Date and Time": f"{date} {time}".strip(),
                 "Description": (row.get("Description") or "").strip(),
-                "Price": (row.get("Price") or "").strip(),
+                "Price": PRICE_OVERRIDES.get((title, date), (row.get("Price") or "").strip()),
                 "Age Requirement": (row.get("Age Requirement") or "").strip(),
                 "Long description": (row.get("Long description") or row.get("Long Description") or "").strip(),
                 "Header Image": (row.get("Header Image") or "").strip(),

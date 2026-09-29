@@ -15,13 +15,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260928-47">
+  <link rel="stylesheet" href="style.css?v=20260929-52">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
-    <div class="hero-video-layer" aria-hidden="true"><video id="hero-video" autoplay muted playsinline preload="metadata"></video></div>
     <div class="hero-content wrapper">
-      <h1 class="current-events-title"><span class="current-title-top">TALÁLD MEG A</span><span class="current-title-bottom"><strong>KÖVETKEZŐ</strong><em>élményed</em></span></h1><span class="points-counter" aria-label="0 csillagpontod van" title="Pontjaid"><span aria-hidden="true">⭐</span><strong id="points-counter">0</strong></span>
+      <h1 class="current-events-title"><span class="current-title-top">TALÁLD MEG A</span><span class="current-title-bottom"><strong>KÖVETKEZŐ</strong><em>élményed</em></span></h1><span class="points-counter" aria-label="0 csillagpontod van" title="Pontjaid"><span data-ui-icon="star" aria-hidden="true"></span><strong id="points-counter">0</strong></span>
     </div>
   </header>
 
@@ -34,7 +33,7 @@
     <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
       <div class="section-heading featured-heading">
         <div>
-          <h2 id="featured-title">Kiemelt <span class="title-emoji" aria-hidden="true">🔥</span></h2>
+          <h2 id="featured-title">Kiemelt <span class="title-emoji" data-ui-icon="fire" aria-hidden="true"></span></h2>
         </div>
       </div>
       <div id="featured-grid" class="events-grid featured-grid event-carousel" tabindex="0" aria-label="Kiemelt események"><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article></div>
@@ -49,7 +48,7 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">ELMENTVE NEKED</p>
-          <h2 id="favorites-title">Kedvelt események <span class="title-emoji" aria-hidden="true">❤️</span></h2>
+          <h2 id="favorites-title">Kedvelt események <span class="title-emoji" data-ui-icon="heart" aria-hidden="true"></span></h2>
         </div>
       </div>
       <div id="favorites-grid" class="favorites-list" aria-label="Kedvelt események"></div>
@@ -66,7 +65,7 @@
     </section>
 
     <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-title">
-      <div class="section-heading"><div><h2 id="calendar-title">Naptár <span class="title-emoji" aria-hidden="true">📆</span></h2></div></div>
+      <div class="section-heading"><div><h2 id="calendar-title">Naptár <span class="title-emoji" data-ui-icon="calendar" aria-hidden="true"></span></h2></div></div>
       <div id="calendar-filters" class="filter-bar calendar-filter-bar" aria-label="Naptár kategóriaszűrői"></div>
       <div class="calendar-shell">
         <div class="calendar-toolbar"><button id="calendar-prev" class="calendar-nav-button" type="button" aria-label="Előző hónap">←</button><h3 id="calendar-month-label"></h3><button id="calendar-next" class="calendar-nav-button" type="button" aria-label="Következő hónap">→</button></div>
@@ -154,7 +153,7 @@
       <section class="preference-group" data-preference-group="categories" data-selection="multiple">
         <div class="preference-heading"><h2>Milyen programokat szeretsz?</h2></div>
         <div class="preference-options filter-bar event-group-filters">
-          <button class="filter-button" type="button" data-preference-value="romantika">Romantika 🌹</button><button class="filter-button" type="button" data-preference-value="party">Party 🎉</button><button class="filter-button" type="button" data-preference-value="családi">Családi 👪</button><button class="filter-button" type="button" data-preference-value="gasztro">Gasztro 🦐</button><button class="filter-button" type="button" data-preference-value="kultúra">Kultúra 🎭</button><button class="filter-button" type="button" data-preference-value="sport">Sport 🏀</button>
+          <button class="filter-button" type="button" data-preference-value="romantika"><span>Romantika</span><span class="filter-emoji" data-ui-icon="romance" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="party"><span>Party</span><span class="filter-emoji" data-ui-icon="party" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="családi"><span>Családi</span><span class="filter-emoji" data-ui-icon="family" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="gasztro"><span>Gasztro</span><span class="filter-emoji" data-ui-icon="gastro" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="kultúra"><span>Kultúra</span><span class="filter-emoji" data-ui-icon="culture" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="sport"><span>Sport</span><span class="filter-emoji" data-ui-icon="sport" aria-hidden="true"></span></button>
         </div>
       </section>
       <section class="preference-group" data-preference-group="moods" data-selection="multiple">
@@ -263,6 +262,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20260928-43"></script>
+  <script src="script.js?v=20260929-48"></script>
 </body>
 </html>

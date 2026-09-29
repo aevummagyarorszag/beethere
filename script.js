@@ -1,7 +1,44 @@
 const EVENTS_FILE = 'events.json';
 const CATEGORIES = ['party', 'kultúra', 'sport', 'családi', 'gasztro', 'romantika'];
-const CATEGORY_EMOJIS = { party: '🎉', kultúra: '🎭', sport: '🏀', családi: '👪', gasztro: '🦐', romantika: '🌹' };
-const EVENT_GROUP_EMOJIS = { 'Ingyenes': '🎟️', 'Fizetős': '💸' };
+const CATEGORY_ICONS = { party: 'party', kultúra: 'culture', sport: 'sport', családi: 'family', gasztro: 'gastro', romantika: 'romance' };
+const EVENT_GROUP_ICONS = { 'Ingyenes': 'ticket', 'Fizetős': 'paid' };
+const UI_ICON_PATHS = {
+  star: '<defs><linearGradient id="starGold" x1="7" y1="4" x2="17" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE86A"/><stop offset=".48" stop-color="#F7C52F"/><stop offset="1" stop-color="#D99B10"/></linearGradient><filter id="starShadow" x="-2" y="-2" width="28" height="28" filterUnits="userSpaceOnUse"><feDropShadow dx="0" dy="1" stdDeviation=".7" flood-color="#9B6500" flood-opacity=".38"/></filter></defs><path filter="url(#starShadow)" fill="url(#starGold)" stroke="#D9A316" stroke-width=".55" stroke-linejoin="round" d="M12 2.55c.43 0 .78.24.98.66l2.42 5.03 5.48.79c.46.07.82.35.96.76.13.4.02.85-.31 1.17l-3.97 3.9.94 5.5c.08.47-.09.9-.44 1.15-.35.26-.81.28-1.23.06L12 18.98l-4.83 2.59c-.42.22-.88.2-1.23-.06-.35-.25-.52-.68-.44-1.15l.94-5.5-3.97-3.9a1.13 1.13 0 0 1-.31-1.17c.14-.41.5-.69.96-.76l5.48-.79 2.42-5.03c.2-.42.55-.66.98-.66Z"/><path fill="#FFF3A5" fill-opacity=".72" d="M11.35 4.7 9.4 8.76l-4.31.62 3.13.64c1.93.4 3.7-.96 3.83-2.93l.17-2.6c-.33-.14-.68-.06-.87.21Z"/>',
+  heart: '<path fill="#FF5B71" d="M20.25 5.55a5.15 5.15 0 0 0-7.28 0L12 6.52l-.97-.97a5.15 5.15 0 1 0-7.28 7.28L12 21.08l8.25-8.25a5.15 5.15 0 0 0 0-7.28Z"/><path fill="#FF8798" d="M6.35 6.55c1.15-.95 2.55-.72 3.48.18L8.9 8.05c-.67-.52-1.32-.62-2.1-.1l-.45-1.4Z"/>',
+};
+
+let uiIconInstance = 0;
+
+// External SVG documents isolate gradient/filter IDs and keep the detailed artwork cacheable.
+const UI_ICON_ASSETS = Object.freeze({
+  paid: 'assets/icons/paid.svg',
+  ticket: 'assets/icons/ticket.svg',
+  calendar: 'assets/icons/calendar.svg',
+  fire: 'assets/icons/fire.svg',
+  party: 'assets/icons/party.svg',
+  culture: 'assets/icons/culture.svg',
+  sport: 'assets/icons/sport.svg',
+  family: 'assets/icons/family.svg',
+  gastro: 'assets/icons/gastro.svg',
+  romance: 'assets/icons/romance.svg',
+});
+
+function uiIconMarkup(name) {
+  if (Object.hasOwn(UI_ICON_ASSETS, name)) {
+    return `<img class="ui-icon ui-icon-${name}" src="${UI_ICON_ASSETS[name]}" alt="" aria-hidden="true" width="24" height="24">`;
+  }
+  const paths = UI_ICON_PATHS[name];
+  if (!paths) return '';
+  const suffix = `-${name}-${++uiIconInstance}`;
+  const uniquePaths = paths
+    .replace(/id="([^"]+)"/g, (_, id) => `id="${id}${suffix}"`)
+    .replace(/url\(#([^\)]+)\)/g, (_, id) => `url(#${id}${suffix})`);
+  return `<svg class="ui-icon ui-icon-${name}" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">${uniquePaths}</svg>`;
+}
+
+function hydrateUiIcons(scope = document) {
+  findAll('[data-ui-icon]', scope).forEach(element => { element.innerHTML = uiIconMarkup(element.dataset.uiIcon); });
+}
 const CITIES = [
   { name: 'Budapest', latitude: 47.4979, longitude: 19.0402 },
   { name: 'Debrecen', latitude: 47.5316, longitude: 21.6273 },
@@ -21,9 +58,6 @@ const ACCOUNT_SETTINGS_STORAGE_KEY = 'bee-there-account-settings';
 const MAX_FAVORITES = 100;
 const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
 const weatherCache = new Map();
-// The compressed header clips are loaded one at a time by initHeroVideo().
-// Keep these names in sync with the files in /assets.
-const HERO_VIDEOS = ['assets/csokk01.mp4', 'assets/csokk02.mp4', 'assets/csokk03.mp4', 'assets/csokk04.mp4', 'assets/csokk05.mp4'];
 
 const find = (selector, scope = document) => {
   if (!scope || typeof scope.querySelector !== 'function') {
@@ -61,7 +95,6 @@ const citySelector = find('#city-selector');
 const citySelectorLabel = find('#city-selector-label');
 const cityDialog = find('#city-dialog');
 const cityDialogClose = find('#city-dialog-close');
-const heroVideo = find('#hero-video');
 const eventDetailsDialog = find('#event-details-dialog');
 const eventDetailsClose = find('#event-details-close');
 const eventDetailsDate = find('#event-details-date');
@@ -311,6 +344,11 @@ function haversineKm(lat1, lon1, lat2, lon2) { const toRadians = value => value 
 function eventCategories(event) { return (event.Category || event.Kategória || '').split(/[,;|]/).map(value => value.trim().toLowerCase()).filter(Boolean); }
 function isFeatured(event) { return (event.Featured || event.Kiemelt || '').trim() === 'Igen'; }
 function isFree(event) { return /(^|\b)(ingyenes|0\s*(ft|huf))\b/i.test((event.Price || '').trim()); }
+
+function eventPriceLabel(event) {
+  if (isFree(event)) return 'Ingyenes';
+  return (event.Price || '').trim() || 'Ár nincs megadva';
+}
 function eventKey(event) { return [event.Title, eventDateValue(event), event.Location, event['Ticket Link']].map(value => String(value || '').trim()).join('|'); }
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
 function eventDateOnly(event) { if (event.Permanent) return 'Állandó program'; const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
@@ -1021,7 +1059,7 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'filter-button';
-      button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
+      button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
       button.addEventListener('click', () => {
         if (!searchInput) return;
         searchInput.value = category;
@@ -1699,7 +1737,7 @@ function renderCard(event, target, { compact = false } = {}) {
   setText('.event-title', event.Title || 'Névtelen esemény', fragment);
   setText('.event-description', event.Description || 'Részletek hamarosan.', fragment);
   setText('.category-badge', eventCategories(event)[0] || 'program', fragment);
-  setText('.price-badge', event.Price || 'Ár nincs megadva', fragment);
+  setText('.price-badge', eventPriceLabel(event), fragment);
   setText('.age-badge', event['Age Requirement'] || 'Korhatár nincs megadva', fragment);
   if (card && target === featuredGrid) {
     card.classList.add('featured-card');
@@ -1890,8 +1928,8 @@ function createEventGroup(target, title, items, id) {
   if (!target) return;
   const group = document.createElement('section');
   group.className = 'event-group';
-  const emoji = EVENT_GROUP_EMOJIS[title] || '';
-  group.innerHTML = `<div class="event-group-header"><h3>${title}${emoji ? ` <span class="event-group-emoji" aria-hidden="true">${emoji}</span>` : ''}</h3></div><div class="filter-bar event-group-filters" aria-label="${title} események kategóriaszűrői"></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
+  const icon = EVENT_GROUP_ICONS[title] || '';
+  group.innerHTML = `<div class="event-group-header"><h3>${title}${icon ? ` <span class="event-group-emoji" aria-hidden="true">${uiIconMarkup(icon)}</span>` : ''}</h3></div><div class="filter-bar event-group-filters" aria-label="${title} események kategóriaszűrői"></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
   target.append(group);
   const carousel = find(`#${id}`, group);
   const filters = find('.event-group-filters', group);
@@ -1935,7 +1973,7 @@ function createEventGroup(target, title, items, id) {
     button.className = 'filter-button';
     button.dataset.groupCategory = category;
     button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
+    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
     button.addEventListener('click', () => {
       activeCategory = activeCategory === category ? '' : category;
       findAll('.filter-button', filters).forEach(filter => {
@@ -2272,7 +2310,7 @@ function refreshCalendarFavoriteMarkers() {
       heart = document.createElement('span');
       heart.className = 'calendar-favorite-heart';
       heart.setAttribute('aria-hidden', 'true');
-      heart.textContent = '♥';
+      heart.innerHTML = uiIconMarkup('heart');
       button.prepend(heart);
     } else if (!hasFavorite) heart?.remove();
     const day = button.querySelector('.calendar-day-number')?.textContent || '';
@@ -2319,7 +2357,7 @@ function renderCalendar() {
       const favoriteHeart = document.createElement('span');
       favoriteHeart.className = 'calendar-favorite-heart';
       favoriteHeart.setAttribute('aria-hidden', 'true');
-      favoriteHeart.textContent = '♥';
+      favoriteHeart.innerHTML = uiIconMarkup('heart');
       button.append(favoriteHeart);
     }
     button.append(dayNumber);
@@ -2349,7 +2387,7 @@ function createCalendarFilters() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'filter-button';
-    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
+    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
     button.setAttribute('aria-pressed', 'false');
     button.addEventListener('click', () => {
       const isSecondClick = calendarCategory === category;
@@ -2557,7 +2595,7 @@ function createFilters() {
     const button = document.createElement('button');
     button.type = 'button';
     button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${CATEGORY_EMOJIS[category]}</span>`;
+    button.innerHTML = `<span>${category}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
     button.className = 'filter-button';
     button.addEventListener('click', () => {
       const isSecondClick = activeFilterButton === button;
@@ -2701,85 +2739,6 @@ function initPixelBlast() {
     if (ripples.length > 5) ripples.shift();
   }, { passive: true });
   window.addEventListener('resize', resize, { passive: true });
-}
-
-function initHeroVideo() {
-  if (!heroVideo || !HERO_VIDEOS.length) return;
-  const layer = heroVideo.parentElement;
-  if (!layer) return;
-
-  // Every source gets its own persistent video element. We assign each src at
-  // most once, so returning to csokk01 after csokk05 reuses the already loaded
-  // media instead of issuing another fetch for the same file.
-  const clips = HERO_VIDEOS.map((source, index) => {
-    const clip = index === 0 ? heroVideo : document.createElement('video');
-    clip.classList.add('hero-clip');
-    clip.dataset.source = source;
-    clip.muted = true;
-    clip.defaultMuted = true;
-    clip.playsInline = true;
-    clip.autoplay = true;
-    // Set the attributes as well as the DOM properties: iOS Safari bases its
-    // autoplay decision on the attributes for dynamically created videos.
-    clip.setAttribute('muted', '');
-    clip.setAttribute('playsinline', '');
-    clip.setAttribute('autoplay', '');
-    clip.preload = 'metadata';
-    clip.setAttribute('aria-hidden', 'true');
-    if (index > 0) layer.append(clip);
-    return clip;
-  });
-
-  let videoIndex = 0;
-  let rotationTimer = 0;
-  let preloadTimer = 0;
-
-  const loadClipOnce = index => {
-    const clip = clips[index];
-    if (!clip || clip.dataset.loaded === 'true') return clip;
-    clip.src = clip.dataset.source || '';
-    clip.dataset.loaded = 'true';
-    clip.load();
-    return clip;
-  };
-
-  const preloadUpcomingClip = () => {
-    const nextIndex = (videoIndex + 1) % clips.length;
-    loadClipOnce(nextIndex);
-  };
-
-  const showClip = index => {
-    window.clearTimeout(rotationTimer);
-    window.clearTimeout(preloadTimer);
-    videoIndex = index;
-    const activeClip = loadClipOnce(videoIndex);
-    if (!activeClip) return;
-
-    clips.forEach((clip, clipIndex) => {
-      const isActive = clipIndex === videoIndex;
-      clip.classList.toggle('is-active', isActive);
-      if (!isActive) clip.pause();
-    });
-
-    const startPlayback = () => {
-      if (!activeClip.classList.contains('is-active')) return;
-      activeClip.currentTime = 0;
-      activeClip.play().catch(error => console.warn('[Bee There] A fejlécvideó nem indítható:', error));
-    };
-    // Calling play before a dynamically assigned source has video data is
-    // unreliable in Safari. Wait for a playable frame when necessary.
-    if (activeClip.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) startPlayback();
-    else activeClip.addEventListener('canplay', startPlayback, { once: true });
-
-    // Metadata for just the next clip arrives while the current clip is on
-    // screen. We intentionally do not download all five videos at page load.
-    preloadTimer = window.setTimeout(preloadUpcomingClip, 2000);
-    rotationTimer = window.setTimeout(() => {
-      showClip((videoIndex + 1) % clips.length);
-    }, 4000);
-  };
-
-  showClip(0);
 }
 
 function setupProfileSettings() {
@@ -3075,6 +3034,7 @@ async function loadEvents() {
 }
 
 function init() {
+  hydrateUiIcons();
   setupGenerousButtonHitAreas();
   setupLocationOverflowCues();
   setupAppNavigation();
@@ -3091,7 +3051,6 @@ function init() {
   setupCalendar();
   initOutroMessage();
   updateOutroWeather();
-  initHeroVideo();
   updatePointsCounter();
   window.addEventListener('resize', positionAllDetailsButtons, { passive: true });
   loadEvents();
