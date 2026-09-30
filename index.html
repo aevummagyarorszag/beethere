@@ -18,19 +18,24 @@
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
+  <link rel="stylesheet" href="home-redesign.css?v=20260930-23">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
     <div class="hero-content wrapper">
-      <h1 class="current-events-title"><span class="current-title-top">TALÁLD MEG A</span><span class="current-title-bottom"><strong>KÖVETKEZŐ</strong><em>élményed</em></span></h1>
+      <h1 class="sr-only">Bee There – Események</h1>
+      <div class="event-mode-bar" aria-label="Programok ára">
+        <button id="event-mode-current" class="event-mode-current" type="button" aria-label="Fizetős programok, váltás ingyenesre"><span id="event-mode-icon" aria-hidden="true"></span><span id="event-mode-label" aria-live="polite">Fizetős</span></button>
+        <button id="event-mode-toggle" class="event-mode-toggle" type="button" aria-label="Váltás ingyenes programokra"><span id="event-mode-other-icon" aria-hidden="true"></span></button>
+      </div>
     </div>
   </header>
-  <span class="points-counter" data-home-content aria-label="0 csillagpontod van" title="Pontjaid"><span data-ui-icon="star" aria-hidden="true"></span><strong id="points-counter">0</strong></span>
+  <button class="points-counter" type="button" aria-label="0 csillagpontod van" title="Pontjaid"><img class="points-icon" src="assets/icons/kid-star.svg" alt="" aria-hidden="true"><strong id="points-counter">0</strong></button>
 
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
     <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Válassz várost</span></button>
-    <p class="quick-weather" aria-label="Aktuális időjárás"><span id="quick-weather-icon" aria-hidden="true">🌤️</span><strong id="quick-weather">--°C</strong></p>
   </section>
+  <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 
   <main class="wrapper events-section" id="esemenyek" data-home-content>
     <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
@@ -267,6 +272,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20260930-64"></script>
+  <script src="script.js?v=20260930-82"></script>
 </body>
 </html>

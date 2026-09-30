@@ -8,6 +8,65 @@ const UI_ICON_PATHS = {
 };
 
 let uiIconInstance = 0;
+let homeEventMode = 'paid';
+const HOME_MODE_ICONS = {
+  paid: '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-440q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM280-320q-33 0-56.5-23.5T200-400v-320q0-33 23.5-56.5T280-800h560q33 0 56.5 23.5T920-720v320q0 33-23.5 56.5T840-320H280Zm80-80h400q0-33 23.5-56.5T840-480v-160q-33 0-56.5-23.5T760-720H360q0 33-23.5 56.5T280-640v160q33 0 56.5 23.5T360-400Zm440 240H120q-33 0-56.5-23.5T40-240v-440h80v440h680v80ZM280-400v-320 320Z"/></svg>',
+  free: '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M668.5-531.5Q680-543 680-560t-11.5-28.5Q657-600 640-600t-28.5 11.5Q600-577 600-560t11.5 28.5Q623-520 640-520t28.5-11.5ZM320-600h200v-80H320v80ZM180-120q-34-114-67-227.5T80-580q0-92 64-156t156-64h200q29-38 70.5-59t89.5-21q25 0 42.5 17.5T720-820q0 6-1.5 12t-3.5 11q-4 11-7.5 22.5T702-751l91 91h87v279l-113 37-67 224H480v-80h-80v80H180Zm60-80h80v-80h240v80h80l62-206 98-33v-141h-40L620-720q0-20 2.5-38.5T630-796q-29 8-51 27.5T547-720H300q-58 0-99 41t-41 99q0 98 27 191.5T240-200Zm240-298Z"/></svg>'
+};
+function matchesHomeMode(event) { return homeEventMode === 'free' ? isFree(event) : !isFree(event); }
+function setupHomeMode() {
+  const current = document.querySelector('#event-mode-current');
+  const toggle = document.querySelector('#event-mode-toggle');
+  const sync = () => {
+    const free = homeEventMode === 'free';
+    document.body.dataset.eventMode = homeEventMode;
+    document.querySelector('#event-mode-label').textContent = free ? 'Ingyenes' : 'Fizetős';
+    document.querySelector('#event-mode-icon').innerHTML = HOME_MODE_ICONS[homeEventMode];
+    document.querySelector('#event-mode-other-icon').innerHTML = HOME_MODE_ICONS[free ? 'paid' : 'free'];
+    const next = free ? 'fizetős' : 'ingyenes';
+    current.setAttribute('aria-label', `${free ? 'Ingyenes' : 'Fizetős'} programok, váltás ${next} programokra`);
+    toggle.setAttribute('aria-label', `Váltás ${next} programokra`);
+  };
+  const sweep = document.createElement('div');
+  sweep.className = 'mode-sweep';
+  sweep.setAttribute('aria-hidden', 'true');
+  const sweepCloud = document.createElement('span');
+  sweep.append(sweepCloud);
+  document.body.append(sweep);
+  let sweepAnimation;
+  let contentSwapTimer;
+  const change = () => {
+    homeEventMode = homeEventMode === 'paid' ? 'free' : 'paid';
+    calendarSelectedDate = '';
+    sync();
+    sweepAnimation?.cancel();
+    clearTimeout(contentSwapTimer);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      sweepAnimation = sweepCloud.animate([
+        { transform: 'translate(-68%, -68%) scale(.72)', opacity: 0 },
+        { transform: 'translate(-48%, -48%) scale(.96)', opacity: .82, offset: .08 },
+        { transform: 'translate(-10%, -10%) scale(1.48)', opacity: 1, offset: .2 },
+        { transform: 'translate(8%, 8%) scale(1.5)', opacity: 1, offset: .58 },
+        { transform: 'translate(30%, 30%) scale(1.42)', opacity: .9, offset: .76 },
+        { transform: 'translate(72%, 72%) scale(1.08)', opacity: 0 }
+      ], { duration: 2000, easing: 'cubic-bezier(.22,.7,.2,1)' });
+      // Replace the event list behind the fully opaque part of the passing wave.
+      contentSwapTimer = setTimeout(renderEvents, 450);
+    } else {
+      renderEvents();
+    }
+  };
+  current.addEventListener('click', change);
+  toggle.addEventListener('click', change);
+  sync();
+  const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  chevron.setAttribute('viewBox', '0 0 24 24');
+  chevron.setAttribute('class', 'city-chevron');
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.innerHTML = '<path d="m6 9 6 6 6-6"/>';
+  document.querySelector('#city-selector').append(chevron);
+}
 
 // External SVG documents isolate gradient/filter IDs and keep the detailed artwork cacheable.
 const UI_ICON_ASSETS = Object.freeze({
@@ -564,28 +623,24 @@ function updatePointsCounter() {
 function setupPointsCounterVisibility() {
   if (!pointsCounterControl) return;
   let frame = 0;
-  let lockedHidden = false;
+  let pointsVisible = false;
   const update = () => {
     frame = 0;
     const scrollY = window.scrollY;
+    const isHome = currentAppView === 'home';
     const featuredTop = featuredTitle
       ? featuredTitle.getBoundingClientRect().top + scrollY
       : featuredSection
         ? featuredSection.getBoundingClientRect().top + scrollY
       : 420;
-    // Keep the chip steady until the featured heading is about to enter its
-    // vertical space. It then makes one short, proportional exit.
-    const chipClearance = pointsCounterControl.getBoundingClientRect().height + 22;
-    const fadeEnd = Math.max(0, featuredTop - chipClearance);
-    const fadeStart = Math.max(0, fadeEnd - 56);
-    if (scrollY >= fadeEnd) lockedHidden = true;
-    if (scrollY <= 24) lockedHidden = false;
-    const progress = lockedHidden
-      ? 1
-      : Math.max(0, Math.min(1, (scrollY - fadeStart) / Math.max(1, fadeEnd - fadeStart)));
-    pointsCounterControl.style.opacity = String(1 - progress);
-    pointsCounterControl.style.transform = `translateY(${-progress * 6}px) scale(${1 - progress * .24})`;
-    pointsCounterControl.classList.toggle('is-scroll-hidden', progress >= 0.985);
+    // On home, reveal it only once the featured title reaches the top area.
+    // Other app views keep the counter available from the start.
+    const revealAt = Math.max(0, featuredTop - 28);
+    const hideAt = Math.max(0, featuredTop - 68);
+    if (!isHome) pointsVisible = true;
+    else if (!pointsVisible && scrollY >= revealAt) pointsVisible = true;
+    else if (pointsVisible && scrollY <= hideAt) pointsVisible = false;
+    pointsCounterControl.classList.toggle('is-visible', pointsVisible);
   };
   const schedule = () => {
     if (frame) return;
@@ -942,7 +997,7 @@ function appViewFromUrl() {
 function applyAppView(view, { scroll = true } = {}) {
   currentAppView = ['search', 'permanent', 'favorites', 'profile'].includes(view) ? view : 'home';
   const isHome = currentAppView === 'home';
-  homeContent.forEach(element => { element.hidden = !isHome; });
+  homeContent.forEach(element => { if (element.hasAttribute('data-home-content')) element.hidden = !isHome; });
   const views = { search: searchView, permanent: permanentView, favorites: favoritesView, profile: profileView };
   Object.entries(views).forEach(([name, element]) => { if (element) element.hidden = name !== currentAppView; });
   findAll('.bottom-nav-button', bottomNavigation).forEach(button => {
@@ -957,6 +1012,7 @@ function applyAppView(view, { scroll = true } = {}) {
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
   lastFavoritesScrollY = window.scrollY;
   updateFavoritesToTopButton();
+  window.dispatchEvent(new Event('scroll'));
 }
 
 function navigateToAppView(view) {
@@ -1845,11 +1901,25 @@ function renderCard(event, target, { compact = false } = {}) {
     triggerBounce(detailsButton);
     openEventDetails(event, detailsButton);
   });
+  detailsButton?.remove();
 
   const favoriteButton = find('.favorite-button', fragment);
   if (card && favoriteButton) {
     let lastTap = 0;
     let pointerStart = null;
+    let openTimer = 0;
+    const openCardDetails = () => {
+      if (openTimer) clearTimeout(openTimer);
+      openTimer = window.setTimeout(() => {
+        openTimer = 0;
+        card.dataset.interacted = 'true';
+        openEventDetails(event, null);
+      }, 160);
+    };
+    card.addEventListener('click', input => {
+      if (input.target.closest('button, a, textarea, input')) return;
+      openCardDetails();
+    });
     card.addEventListener('pointerdown', input => {
       pointerStart = { x: input.clientX, y: input.clientY };
     }, { passive: true });
@@ -1860,6 +1930,8 @@ function renderCard(event, target, { compact = false } = {}) {
       }
       const now = performance.now();
       if (lastTap && now - lastTap < 350) {
+        if (openTimer) clearTimeout(openTimer);
+        openTimer = 0;
         if (!favoriteIds.has(key)) favoriteButton.click();
         lastTap = 0;
       } else lastTap = now;
@@ -1868,13 +1940,18 @@ function renderCard(event, target, { compact = false } = {}) {
     card.addEventListener('dblclick', input => {
       if (input.target.closest('button, a, textarea, input') || favoriteIds.has(key)) return;
       input.preventDefault();
+      if (openTimer) clearTimeout(openTimer);
+      openTimer = 0;
       favoriteButton.click();
     });
   }
   if (favoriteButton) {
     favoriteButton.dataset.eventKey = key;
     syncFavoriteButton(favoriteButton, favoriteIds.has(key));
-    favoriteButton.addEventListener('click', () => toggleFavoriteForEvent(event, favoriteButton, card));
+    favoriteButton.addEventListener('click', input => {
+      input.stopPropagation();
+      toggleFavoriteForEvent(event, favoriteButton, card);
+    });
   }
   if (event.Permanent && card) {
     if (!event['Age Requirement']) find('.age-badge', card).hidden = true;
@@ -1889,6 +1966,14 @@ function renderCard(event, target, { compact = false } = {}) {
   }
   target.append(fragment);
   if (card?.classList.contains('featured-card')) fitFeaturedDescription(card);
+  window.requestAnimationFrame(() => {
+    const title = find('.event-title', card);
+    if (!title) return;
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    const lineCount = [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0).length;
+    title.classList.toggle('is-single-line-title', lineCount <= 1);
+  });
   window.requestAnimationFrame(() => refreshLocationOverflowCue(find('.inline-location-value', card)));
   if (card) eventVisibilityObserver?.observe(card);
   window.requestAnimationFrame(() => positionDetailsButton(card));
@@ -2034,7 +2119,8 @@ function createEventGroup(target, title, items, id) {
   const group = document.createElement('section');
   group.className = 'event-group';
   const icon = EVENT_GROUP_ICONS[title] || '';
-  group.innerHTML = `<div class="event-group-header"><h3>${title}${icon ? ` <span class="event-group-emoji" aria-hidden="true">${uiIconMarkup(icon)}</span>` : ''}</h3></div><div class="filter-bar event-group-filters" aria-label="${title} események kategóriaszűrői"></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
+  const hidePriceTitle = title === 'Fizetős' || title === 'Ingyenes';
+  group.innerHTML = `<div class="event-group-header"${hidePriceTitle ? ' hidden' : ''}><h3>${title}${icon ? ` <span class="event-group-emoji" aria-hidden="true">${uiIconMarkup(icon)}</span>` : ''}</h3></div><div class="filter-bar event-group-filters" aria-label="${title} események kategóriaszűrői"></div><div id="${id}" class="events-grid event-carousel" tabindex="0" aria-label="${title}"></div>`;
   target.append(group);
   const carousel = find(`#${id}`, group);
   const filters = find('.event-group-filters', group);
@@ -2097,7 +2183,7 @@ function createEventGroup(target, title, items, id) {
 
 function renderFeatured() {
   if (!featuredGrid || !featuredSection) return;
-  const upcomingFeatured = events.filter(event => isFeatured(event) && !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)));
+  const upcomingFeatured = events.filter(event => matchesHomeMode(event) && isFeatured(event) && !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)));
   const featured = position
     ? sortByDistance(upcomingFeatured)
     : upcomingFeatured.sort((first, second) => (first['Date and Time'] || '').localeCompare(second['Date and Time'] || ''));
@@ -2365,7 +2451,7 @@ function renderToday() {
   if (!todayGrid || !todaySection) return;
   const target = quickCalendarTarget();
   const matching = position
-    ? sortByDistance(events.filter(event => !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
+    ? sortByDistance(events.filter(event => matchesHomeMode(event) && !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
     : [];
   if (todayEyebrow) todayEyebrow.textContent = target.label === 'mai' ? 'MAI TERV' : 'HOLNAPI TERV';
   if (todayTitle) todayTitle.textContent = target.label === 'mai' ? 'Mai események' : 'Holnapi események';
@@ -2377,7 +2463,7 @@ function renderToday() {
 
 function calendarEventsForSelection() {
   return events
-    .filter(event => !isPastEvent(event))
+    .filter(event => !isPastEvent(event) && matchesHomeMode(event))
     .filter(event => (!calendarCategory || eventCategories(event).includes(calendarCategory)))
     .filter(event => !calendarSelectedDate || dateKey(eventDateValue(event)) === calendarSelectedDate);
 }
@@ -2431,7 +2517,7 @@ function renderCalendar() {
   const month = calendarMonth.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const categoryEvents = events.filter(event => !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
+  const categoryEvents = events.filter(event => matchesHomeMode(event) && !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
   const datesWithEvents = new Set(categoryEvents.map(event => dateKey(eventDateValue(event))).filter(Boolean));
   const datesWithFavorites = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
@@ -2618,8 +2704,7 @@ function renderEvents() {
     empty.append(message, hint, recommendation);
     grid.append(empty);
   } else {
-    createEventGroup(grid, 'Ingyenes', visible.filter(isFree), 'free-events');
-    createEventGroup(grid, 'Fizetős', visible.filter(event => !isFree(event)), 'paid-events');
+    createEventGroup(grid, homeEventMode === 'free' ? 'Ingyenes' : 'Fizetős', visible.filter(matchesHomeMode), homeEventMode === 'free' ? 'free-events' : 'paid-events');
   }
   renderFavorites();
   renderToday();
@@ -3100,6 +3185,7 @@ function init() {
   setupNavigationMenu();
   setupQuickNavigation();
   setupFavoritesToTop();
+  setupHomeMode();
   setupPointsCounterVisibility();
   setupEventsRefresh();
   setupCityChooser();
