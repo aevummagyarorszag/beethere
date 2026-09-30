@@ -1,0 +1,162 @@
+/* Home filters: original 240ms fade, regular labels, current slate palette. */
+#events-grid .event-group-filters {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  isolation: isolate;
+}
+
+#events-grid .event-group-filters .filter-button {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  overflow: visible;
+  border: 1px solid rgba(30, 41, 59, .11) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.05)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 8px 24px rgba(15,23,42,.16) !important;
+  color: #1e293b !important;
+  font: 400 16px/1.55 var(--font-sans) !important;
+  backdrop-filter: blur(22px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+  text-align: left !important;
+  opacity: 1;
+  transform: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 240ms ease, background 240ms ease,
+    border-color 240ms ease, color 240ms ease !important;
+}
+
+#events-grid .event-group-filters .filter-button:active {
+  transform: none !important;
+}
+
+#events-grid .event-group-filters .filter-button .category-icon,
+#events-grid .event-group-filters .filter-button svg {
+  flex: 0 0 auto;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+#events-grid .event-group-filters.has-selection .filter-button,
+#events-grid .filter-bar.has-selection .event-group-filters .filter-button {
+  opacity: .45 !important;
+}
+
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters.has-selection .filter-button.active:hover,
+#events-grid .event-group-filters.has-selection .filter-button.active,
+#events-grid .filter-bar.has-selection .event-group-filters .filter-button.active {
+  color: #fff !important;
+  opacity: 1 !important;
+  background: #1e293b !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 18px rgba(30,41,59,.24) !important;
+  font-weight: 400 !important;
+}
+
+#events-grid .event-group-filters .gooey-filter {
+  position: absolute !important;
+  z-index: 1 !important;
+  display: block !important;
+  visibility: visible !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #1e293b !important;
+  box-shadow: 0 7px 18px rgba(15, 23, 42, .18) !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: left 360ms cubic-bezier(.22, 1, .36, 1),
+    top 360ms cubic-bezier(.22, 1, .36, 1),
+    width 360ms cubic-bezier(.22, 1, .36, 1),
+    height 360ms cubic-bezier(.22, 1, .36, 1),
+    opacity 150ms ease !important;
+}
+
+#events-grid .event-group-filters .gooey-filter[hidden] {
+  display: none !important;
+}
+
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button {
+  color: #fff !important;
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button,
+html[data-theme="dark"] #events-grid .filter-bar.has-selection .event-group-filters .filter-button {
+  background: rgba(255, 255, 255, .045) !important;
+}
+
+html[data-theme="dark"] #events-grid .event-group-filters .gooey-filter {
+  background: #334155 !important;
+}
+
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active:hover,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active {
+  background: #334155 !important;
+  color: #fff !important;
+}
+
+/* Keep inherited hover/selection rules from changing the original label weight. */
+#events-grid .event-group-filters .filter-button > span:first-child {
+  font-weight: 400 !important;
+}
+
+/* The calendar uses the same six category choices as the home rails. */
+#calendar-filters .filter-button {
+  transition: opacity 240ms ease, background 240ms ease,
+    border-color 240ms ease, color 240ms ease !important;
+  font-weight: 400 !important;
+}
+#calendar-filters.has-selection .filter-button:not(.active) {
+  opacity: .45 !important;
+}
+#calendar-filters .filter-button.active,
+#calendar-filters.has-selection .filter-button.active:hover {
+  opacity: 1 !important;
+  background: #1e293b !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 18px rgba(30,41,59,.24) !important;
+  color: #fff !important;
+  font-weight: 400 !important;
+}
+#calendar-filters .filter-button > span:first-child {
+  font-weight: 400 !important;
+}
+html[data-theme="dark"] #calendar-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active:hover {
+  background: #334155 !important;
+  color: #fff !important;
+}
+
+@media (max-width: 370px) {
+  #events-grid .event-group-filters {
+    gap: 6px !important;
+  }
+
+  #events-grid .event-group-filters .filter-button {
+    min-height: 48px !important;
+    padding-inline: 7px !important;
+    gap: 5px !important;
+    font-size: 14px !important;
+  }
+
+  #events-grid .event-group-filters .filter-button .category-icon,
+  #events-grid .event-group-filters .filter-button svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
