@@ -7,9 +7,9 @@ body::before {
   top: -72px; left: -18%; width: 136%; height: 260px;
   border-radius: 0 0 48% 52% / 0 0 58% 62%;
   background:
-    radial-gradient(ellipse 42% 76% at 8% 4%, color-mix(in srgb, var(--mode-color) 100%, transparent) 0 36%, transparent 72%),
-    radial-gradient(ellipse 48% 82% at 52% -2%, color-mix(in srgb, var(--mode-color) 92%, transparent) 0 34%, transparent 73%),
-    radial-gradient(ellipse 42% 72% at 94% 7%, color-mix(in srgb, var(--mode-color) 82%, transparent) 0 32%, transparent 72%);
+    radial-gradient(ellipse 42% 76% at 8% 4%, rgb(255 255 255 / .96) 0 36%, transparent 72%),
+    radial-gradient(ellipse 48% 82% at 52% -2%, rgb(255 255 255 / .88) 0 34%, transparent 73%),
+    radial-gradient(ellipse 42% 72% at 94% 7%, rgb(255 255 255 / .72) 0 32%, transparent 72%);
   background-size: 115% 100%, 125% 105%, 115% 100%;
   filter: blur(10px) saturate(112%);
   mask-image: radial-gradient(ellipse 92% 100% at 50% 0%, #000 0 58%, rgba(0,0,0,.9) 66%, rgba(0,0,0,.35) 82%, transparent 100%);
@@ -48,9 +48,10 @@ body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); overflow-x
 .event-mode-bar svg { display: block; width: 28px; height: 28px; fill: currentColor; }
 .event-mode-current {
   gap: 10px; min-height: 52px; padding: 12px 22px; border-radius: 999px;
-  background: var(--mode-color); color: #FFFFFF; font: 600 18px/1.3 var(--font-sans);
+  background: #FFFFFF; color: #1E293B; font: 600 18px/1.3 var(--font-sans);
   transition: background 70ms linear, transform 120ms ease;
 }
+.event-mode-current #event-mode-icon { color: var(--mode-color); }
 .event-mode-toggle { width: 52px; height: 52px; padding: 12px; border-radius: 50%; background: #FFFFFF; color: #10B981; }
 body[data-event-mode="free"] .event-mode-toggle { color: #2563EB; }
 .event-mode-bar button:active { transform: scale(.96); }
@@ -58,12 +59,17 @@ body[data-event-mode="free"] .event-mode-toggle { color: #2563EB; }
 .quick-navigation:hover,
 .quick-navigation::before,
 .quick-navigation::after { background: transparent !important; background-image: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-.quick-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 3px; }
+.quick-navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 0;
+}
 .home-section-divider {
   height: 1px;
-  /* Close to the city row without touching its type. */
-  margin-top: -26px;
-  margin-bottom: 0;
+  margin-top: 4px;
+  margin-bottom: 20px;
   background: rgba(30, 41, 59, .15);
 }
 .quick-navigation #city-selector,
@@ -80,7 +86,129 @@ body[data-event-mode="free"] .event-mode-toggle { color: #2563EB; }
 #city-selector .location-icon { width: 25px; height: 25px; fill: currentColor; }
 #city-selector-label { display: block; padding-block: 2px; font-size: 14px; font-weight: 600; line-height: 1.35; }
 #city-selector .city-chevron { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
-.quick-navigation .quick-weather { width: auto; min-width: 0; min-height: 44px; padding: 8px 12px; background: #FFFFFF; border: 0; box-shadow: none; }
+.quick-navigation .quick-weather {
+  display: inline-flex;
+  position: static;
+  width: auto;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  transform: none;
+}
+.quick-navigation .quick-weather span { font-size: 20px; line-height: 1; }
+.quick-navigation #quick-weather { font: 600 14px/1.35 var(--font-sans); }
+.quick-navigation .quick-date {
+  margin-left: auto;
+  justify-self: end;
+  color: #111827;
+  font: 600 14px/1.35 var(--font-sans);
+  white-space: nowrap;
+}
+
+/* Browse topics as a compact horizontal rail, following the reference layout. */
+#category-filters,
+#events-grid .event-group-filters,
+#calendar-filters {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 2px 0 10px !important;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+#category-filters::-webkit-scrollbar,
+#events-grid .event-group-filters::-webkit-scrollbar,
+#calendar-filters::-webkit-scrollbar { display: none; }
+#category-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+#calendar-filters .filter-button {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-height: 44px !important;
+  min-width: max-content !important;
+  gap: 8px !important;
+  padding: 9px 13px !important;
+  border: 1px solid rgb(30 41 59 / .13) !important;
+  border-radius: 14px !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 1px 3px rgb(30 41 59 / .05) !important;
+  color: #1E293B !important;
+  font: 600 14px/1.2 var(--font-sans) !important;
+  scroll-snap-align: start;
+  opacity: 1 !important;
+  transform: none !important;
+}
+#category-filters .filter-button .filter-emoji,
+#events-grid .event-group-filters .filter-button .filter-emoji,
+#calendar-filters .filter-button .filter-emoji {
+  display: inline-flex;
+  width: 21px;
+  height: 21px;
+  align-items: center;
+  justify-content: center;
+}
+#category-filters .filter-button .ui-icon,
+#events-grid .event-group-filters .filter-button .ui-icon,
+#calendar-filters .filter-button .ui-icon {
+  width: 21px !important;
+  height: 21px !important;
+  filter: none !important;
+}
+#category-filters.has-selection .filter-button:not(.active),
+#events-grid .event-group-filters.has-selection .filter-button:not(.active),
+#calendar-filters.has-selection .filter-button:not(.active) { opacity: .46 !important; }
+#category-filters .filter-button.active,
+#category-filters .filter-button.active:hover,
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters .filter-button.active:hover,
+#calendar-filters .filter-button.active,
+#calendar-filters .filter-button.active:hover,
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #1E293B !important;
+  box-shadow: 0 0 0 2px rgb(30 41 59 / .11), 0 3px 8px rgb(30 41 59 / .08) !important;
+}
+
+/* The permanent-program icon follows the navigation scale with softly rounded artwork bounds. */
+.bottom-nav-icon.permanent-nav-icon {
+  display: block;
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  clip-path: inset(0 round 5px);
+}
+html[data-theme="dark"] .bottom-nav-icon.permanent-nav-icon { filter: brightness(0) invert(1); }
+#category-filters .gooey-filter,
+#events-grid .event-group-filters .gooey-filter { display: none !important; }
+html[data-theme="dark"] #category-filters .filter-button,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button,
+html[data-theme="dark"] #calendar-filters .filter-button {
+  background: #334155 !important;
+  border-color: rgb(248 250 252 / .16) !important;
+  color: #F8FAFC !important;
+}
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: #FFFFFF !important;
+}
 .points-counter {
   position: fixed !important;
   z-index: 1000;
@@ -116,6 +244,150 @@ body[data-event-mode="free"] .event-mode-toggle { color: #2563EB; }
   border-bottom: 1px solid rgba(30, 41, 59, .15);
 }
 .all-events { margin-top: 16px; }
+#featured-grid {
+  padding-bottom: 0;
+  scrollbar-width: none !important;
+}
+#featured-grid::-webkit-scrollbar { display: none !important; width: 0; height: 0; }
+#featured-section .carousel-return { display: none !important; }
+#events-grid .event-group { margin-top: 16px; }
+#events-grid .event-group:first-child { margin-top: 0; }
+#events-grid .event-group-filters { margin-bottom: 10px; }
+.calendar-section { margin-top: 24px; }
+.calendar-shell,
+html[data-theme="dark"] .calendar-shell {
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.calendar-day.today {
+  outline: 0;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#F5F5F7, #F5F5F7) padding-box,
+    linear-gradient(125deg, #2563EB, #10B981, #60A5FA, #10B981, #2563EB) border-box;
+  background-size: 100% 100%, 280% 280%;
+  color: #1E293B;
+  animation: calendar-today-border 6.5s ease-in-out infinite;
+}
+#category-filters .filter-button.active .ui-icon,
+#events-grid .event-group-filters .filter-button.active .ui-icon,
+#calendar-filters .filter-button.active .ui-icon {
+  filter: none !important;
+}
+
+/* Final selected-state override: the outline matches the category icon and has no layout or motion change. */
+#category-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+#calendar-filters .filter-button {
+  border: 2px solid transparent !important;
+  background: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgb(30 41 59 / .12) !important;
+}
+html[data-theme="dark"] #category-filters .filter-button,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button,
+html[data-theme="dark"] #calendar-filters .filter-button {
+  background: #334155 !important;
+  color: #F8FAFC !important;
+  box-shadow: inset 0 0 0 1px rgb(248 250 252 / .16) !important;
+}
+#category-filters .filter-button.active,
+#category-filters .filter-button.active:hover,
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters .filter-button.active:hover,
+#calendar-filters .filter-button.active,
+#calendar-filters .filter-button.active:hover,
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  border-color: var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Calendar selection has the same specificity as its legacy state rules. */
+#calendar-filters.has-selection .filter-button.active,
+#calendar-filters.has-selection .filter-button.active:hover,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active:hover {
+  border: 2px solid var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+#calendar-filters.has-selection .filter-button.active .ui-icon,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active .ui-icon { filter: none !important; }
+
+/* Reserve the same border width for every button, so selecting it never shifts the rail. */
+#category-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+#calendar-filters .filter-button {
+  border: 2px solid transparent !important;
+  background: #FFFFFF !important;
+  box-shadow: inset 0 0 0 1px rgb(30 41 59 / .12) !important;
+}
+html[data-theme="dark"] #category-filters .filter-button,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button,
+html[data-theme="dark"] #calendar-filters .filter-button {
+  background: #334155 !important;
+  color: #F8FAFC !important;
+  box-shadow: inset 0 0 0 1px rgb(248 250 252 / .16) !important;
+}
+#category-filters .filter-button.active,
+#category-filters .filter-button.active:hover,
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters .filter-button.active:hover,
+#calendar-filters .filter-button.active,
+#calendar-filters .filter-button.active:hover,
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  border-color: var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+@keyframes calendar-today-border {
+  0%, 100% { background-position: 0 0, 0% 50%; }
+  22% { background-position: 0 0, 62% 18%; }
+  48% { background-position: 0 0, 100% 78%; }
+  71% { background-position: 0 0, 36% 100%; }
+}
+.calendar-day.selected,
+.calendar-day.selected:hover,
+.calendar-day.selected:focus-visible {
+  border-color: rgba(30, 41, 59, .16);
+  background: #FFFFFF;
+  box-shadow: none;
+  color: #1E293B;
+}
+.calendar-day.today.selected {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#FFFFFF, #FFFFFF) padding-box,
+    linear-gradient(125deg, #2563EB, #10B981, #60A5FA, #10B981, #2563EB) border-box;
+  background-size: 100% 100%, 280% 280%;
+  animation: calendar-today-border 6.5s ease-in-out infinite;
+}
+html[data-theme="dark"] .calendar-day.today {
+  background:
+    linear-gradient(#0F172A, #0F172A) padding-box,
+    linear-gradient(125deg, #60A5FA, #10B981, #93C5FD, #10B981, #60A5FA) border-box;
+  color: #F8FAFC;
+}
+html[data-theme="dark"] .calendar-day.selected { background: #FFFFFF; color: #1E293B; }
 .event-card .event-title,
 .event-card .event-description {
   display: -webkit-box;
@@ -131,34 +403,53 @@ body[data-event-mode="free"] .event-mode-toggle { color: #2563EB; }
 }
 .event-card .event-location { justify-content: flex-start; }
 .event-card .event-location-value { min-width: 0; }
-.event-card:not(.featured-card) .event-content { padding-bottom: 16px; }
-.event-card:not(.featured-card) .event-title {
-  min-height: 2.5em;
-  margin: 8px 0;
-  line-height: 1.25;
+.event-card:not(.featured-card) .event-content {
+  display: grid;
+  grid-template-rows: 2.5em auto 2.9em;
+  row-gap: 8px;
+  padding-bottom: 16px;
 }
-.event-card:not(.featured-card) .event-title.is-single-line-title { transform: translateY(1.25em); }
+.event-card:not(.featured-card) .event-title {
+  min-height: 0;
+  max-height: 2.5em;
+  margin: 0;
+  line-height: 1.25;
+  align-self: end;
+}
+.event-card:not(.featured-card) .event-title.is-single-line-title { transform: none; }
+.event-card:not(.featured-card) .event-meta { align-self: center; }
 .event-card:not(.featured-card) .event-description {
-  min-height: 2.9em;
+  min-height: 0;
+  height: 2.9em;
   margin: 0;
   line-height: 1.45;
+  align-self: start;
 }
 /* Cards themselves are the detail affordance; the dedicated action is no longer shown. */
 .event-card .details-button { display: none !important; }
 .featured-grid .featured-card .event-title {
   display: -webkit-box;
-  min-height: 2.4em;
+  min-height: 0;
+  max-height: 2.4em;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-.featured-grid .featured-card .event-title.is-single-line-title { transform: translateY(1.2em); }
+.featured-grid .featured-card .event-title.is-single-line-title { transform: none; }
 .featured-grid .featured-card .event-description {
   height: auto;
-  min-height: 3em;
+  min-height: 0;
+  height: 3em;
   max-height: none;
   -webkit-line-clamp: 2 !important;
 }
+.featured-grid .featured-card .event-content {
+  grid-template-rows: 2.4em auto minmax(0, 1fr);
+  padding: 20px 16px 18px;
+}
+.featured-grid .featured-card .event-title { align-self: end; }
+.featured-grid .featured-card .event-meta { align-self: center; }
+.featured-grid .featured-card .event-description { align-self: end; }
 /* Let the photo dissolve into the application canvas rather than whitening it. */
 .featured-grid .featured-card .event-content::before {
   background: linear-gradient(to bottom, rgb(245 245 247 / 0) 0%, #F5F5F7 38%, #F5F5F7 100%);
@@ -175,6 +466,7 @@ html[data-theme="dark"] #featured-section { border-bottom-color: rgba(248, 250, 
   .featured-grid .event-card.featured-card {
     /* Match the card's right edge to the left content edge. */
     flex-basis: calc(100dvw - 36px);
+    height: clamp(410px, 112vw, 460px);
   }
 }
 /* Keep swipe navigation, but remove the progress scrollbar below event rows. */
@@ -213,6 +505,8 @@ html[data-theme="dark"] .event-card {
 /* Keep the existing dark theme readable while using the new white controls. */
 html[data-theme="dark"] body { background: #0F172A; }
 html[data-theme="dark"] .quick-navigation #city-selector { color: #F5F5F7; }
+html[data-theme="dark"] .quick-navigation .quick-weather { color: #F5F5F7; }
+html[data-theme="dark"] .quick-navigation .quick-date { color: #F5F5F7; }
 html[data-theme="dark"] .home-section-divider { background: rgba(248, 250, 252, .16); }
 html[data-theme="dark"] .points-counter { background: #334155; color: #F8FAFC; }
 html[data-theme="dark"] .points-counter .points-icon { filter: brightness(0); }
@@ -229,7 +523,506 @@ html[data-theme="dark"] #calendar-filters .filter-button.active,
 html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active:hover {
   background: #FFFFFF !important; color: #1E293B !important; box-shadow: none !important;
 }
+
+/* A filter must visibly communicate that it is shaping the feed. */
+#events-grid .event-group-filters.has-selection .filter-button.active,
+#events-grid .event-group-filters.has-selection .filter-button.active:hover,
+#calendar-filters.has-selection .filter-button.active,
+#calendar-filters.has-selection .filter-button.active:hover,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active:hover,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active:hover {
+  background: #1E293B !important;
+  color: #FFFFFF !important;
+  border-color: #1E293B !important;
+  box-shadow: 0 5px 14px rgb(30 41 59 / .16) !important;
+}
+#events-grid .event-group-filters.has-selection .filter-button.active .filter-emoji,
+#events-grid .event-group-filters.has-selection .filter-button.active .ui-icon,
+#calendar-filters.has-selection .filter-button.active .filter-emoji,
+#calendar-filters.has-selection .filter-button.active .ui-icon,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active .filter-emoji,
+html[data-theme="dark"] #events-grid .event-group-filters.has-selection .filter-button.active .ui-icon,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active .filter-emoji,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active .ui-icon {
+  color: #FFFFFF;
+  filter: brightness(0) invert(1);
+}
+
+/* Event cards are direct detail controls now; give touch and keyboard users feedback. */
+.event-card[role="button"],
+.event-card[tabindex] { cursor: pointer; }
+.event-card:not(.featured-card) .image-wrap,
+.featured-grid .featured-card .image-wrap,
+.event-card .event-content {
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+.event-card:not(.featured-card):active .image-wrap,
+.featured-grid .featured-card:active .image-wrap { transform: scale(.985); }
+.event-card:focus-visible {
+  outline: 3px solid rgb(30 41 59 / .48);
+  outline-offset: 4px;
+  border-radius: 24px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-card:not(.featured-card) .image-wrap,
+  .featured-grid .featured-card .image-wrap,
+  .event-card .event-content { transition: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
   .event-mode-bar button { transition: none; }
+}
+
+/* Two compact rows preserve the category overview while allowing a horizontal browse rail. */
+#category-filters,
+#events-grid .event-group-filters,
+#calendar-filters {
+  display: grid !important;
+  grid-template-columns: none !important;
+  grid-template-rows: repeat(2, 44px) !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: max-content !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  align-items: start !important;
+  column-gap: 10px !important;
+  row-gap: 8px !important;
+  padding-bottom: 10px !important;
+}
+#category-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+#calendar-filters .filter-button {
+  height: 44px !important;
+  min-height: 44px !important;
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+}
+
+/* Each row packs its own labels, so a long button never creates a gap above it. */
+#category-filters,
+#events-grid .event-group-filters,
+#calendar-filters {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  gap: 8px !important;
+  padding: 2px 0 10px !important;
+}
+.category-filter-row {
+  display: flex;
+  width: max-content;
+  gap: 10px;
+  min-width: max-content;
+}
+
+/* A selected topic keeps its white fill; only the animated calendar-style border signals state. */
+#category-filters .filter-button.active,
+#category-filters .filter-button.active:hover,
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters .filter-button.active:hover,
+#calendar-filters .filter-button.active,
+#calendar-filters .filter-button.active:hover,
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  border: 2px solid transparent !important;
+  background:
+    linear-gradient(#FFFFFF, #FFFFFF) padding-box,
+    linear-gradient(125deg, #2563EB, #10B981, #60A5FA, #10B981, #2563EB) border-box !important;
+  background-size: 100% 100%, 280% 280% !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: calendar-today-border 6.5s ease-in-out infinite;
+}
+
+/* Keep the category artwork colorful after earlier selection rules. */
+#category-filters .filter-button.active .ui-icon,
+#events-grid .event-group-filters .filter-button.active .ui-icon,
+#calendar-filters .filter-button.active .ui-icon {
+  filter: none !important;
+}
+
+/* Final selected-state override: icon-colored outline without an animated or resizing button. */
+#category-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+#calendar-filters .filter-button { border: 2px solid transparent !important; background: #FFFFFF !important; box-shadow: none !important; }
+html[data-theme="dark"] #category-filters .filter-button,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button,
+html[data-theme="dark"] #calendar-filters .filter-button { background: #334155 !important; color: #F8FAFC !important; box-shadow: none !important; }
+#category-filters .filter-button.active,
+#category-filters .filter-button.active:hover,
+#events-grid .event-group-filters .filter-button.active,
+#events-grid .event-group-filters .filter-button.active:hover,
+#calendar-filters .filter-button.active,
+#calendar-filters .filter-button.active:hover,
+html[data-theme="dark"] #category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  border-color: var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Final calendar parity: overrides the older filled selected state. */
+#calendar-filters.has-selection .filter-button.active,
+#calendar-filters.has-selection .filter-button.active:hover,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active:hover {
+  border: 2px solid var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+#calendar-filters.has-selection .filter-button.active .ui-icon,
+html[data-theme="dark"] #calendar-filters.has-selection .filter-button.active .ui-icon {
+  filter: none !important;
+}
+
+/* Shared home and calendar category rail — identical structure and selected state. */
+.shared-category-filters {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding: 2px 0 10px !important;
+  scrollbar-width: none;
+}
+.shared-category-filters::-webkit-scrollbar { display: none; }
+.shared-category-filters .category-filter-row { display: flex; width: max-content; min-width: max-content; gap: 10px; }
+.shared-category-filters .filter-button {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  max-width: none !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  gap: 8px !important;
+  padding: 9px 13px !important;
+  border: 2px solid transparent !important;
+  border-radius: 14px !important;
+  background: #FFFFFF !important;
+  box-shadow: none !important;
+  color: #1E293B !important;
+  font: 600 14px/1.2 var(--font-sans) !important;
+  white-space: nowrap !important;
+  transform: none !important;
+  animation: none !important;
+}
+.shared-category-filters.has-selection .filter-button:not(.active) { opacity: .46 !important; }
+.shared-category-filters .filter-button.active,
+.shared-category-filters .filter-button.active:hover {
+  border-color: var(--category-color, #1E293B) !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: #1E293B !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.shared-category-filters .filter-button .ui-icon,
+.shared-category-filters .filter-button.active .ui-icon { width: 21px !important; height: 21px !important; filter: none !important; }
+html[data-theme="dark"] .shared-category-filters .filter-button { background: #334155 !important; color: #F8FAFC !important; }
+html[data-theme="dark"] .shared-category-filters .filter-button.active,
+html[data-theme="dark"] .shared-category-filters .filter-button.active:hover { background: #FFFFFF !important; color: #1E293B !important; }
+
+/* Event-card reading order: title, date/location, then description. */
+.event-card:not(.featured-card) .event-content {
+  display: grid !important;
+  grid-template-areas: "title" "meta" "description" !important;
+  grid-template-rows: 2.5em auto 2.9em !important;
+  row-gap: 8px !important;
+}
+.event-card:not(.featured-card) .event-title { grid-area: title; align-self: start !important; }
+.event-card:not(.featured-card) .event-meta { grid-area: meta; align-self: center !important; }
+.event-card:not(.featured-card) .event-description { grid-area: description; align-self: start !important; margin: 0 !important; }
+.featured-grid .featured-card .event-meta,
+.featured-grid .featured-card .event-description { margin-inline: 0 !important; }
+.featured-grid .featured-card .event-description {
+  padding-left: 0 !important;
+  justify-self: stretch;
+  align-self: end !important;
+}
+
+/* Home feed order: featured events, All heading, shared filters, then the feed. */
+.all-events > .filter-bar.shared-category-filters { display: flex !important; margin: 0 0 14px !important; }
+.all-events-heading { margin: 0 0 10px !important; }
+.all-events-heading h2 { margin: 0; }
+#events-grid .event-group { margin-top: 0 !important; }
+#events-grid .event-group-filters { display: none !important; }
+.calendar-section { margin-top: 30px; }
+.calendar-section > .shared-category-filters { margin: 0 0 14px !important; }
+
+/* Featured events use the same clear reading order as the feed: image, title,
+   date/location, description. No image-to-content dissolve is used here. */
+.featured-grid .event-card.featured-card {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  background: transparent !important;
+}
+.featured-grid .featured-card .image-wrap {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 10 !important;
+  margin: 0 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+}
+.featured-grid .featured-card .event-image { width: 100%; height: 100% !important; }
+.featured-grid .featured-card .event-content {
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  grid-template-areas: "title" "meta" "description" !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 6px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 14px 0 0 !important;
+  overflow: visible !important;
+  color: #111827 !important;
+}
+.featured-grid .featured-card .event-content::before,
+.featured-grid .featured-card::before,
+.featured-grid .featured-card::after { display: none !important; content: none !important; }
+.featured-grid .featured-card .event-content > * { position: static !important; }
+.featured-grid .featured-card .event-title {
+  grid-area: title;
+  align-self: start !important;
+  min-height: 0 !important;
+  max-height: 2.4em !important;
+  margin: 0 !important;
+  color: #111827 !important;
+}
+.featured-grid .featured-card .event-meta { grid-area: meta; align-self: start !important; margin: 0 !important; }
+.featured-grid .featured-card .event-description {
+  grid-area: description;
+  align-self: start !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  color: #111827 !important;
+  line-height: 1.45 !important;
+}
+.featured-grid .featured-card .event-bottom,
+.featured-grid .featured-card .inline-details { display: none !important; }
+html[data-theme="dark"] .featured-grid .featured-card .event-content,
+html[data-theme="dark"] .featured-grid .featured-card .event-title,
+html[data-theme="dark"] .featured-grid .featured-card .event-meta,
+html[data-theme="dark"] .featured-grid .featured-card .event-description { color: #F8FAFC !important; }
+
+/* Fixed featured-card text slots keep the metadata row aligned across cards. */
+.featured-grid .featured-card .event-content {
+  grid-template-rows: 2.4em 1.55em 2.9em !important;
+  row-gap: 3px !important;
+  column-gap: 0 !important;
+}
+.featured-grid .featured-card .event-title {
+  align-self: end !important;
+  line-height: 1.2 !important;
+  -webkit-line-clamp: 2 !important;
+}
+.featured-grid .featured-card .event-meta {
+  align-self: center !important;
+  min-height: 1.55em !important;
+}
+.featured-grid .featured-card .event-description {
+  display: -webkit-box !important;
+  visibility: visible !important;
+  height: 2.9em !important;
+  max-height: 2.9em !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+/* One vertical rhythm for every event card: image, title, metadata, description. */
+.event-card:not(.featured-card) .event-content {
+  padding-top: 10px !important;
+  row-gap: 10px !important;
+}
+.featured-grid .featured-card .event-content {
+  padding-top: 20px !important;
+  row-gap: 10px !important;
+}
+
+/* Fixed text tracks: a one-line title sits on its second line, while metadata
+   stays in one predictable place on every card. */
+.event-card:not(.featured-card) .event-content {
+  grid-template-rows: 50px 26px 47px !important;
+  padding-top: 10px !important;
+  row-gap: 8px !important;
+}
+.event-card:not(.featured-card) .event-title { align-self: end !important; }
+.featured-grid .featured-card .event-content {
+  grid-template-rows: 58px 26px 47px !important;
+  padding-top: 10px !important;
+  row-gap: 8px !important;
+}
+.featured-grid .featured-card .event-title { align-self: end !important; }
+.featured-grid .featured-card .event-meta,
+.event-card:not(.featured-card) .event-meta { align-self: center !important; }
+.featured-grid .featured-card .event-description,
+.event-card:not(.featured-card) .event-description { align-self: start !important; }
+
+/* Featured-card distance remains on the image layer, independent of hidden badges. */
+.featured-grid .featured-card .image-wrap .featured-distance {
+  display: inline-flex !important;
+  position: absolute !important;
+  z-index: 3 !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 7px 10px !important;
+  border: 1px solid rgb(255 255 255 / .38) !important;
+  border-radius: 12px !important;
+  background: rgb(15 23 42 / .84) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 3px 12px rgb(0 0 0 / .18) !important;
+}
+.featured-grid .featured-card .image-wrap .featured-distance .distance-value { color: #FFFFFF !important; }
+
+/* Match the space below both home-feed dividers. */
+#featured-section { margin-top: -48px; }
+
+/* Balanced spacing after the header divider. */
+#featured-section { margin-top: -18px; }
+
+/* Calendar states use the same quiet black and divider-gray language. */
+.calendar-day.has-events {
+  border-color: rgb(30 41 59 / .16) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.calendar-day.today,
+.calendar-day.today.selected,
+.calendar-day.today:hover,
+.calendar-day.today:focus-visible {
+  outline: 0 !important;
+  border: 2px solid #111827 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #111827 !important;
+  animation: none !important;
+}
+.calendar-day.has-favorite .calendar-favorite-heart,
+.calendar-day.selected .calendar-favorite-heart {
+  color: rgb(30 41 59 / .28) !important;
+  opacity: 1 !important;
+}
+.calendar-day.has-favorite .calendar-favorite-heart .ui-icon { filter: grayscale(1) !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .favorite-button.is-heart-feedback {
+    animation: favorite-heart-glow 760ms cubic-bezier(.2,.82,.22,1) both !important;
+  }
+  .favorite-button.is-heart-feedback svg {
+    animation: favorite-heart-pop 760ms cubic-bezier(.2,.82,.22,1) both !important;
+    transform-origin: center;
+  }
+}
+@keyframes favorite-heart-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.38) rotate(-5deg); }
+  56% { transform: scale(.92) rotate(3deg); }
+  78% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@keyframes favorite-heart-glow {
+  0%, 100% { box-shadow: 0 5px 14px rgb(127 29 29 / .24); }
+  34% { box-shadow: 0 0 0 7px rgb(220 38 38 / .15), 0 8px 24px rgb(220 38 38 / .48); }
+  70% { box-shadow: 0 0 0 3px rgb(220 38 38 / .1), 0 6px 18px rgb(220 38 38 / .34); }
+}
+
+/* A selected calendar date receives a clean white fill. */
+.calendar-day.selected,
+.calendar-day.selected:hover,
+.calendar-day.selected:focus-visible {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #1E293B !important;
+}
+
+/* End-of-feed refresh: a compact circular action with pull-to-refresh feedback. */
+.events-refresh-wrap {
+  justify-content: center !important;
+  padding: 28px 0 calc(18px + env(safe-area-inset-bottom)) !important;
+}
+.events-refresh-button,
+.events-refresh-button:hover,
+.events-refresh-button.is-refreshed {
+  --refresh-pull-progress: 0;
+  display: grid !important;
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  padding: 0 !important;
+  place-items: center !important;
+  border: 1px solid rgb(30 41 59 / .14) !important;
+  border-radius: 50% !important;
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  box-shadow: 0 5px 14px rgb(15 23 42 / .08) !important;
+  opacity: calc(1 - var(--refresh-pull-progress) * .42) !important;
+  transform: scale(calc(1 - var(--refresh-pull-progress) * .22)) !important;
+  transition: opacity 120ms linear, transform 120ms ease, box-shadow 180ms ease !important;
+}
+.events-refresh-button img {
+  width: 25px !important;
+  height: 25px !important;
+  filter: brightness(0) saturate(100%) invert(13%) sepia(17%) saturate(1308%) hue-rotate(176deg) brightness(94%) contrast(93%);
+  transition: transform 120ms linear;
+}
+.events-refresh-button.is-pulling img { transform: rotate(calc(var(--refresh-pull-progress) * 320deg)); }
+.events-refresh-button.is-refreshed img { animation: refresh-button-spin 760ms cubic-bezier(.22,1,.36,1) both; }
+html[data-theme="dark"] .events-refresh-button,
+html[data-theme="dark"] .events-refresh-button:hover { background: #334155 !important; border-color: rgb(248 250 252 / .16) !important; }
+html[data-theme="dark"] .events-refresh-button img { filter: brightness(0) invert(1); }
+
+/* Values are set during the end-of-feed pull gesture. */
+.events-refresh-button,
+.events-refresh-button:hover,
+.events-refresh-button.is-refreshed {
+  --refresh-opacity: 1;
+  --refresh-scale: 1;
+  --refresh-rotation: 0deg;
+  opacity: var(--refresh-opacity) !important;
+  transform: scale(var(--refresh-scale)) !important;
+}
+.events-refresh-button.is-pulling img { transform: rotate(var(--refresh-rotation)) !important; }
+
+/* The calendar begins as a peer section, with the same divider rhythm. */
+.calendar-section {
+  border-top: 1px solid rgb(30 41 59 / .15) !important;
+  padding-top: 32px !important;
+}
+html[data-theme="dark"] .calendar-section { border-top-color: rgb(248 250 252 / .16) !important; }
+
+/* Only the featured image is rounded; text must never be clipped by its card shell. */
+.featured-grid .event-card.featured-card {
+  border-radius: 0 !important;
+  overflow: visible !important;
 }

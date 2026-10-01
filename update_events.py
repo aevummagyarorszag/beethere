@@ -4,6 +4,8 @@ import urllib.request
 
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSPfSI82U3LFTE93Wj_ZaGSqNHyxpmAXnnt6ixl2XBgqNUfHkbXZeS4TV_WEY3DB1mESAsRZRtOY8HZ/pub?output=csv"
 MEMORY_FILE = "events.json"
+# Google Sheets: use the optional "Aktuális" column for seasonal/editorial topics,
+# for example "Halloween". Separate multiple topics with commas.
 
 PRICE_OVERRIDES = {
     ("Deák Bill Blues Band – Rossz vér turné", "2026.10.17"): "8 800 Ft-tól",
@@ -51,6 +53,7 @@ def fetch_sheet_data():
                 "Header Image": (row.get("Header Image") or "").strip(),
                 "Ticket Link": (row.get("Ticket Link") or "").strip(),
                 "Category": (row.get("Category") or "").strip(),
+                "Current Topics": (row.get("Aktuális") or row.get("Aktualis") or row.get("Current Topics") or "").strip(),
                 "Featured": (row.get("Featured") or "").strip(),
             })
     return events

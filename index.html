@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
-  <link rel="stylesheet" href="home-redesign.css?v=20260930-23">
+  <link rel="stylesheet" href="home-redesign.css?v=20261001-35">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -30,10 +30,9 @@
       </div>
     </div>
   </header>
-  <button class="points-counter" type="button" aria-label="0 csillagpontod van" title="Pontjaid"><img class="points-icon" src="assets/icons/kid-star.svg" alt="" aria-hidden="true"><strong id="points-counter">0</strong></button>
-
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
     <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Válassz várost</span></button>
+    <time id="quick-date" class="quick-date" aria-label="Mai dátum"></time>
   </section>
   <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 
@@ -41,14 +40,15 @@
     <section id="featured-section" aria-labelledby="featured-title" aria-busy="true">
       <div class="section-heading featured-heading">
         <div>
-          <h2 id="featured-title">Kiemelt <span class="title-emoji" data-ui-icon="fire" aria-hidden="true"></span></h2>
+          <h2 id="featured-title">Kiemelt</h2>
         </div>
       </div>
       <div id="featured-grid" class="events-grid featured-grid event-carousel" tabindex="0" aria-label="Kiemelt események"><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article><article class="skeleton-card" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span></article></div>
     </section>
 
     <section class="all-events" aria-label="Események">
-      <div id="category-filters" class="filter-bar" aria-label="Kategóriaszűrők"></div>
+      <div class="section-heading all-events-heading"><div><h2>Összes</h2></div></div>
+      <div id="category-filters" class="filter-bar shared-category-filters" aria-label="Kategóriaszűrők"></div>
       <div id="events-grid" aria-live="polite"><div class="events-grid"><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article></div></div>
     </section>
 
@@ -73,8 +73,8 @@
     </section>
 
     <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-title">
-      <div class="section-heading"><div><h2 id="calendar-title">Naptár <span class="title-emoji" data-ui-icon="calendar" aria-hidden="true"></span></h2></div></div>
-      <div id="calendar-filters" class="filter-bar calendar-filter-bar" aria-label="Naptár kategóriaszűrői"></div>
+      <div class="section-heading"><div><h2 id="calendar-title">Naptár</h2></div></div>
+      <div id="calendar-category-filters" class="filter-bar calendar-filter-bar shared-category-filters" aria-label="Naptár kategóriaszűrői"></div>
       <div class="calendar-shell">
         <div class="calendar-toolbar"><button id="calendar-prev" class="calendar-nav-button" type="button" aria-label="Előző hónap">←</button><h3 id="calendar-month-label"></h3><button id="calendar-next" class="calendar-nav-button" type="button" aria-label="Következő hónap">→</button></div>
         <div class="calendar-weekdays" aria-hidden="true"><span>H</span><span>K</span><span>Sze</span><span>Cs</span><span>P</span><span>Szo</span><span>V</span></div>
@@ -84,9 +84,8 @@
     </section>
 
     <div class="events-refresh-wrap">
-      <button id="events-refresh" class="events-refresh-button" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></svg>
-        <span>Frissítés</span>
+      <button id="events-refresh" class="events-refresh-button" type="button" aria-label="Események frissítése" title="Események frissítése">
+        <img src="assets/icons/refresh.svg" alt="" aria-hidden="true">
       </button>
     </div>
 
@@ -161,7 +160,7 @@
       <section class="preference-group" data-preference-group="categories" data-selection="multiple">
         <div class="preference-heading"><h2>Milyen programokat szeretsz?</h2></div>
         <div class="preference-options filter-bar event-group-filters">
-          <button class="filter-button" type="button" data-preference-value="romantika"><span>Romantika</span><span class="filter-emoji" data-ui-icon="romance" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="party"><span>Party</span><span class="filter-emoji" data-ui-icon="party" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="családi"><span>Családi</span><span class="filter-emoji" data-ui-icon="family" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="gasztro"><span>Gasztro</span><span class="filter-emoji" data-ui-icon="gastro" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="kultúra"><span>Kultúra</span><span class="filter-emoji" data-ui-icon="culture" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="sport"><span>Sport</span><span class="filter-emoji" data-ui-icon="sport" aria-hidden="true"></span></button>
+          <button class="filter-button" type="button" data-preference-value="romantika"><span>Romantika</span><span class="filter-emoji" data-ui-icon="romance" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="party"><span>Party</span><span class="filter-emoji" data-ui-icon="party" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="családi"><span>Családi</span><span class="filter-emoji" data-ui-icon="family" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="gasztro"><span>Gasztro</span><span class="filter-emoji" data-ui-icon="gastro" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="kultúra"><span>Kultúra</span><span class="filter-emoji" data-ui-icon="culture" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="sport"><span>Sport</span><span class="filter-emoji" data-ui-icon="sport" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="mi"><span>MI</span><span class="filter-emoji" data-ui-icon="ai" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="tanulás"><span>Tanulás</span><span class="filter-emoji" data-ui-icon="learning" aria-hidden="true"></span></button><button class="filter-button" type="button" data-preference-value="látnivalók"><span>Látnivalók</span><span class="filter-emoji" data-ui-icon="sights" aria-hidden="true"></span></button>
         </div>
       </section>
       <section class="preference-group" data-preference-group="moods" data-selection="multiple">
@@ -267,11 +266,11 @@
 
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
-    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c-2.5-3.5-4-5-6-5a5 5 0 0 0 0 10c2 0 3.5-1.5 6-5s4-5 6-5a5 5 0 0 1 0 10c-2 0-3.5-1.5-6-5Z"/></svg><span class="bottom-nav-label">Állandó</span></button>
+    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><img class="bottom-nav-icon permanent-nav-icon" src="assets/icons/permanent.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Állandó</span></button>
     <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Főoldal" title="Főoldal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.2 10.4 7.8-6.2 7.8 6.2v8.2a1.3 1.3 0 0 1-1.3 1.3h-3.7v-5.4H9.2v5.4H5.5a1.3 1.3 0 0 1-1.3-1.3v-8.2Z"/></svg><span class="bottom-nav-label">Főoldal</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20260930-82"></script>
+  <script src="script.js?v=20261001-11"></script>
 </body>
 </html>
