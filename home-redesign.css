@@ -1026,3 +1026,12 @@ html[data-theme="dark"] .calendar-section { border-top-color: rgb(248 250 252 / 
   border-radius: 0 !important;
   overflow: visible !important;
 }
+
+/* Rails may scroll locally, but must never expand the document horizontally. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
