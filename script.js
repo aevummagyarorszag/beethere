@@ -204,8 +204,6 @@ const calendarSection = find('#calendar-section');
 const calendarFilters = find('#calendar-category-filters');
 const calendarGrid = find('#calendar-grid');
 const calendarMonthLabel = find('#calendar-month-label');
-const calendarPrevious = find('#calendar-prev');
-const calendarNext = find('#calendar-next');
 const calendarEvents = find('#calendar-events');
 const eventsRefreshButton = find('#events-refresh');
 const favoritesView = find('#favorites-view');
@@ -501,9 +499,8 @@ function updateQuickDate() {
   if (!quickDate) return;
   const today = new Date();
   quickDate.dateTime = today.toISOString().slice(0, 10);
-  quickDate.textContent = new Intl.DateTimeFormat('hu-HU', {
-    month: 'long', day: 'numeric', weekday: 'long'
-  }).format(today);
+  const weekdays = ['Vas.', 'Hét.', 'Kedd', 'Sze.', 'Csüt.', 'Pén.', 'Szo.'];
+  quickDate.textContent = `${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}. ${weekdays[today.getDay()]}`;
 }
 
 function initOutroMessage() {
@@ -996,18 +993,18 @@ function appViewFromUrl() {
 
 function applyAppView(view, { scroll = true } = {}) {
   currentAppView = ['search', 'permanent', 'favorites', 'profile'].includes(view) ? view : 'home';
-  const isHome = currentAppView === 'home';
+  const isHome = currentAppView === 'home' || currentAppView === 'permanent';
   homeContent.forEach(element => { if (element.hasAttribute('data-home-content')) element.hidden = !isHome; });
-  const views = { search: searchView, permanent: permanentView, favorites: favoritesView, profile: profileView };
+  const views = { search: searchView, favorites: favoritesView, profile: profileView };
   Object.entries(views).forEach(([name, element]) => { if (element) element.hidden = name !== currentAppView; });
   findAll('.bottom-nav-button', bottomNavigation).forEach(button => {
     const active = button.dataset.appView === currentAppView;
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-current', active ? 'page' : 'false');
   });
-  if (currentAppView === 'permanent') renderPermanent();
   if (currentAppView === 'favorites') renderFavorites();
   if (currentAppView === 'search') renderSearchResults(searchInput?.value || '');
+  if (isHome) renderCalendar();
   updateProfileSummary();
   if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
   lastFavoritesScrollY = window.scrollY;
@@ -1026,8 +1023,11 @@ function navigateToAppView(view) {
 
 function renderPermanent() {
   if (!permanentGrid) return;
-  if (permanentEvents.length) renderCardsIncrementally(permanentGrid, position ? sortByDistance(permanentEvents) : permanentEvents);
-  else permanentGrid.innerHTML = '<p class="app-view-empty">Hamarosan új állandó lehetőségekkel várunk.</p>';
+  const source = [...events, ...permanentEvents]
+    .filter(event => !isPastEvent(event))
+    .filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
+  if (source.length) renderCardsIncrementally(permanentGrid, position ? sortByDistance(source) : source);
+  else permanentGrid.innerHTML = '<p class="app-view-empty">Ehhez a szűrőhöz még nincs program.</p>';
 }
 
 function normalizeSearchText(value) {
@@ -1374,7 +1374,10 @@ function syncCarouselControls(carousel) {
     const group = control.closest('.carousel-controls');
     if (group) group.hidden = !hasMultipleCards;
   });
-  if (!hasMultipleCards && carousel._returnButton) carousel._returnButton.hidden = true;
+  if (carousel._returnButton) {
+    carousel._returnButton.hidden = !hasMultipleCards;
+    if (!hasMultipleCards) carousel._returnButton.classList.remove('is-visible');
+  }
 }
 
 function recordSkippedCards(carousel) {
@@ -1409,10 +1412,8 @@ function setupCarousel(carousel) {
     carousel._returnButton = returnButton;
   }
   const carouselShell = carousel.parentElement;
-  if (carouselShell) {
-    carouselShell.classList.add('carousel-shell');
-    if (!carouselShell.contains(returnButton)) carouselShell.append(returnButton);
-  }
+  if (carouselShell) carouselShell.classList.add('carousel-shell');
+  if (!carousel.contains(returnButton)) carousel.append(returnButton);
   syncCarouselControls(carousel);
   if (carousel.dataset.carouselReady === 'true') {
     carousel._updateReturnButton?.();
@@ -1577,7 +1578,7 @@ function setupCarousel(carousel) {
   const updateReturnButton = () => {
     const overflow = carousel.scrollWidth - carousel.clientWidth;
     const atEnd = carousel._hasMultipleCards && overflow > 36 && carousel.scrollLeft >= overflow - 28;
-    returnButton.hidden = !atEnd;
+    returnButton.classList.toggle('is-visible', atEnd);
     // Recommendation bookkeeping must not measure every card on each animation frame.
     if (!feedbackTimer) feedbackTimer = window.setTimeout(() => {
       feedbackTimer = 0;
@@ -1623,6 +1624,12 @@ function closeEventDetails() {
     detailsWindow.style.removeProperty('left');
   }
   document.body.classList.remove('has-open-dialog');
+  const savedScrollY = Number(document.body.dataset.detailsScrollY || 0);
+  document.body.style.removeProperty('position');
+  document.body.style.removeProperty('top');
+  document.body.style.removeProperty('width');
+  delete document.body.dataset.detailsScrollY;
+  window.scrollTo({ top: savedScrollY, behavior: 'auto' });
   const url = new URL(window.location.href);
   if (url.searchParams.has('event')) {
     url.searchParams.delete('event');
@@ -1697,6 +1704,12 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   }
   if (eventDetailsShare) eventDetailsShare.onclick = () => shareEvent(event);
   if (updateUrl) history.replaceState({}, '', eventShareUrl(event));
+  if (!document.body.classList.contains('has-open-dialog')) {
+    document.body.dataset.detailsScrollY = String(window.scrollY);
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${window.scrollY}px`;
+    document.body.style.width = '100%';
+  }
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
   if (!event.Permanent) fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
@@ -2011,6 +2024,14 @@ function fitFeaturedDescription(card) {
   window.requestAnimationFrame(() => updateFeaturedDescriptionLines(description));
 }
 
+function preservePageScroll(callback) {
+  const scrollTop = window.scrollY;
+  callback();
+  const restore = () => window.scrollTo({ top: scrollTop, behavior: 'auto' });
+  restore();
+  window.requestAnimationFrame(restore);
+}
+
 function toggleFavoriteForEvent(event, button, sourceCard = null) {
   const key = eventKey(event);
   if (sourceCard) sourceCard.dataset.interacted = 'true';
@@ -2023,11 +2044,13 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
   saveFavorites();
   if (button) triggerBounce(button);
   vibrate(18);
-  updateFavoriteButtons();
-  refreshCalendarFavoriteMarkers();
-  rerankEventRows(sourceCard?.closest('.events-grid') || null);
-  if (currentAppView !== 'favorites') renderFavorites();
-  else updateProfileSummary();
+  preservePageScroll(() => {
+    updateFavoriteButtons();
+    refreshCalendarFavoriteMarkers();
+    rerankEventRows(sourceCard?.closest('.events-grid') || null);
+    if (currentAppView !== 'favorites') renderFavorites();
+    else updateProfileSummary();
+  });
 }
 
 function syncFavoriteButton(button, isFavorite) {
@@ -2039,7 +2062,7 @@ function syncFavoriteButton(button, isFavorite) {
     button.classList.remove('is-heart-feedback');
     void button.offsetWidth;
     button.classList.add('is-heart-feedback');
-    window.setTimeout(() => button.classList.remove('is-heart-feedback'), 760);
+    window.setTimeout(() => button.classList.remove('is-heart-feedback'), 1500);
   }
 }
 
@@ -2063,7 +2086,7 @@ function rerankEventRows(excludedCarousel = null) {
   rerender(paidTarget, upcomingEvents.filter(event => !isFree(event)).filter(event => !paidCategory || eventCategories(event).includes(paidCategory)), { compact: true });
   const quickTarget = quickCalendarTarget();
   rerender(todayGrid, upcomingEvents.filter(event => dateKey(eventDateValue(event)) === quickTarget.key), { compact: true });
-  rerender(permanentGrid, sortByDistance(permanentEvents));
+  rerender(permanentGrid, sortByDistance([...events, ...permanentEvents].filter(event => !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)))));
 
   const calendarRail = calendarEvents?.querySelector('.events-grid');
   if (calendarSelectedDate && calendarRail) {
@@ -2517,6 +2540,34 @@ function refreshCalendarFavoriteMarkers() {
 
 function renderCalendar() {
   if (!calendarGrid || !calendarMonthLabel) return;
+  const isWeeklyRecurringView = currentAppView === 'permanent';
+  const calendarWeekdays = calendarGrid.closest('.calendar-section')?.querySelector('.calendar-weekdays');
+  if (calendarWeekdays) calendarWeekdays.hidden = isWeeklyRecurringView;
+  if (isWeeklyRecurringView) {
+    calendarMonthLabel.textContent = 'Minden heten';
+    calendarGrid.hidden = false;
+    calendarGrid.classList.add('weekly-calendar-grid');
+    calendarGrid.replaceChildren();
+    const todayIndex = (new Date().getDay() + 6) % 7;
+    const weeklyLabels = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+    const weeklyNames = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
+    const daysWithRecurringEvents = new Set(permanentEvents
+      .map(event => normalizedText(event.Date))
+      .filter(Boolean));
+    weeklyLabels.forEach((label, index) => {
+      const day = document.createElement('span');
+      day.className = 'calendar-day weekly-calendar-day';
+      if (index === todayIndex) day.classList.add('today');
+      if (daysWithRecurringEvents.has(normalizedText(weeklyNames[index]))) day.classList.add('has-events');
+      day.textContent = label;
+      day.setAttribute('aria-label', `${weeklyNames[index]}${day.classList.contains('has-events') ? ', állandó programokkal' : ''}`);
+      calendarGrid.append(day);
+    });
+    calendarEvents?.replaceChildren();
+    return;
+  }
+  calendarGrid.hidden = false;
+  calendarGrid.classList.remove('weekly-calendar-grid');
   const year = calendarMonth.getFullYear();
   const month = calendarMonth.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -2634,8 +2685,6 @@ function setupCalendar() {
     }
     renderCalendar();
   };
-  if (calendarPrevious) calendarPrevious.addEventListener('click', () => changeCalendarMonth(-1, 'previous'));
-  if (calendarNext) calendarNext.addEventListener('click', () => changeCalendarMonth(1, 'next'));
   if (calendarShell) {
     let swipeStart = null;
     let suppressCalendarClickUntil = 0;
@@ -2673,7 +2722,11 @@ function renderEvents() {
   if (!position) {
     allSection.hidden = false;
     if (filterBar) filterBar.hidden = true;
-    grid.innerHTML = '<div class="location-empty">Válassz várost az események megtekintéséhez.</div>';
+    grid.innerHTML = '<p class="location-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span><strong>Hiba:</strong> <button class="location-empty-city-link" type="button">Válassz várost</button> az események megtekintéséhez.</span></p>';
+    find('.location-empty-city-link', grid)?.addEventListener('click', () => {
+      citySelector?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.setTimeout(() => citySelector?.click(), 260);
+    });
     renderFavorites();
     renderToday();
     return;
@@ -2683,25 +2736,42 @@ function renderEvents() {
   if (filterBar) filterBar.hidden = false;
   const visible = sortByDistance(events.filter(event => !isPastEvent(event))).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
   if (!visible.length) {
-    const alternatives = sortByDistance(events.filter(event => !isPastEvent(event)))
+    const alternatives = events
+      .filter(event => !isPastEvent(event) && matchesHomeMode(event))
       .filter(event => eventCategories(event).some(category => category !== selectedCategory));
-    const recommendedCategory = alternatives.flatMap(eventCategories).find(category => category !== selectedCategory) || 'gasztro';
+    const availableCategories = [...new Set(alternatives
+      .flatMap(eventCategories)
+      .filter(category => category !== selectedCategory && CATEGORIES.includes(category)))];
+    const recommendedCategory = availableCategories.length
+      ? availableCategories[Math.floor(Math.random() * availableCategories.length)]
+      : '';
     const empty = document.createElement('div');
     empty.className = 'compact-empty-state';
+    const icon = document.createElement('img');
+    icon.className = 'empty-error-icon';
+    icon.src = 'assets/icons/error.svg';
+    icon.alt = '';
+    icon.setAttribute('aria-hidden', 'true');
     const message = document.createElement('span');
     message.className = 'compact-empty-message';
-    message.textContent = 'Ebben a városban ma nincs ilyen program.';
-    const hint = document.createElement('span');
-    hint.className = 'compact-empty-hint';
-    hint.textContent = 'Próbáld meg ezt:';
-    const recommendation = document.createElement('button');
-    recommendation.type = 'button';
-    recommendation.className = 'compact-empty-recommendation';
-    recommendation.textContent = categoryLabel(recommendedCategory);
-    recommendation.addEventListener('click', () => {
-      findAll('.filter-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click();
-    });
-    empty.append(message, hint, recommendation);
+    message.textContent = 'Upsz! Ebben a városban nincs ilyen program.';
+    empty.append(icon, message);
+    if (recommendedCategory) {
+      const recommendationRow = document.createElement('span');
+      recommendationRow.className = 'compact-empty-recommendation-row';
+      const hint = document.createElement('span');
+      hint.className = 'compact-empty-hint';
+      hint.textContent = 'Próbáld meg ezt:';
+      const recommendation = document.createElement('button');
+      recommendation.type = 'button';
+      recommendation.className = 'compact-empty-recommendation';
+      recommendation.textContent = categoryLabel(recommendedCategory);
+      recommendation.addEventListener('click', () => {
+        findAll('.filter-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click();
+      });
+      recommendationRow.append(hint, recommendation);
+      empty.append(recommendationRow);
+    }
     grid.append(empty);
   } else {
     createEventGroup(grid, 'Összes', visible.filter(matchesHomeMode), homeEventMode === 'free' ? 'free-events' : 'paid-events');
@@ -2754,7 +2824,10 @@ function createFilters() {
         gooey.style.removeProperty('height');
       } else if (selectedCategory) moveGooeyFilter(button);
       vibrate(10);
-      renderEvents();
+      preservePageScroll(() => {
+        renderEvents();
+        renderPermanent();
+      });
     });
     button.dataset.category = category;
     categoryRows[index % 2]?.append(button);

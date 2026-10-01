@@ -193,6 +193,15 @@ html[data-theme="dark"] #calendar-filters .filter-button.active {
   clip-path: inset(0 round 5px);
 }
 html[data-theme="dark"] .bottom-nav-icon.permanent-nav-icon { filter: brightness(0) invert(1); }
+.bottom-nav-icon.one-time-nav-icon {
+  display: block;
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  clip-path: inset(0 round 5px);
+  filter: brightness(0);
+}
+html[data-theme="dark"] .bottom-nav-icon.one-time-nav-icon { filter: brightness(0) invert(1); }
 #category-filters .gooey-filter,
 #events-grid .event-group-filters .gooey-filter { display: none !important; }
 html[data-theme="dark"] #category-filters .filter-button,
@@ -1034,4 +1043,472 @@ body {
   max-width: 100%;
   overflow-x: clip;
   overscroll-behavior-x: none;
+}
+
+/* Compact event cards: one-line title, metadata, and up to two description lines. */
+.event-card:not(.featured-card) .event-content,
+.featured-grid .featured-card .event-content {
+  grid-template-rows: auto auto auto !important;
+  row-gap: 8px !important;
+  padding: 10px 0 0 !important;
+  min-height: 0 !important;
+}
+.event-card .event-title,
+.featured-grid .featured-card .event-title {
+  display: block !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  -webkit-line-clamp: unset !important;
+}
+.event-card .event-description,
+.featured-grid .featured-card .event-description {
+  display: -webkit-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 2.9em !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+.event-card .event-bottom { display: none !important; }
+/* Saved hearts and distance text share the app canvas color; the feedback is
+   expressed only through three progressively smaller beats of the heart. */
+.favorite-button.is-favorite,
+.favorite-button.is-heart-feedback,
+.featured-grid .featured-card .favorite-button.is-favorite,
+.featured-grid .featured-card .favorite-button.is-heart-feedback {
+  background: rgb(20 20 24 / .66) !important;
+  color: #F5F5F7 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.distance-pill .distance-value,
+.distance-pill.is-nearby .distance-value,
+.featured-grid .featured-card .featured-distance .distance-value {
+  color: #F5F5F7 !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .favorite-button.is-heart-feedback svg {
+    animation: favorite-heart-three-beats 1300ms cubic-bezier(.22,.82,.26,1) both !important;
+    transform-origin: center;
+  }
+}
+@keyframes favorite-heart-three-beats {
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.34); }
+  23% { transform: scale(1); }
+  39% { transform: scale(1.23); }
+  50% { transform: scale(1); }
+  66% { transform: scale(1.13); }
+  77% { transform: scale(1); }
+}
+
+/* Normal card copy must not be clipped by rounded lower card corners. */
+.event-card:not(.featured-card) {
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+/* A return control occupies a short tail after the final card in every event rail. */
+.event-carousel .carousel-return {
+  position: relative !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 1 !important;
+  display: grid !important;
+  flex: 0 0 56px !important;
+  width: 52px !important;
+  height: 52px !important;
+  margin: auto 6px auto 2px !important;
+  place-items: center !important;
+  border: 1px solid rgb(30 41 59 / .14) !important;
+  border-radius: 50% !important;
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  box-shadow: 0 5px 14px rgb(15 23 42 / .08) !important;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(.82);
+  transition: opacity 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1), visibility 180ms ease;
+}
+.event-carousel .carousel-return[hidden] { display: none !important; }
+.event-carousel .carousel-return.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.event-carousel .carousel-return svg {
+  width: 25px !important;
+  height: 25px !important;
+  fill: currentColor !important;
+  filter: none !important;
+}
+html[data-theme="dark"] .event-carousel .carousel-return { background: #334155 !important; color: #F8FAFC !important; border-color: rgb(248 250 252 / .16) !important; }
+
+/* Dynamic rails never become a browser scroll anchor during filter or favorite updates. */
+#events-grid,
+#featured-grid,
+#calendar-events,
+.events-grid,
+.event-card { overflow-anchor: none; }
+
+/* Keep the top divider immediately below the city row. */
+.home-section-divider { margin-top: 3px !important; }
+
+/* Featured rails use the same end-of-row return control as every event rail. */
+#featured-section .event-carousel .carousel-return { display: grid !important; }
+#featured-section .event-carousel .carousel-return[hidden] { display: none !important; }
+
+/* Prevent horizontal reflow from being exposed while a feed swaps its cards. */
+#events-grid .event-carousel { contain: inline-size; }
+
+/* Header hierarchy: price controls left; date and city stack at upper right. */
+.event-mode-bar {
+  justify-content: flex-start !important;
+  gap: 12px !important;
+}
+.quick-navigation {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 1fr max-content !important;
+  grid-template-rows: 30px 48px !important;
+  align-items: center !important;
+  width: min(1180px, calc(100% - 32px)) !important;
+  min-height: 86px !important;
+  margin-top: -52px !important;
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+}
+.quick-navigation .quick-date {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0 !important;
+  justify-self: end;
+  align-self: start;
+}
+.quick-navigation #city-selector {
+  grid-column: 2;
+  grid-row: 2;
+  width: max-content !important;
+  min-width: 0;
+  min-height: 48px !important;
+  justify-self: end;
+  align-self: end;
+}
+.home-section-divider { margin-top: 3px !important; }
+@media (max-width: 800px) {
+  .quick-navigation { width: calc(100% - 24px) !important; }
+}
+
+/* Two slow, progressively softer heart beats; no surrounding pulse effect. */
+@keyframes favorite-heart-three-beats {
+  0%, 100% { transform: scale(1); }
+  18% { transform: scale(1.3); }
+  35% { transform: scale(1); }
+  60% { transform: scale(1.16); }
+  77% { transform: scale(1); }
+}
+
+/* The right-hand date/city stack shares the exact 52px height of the mode controls. */
+.quick-navigation {
+  grid-template-rows: 26px 26px !important;
+  min-height: 52px !important;
+  height: 52px !important;
+}
+.quick-navigation .quick-date {
+  align-self: start !important;
+  padding-top: 3px;
+  line-height: 1.2 !important;
+}
+.quick-navigation #city-selector {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  align-items: flex-end !important;
+  line-height: 1.2 !important;
+}
+#city-selector-label { padding-bottom: 0 !important; line-height: 1.2 !important; }
+#city-selector .location-icon { width: 23px !important; height: 23px !important; }
+
+/* Bring the header's right-hand lines closer while keeping city interaction stable. */
+.quick-navigation .quick-date { transform: translateY(4px) !important; }
+.quick-navigation #city-selector,
+.quick-navigation #city-selector:hover,
+.quick-navigation #city-selector:focus,
+.quick-navigation #city-selector:focus-visible,
+.quick-navigation #city-selector:active {
+  transform: translateY(-14px) !important;
+  align-items: center !important;
+}
+
+/* Keep the header city name as compact as “Budapest”; longer names truncate cleanly. */
+#city-selector-label {
+  max-width: 8.6ch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Section-divider rhythm: a little more air before Featured, less before later sections. */
+.home-section-divider { margin-top: 12px !important; }
+#featured-section { padding-bottom: 6px !important; }
+.calendar-section { margin-top: 8px !important; }
+
+/* A quiet elevation separates white controls from the canvas without making them heavy. */
+.filter-button,
+.event-mode-current,
+.event-mode-toggle,
+.calendar-nav-button,
+.events-refresh-button,
+.bottom-nav .nav-item.is-active,
+.favorite-button {
+  box-shadow: 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05) !important;
+}
+
+/* Every interactive button, including theme choices, shares the same subtle depth. */
+button {
+  box-shadow: 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05) !important;
+}
+
+/* Category choices need a slightly clearer edge against the canvas. */
+#category-filters .filter-button,
+#calendar-category-filters .filter-button,
+#calendar-filters .filter-button,
+#events-grid .event-group-filters .filter-button {
+  box-shadow: 0 5px 14px rgb(15 23 42 / .11), 0 1px 2px rgb(15 23 42 / .06) !important;
+}
+
+/* Calendar stays quiet: only dates that contain events appear as white controls. */
+.calendar-day:not(.has-events):not(.selected) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.calendar-day.has-events {
+  background: #FFFFFF !important;
+  box-shadow: 0 3px 10px rgb(15 23 42 / .07), 0 1px 2px rgb(15 23 42 / .04) !important;
+  border-color: transparent !important;
+}
+.calendar-day.today,
+.calendar-day.today.selected,
+.calendar-day.today:hover,
+.calendar-day.today:focus-visible {
+  border-width: 1px !important;
+  border-color: rgb(30 41 59 / .15) !important;
+}
+.calendar-day.has-favorite .calendar-favorite-heart,
+.calendar-day.selected .calendar-favorite-heart {
+  color: rgb(30 41 59 / .14) !important;
+  opacity: .45 !important;
+}
+
+/* Images float just enough above the canvas to retain their visual edge. */
+.event-card .image-wrap {
+  box-shadow: 0 7px 18px rgb(15 23 42 / .12), 0 2px 5px rgb(15 23 42 / .06) !important;
+}
+
+.calendar-day.selected .calendar-day-number { font-weight: 800 !important; }
+
+/* City selection is an inline error message, not a card or empty-state panel. */
+.location-empty {
+  margin: 8px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #64748B !important;
+  font: 500 13px/1.45 var(--font-sans) !important;
+}
+.location-empty strong { color: #1E293B; font-weight: 700; }
+
+/* Detail-view controls use the same white, lightly elevated material as the home controls. */
+#event-details-dialog .ticket-button,
+#event-details-dialog .event-details-favorite-button,
+#event-details-dialog .event-share-button {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid rgb(30 41 59 / .10) !important;
+  box-shadow: 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05) !important;
+}
+#event-details-dialog .ticket-button {
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+  border-color: #2563EB !important;
+}
+#event-details-dialog .ticket-button.is-free {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border-color: rgb(30 41 59 / .10) !important;
+  box-shadow: 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05) !important;
+}
+#event-details-dialog .event-details-favorite-button.is-favorite,
+#event-details-dialog .event-details-favorite-button.is-heart-feedback { color: #111827 !important; }
+#event-details-time { color: #2563EB !important; }
+#event-details-dialog .event-details-badges .badge { color: #2563EB !important; }
+
+/* Calendar favorite markers remain present but intentionally whisper-quiet. */
+.calendar-day.has-favorite .calendar-favorite-heart,
+.calendar-day.selected .calendar-favorite-heart {
+  color: rgb(30 41 59 / .09) !important;
+  opacity: .24 !important;
+}
+
+/* Empty category results remain a simple inline message, not a panel. */
+.compact-empty-state {
+  display: flex !important;
+  align-items: baseline !important;
+  width: auto !important;
+  margin: 10px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.compact-empty-message {
+  color: #64748B !important;
+  font-size: 13px !important;
+}
+.compact-empty-hint { color: #1E293B !important; font-size: 13px !important; }
+.compact-empty-recommendation {
+  min-height: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  color: #2563EB !important;
+  font-size: 13px !important;
+}
+
+/* Errors are centred and red; the suggested category keeps its own blue action color. */
+.location-empty,
+.compact-empty-state {
+  justify-content: center !important;
+  text-align: center !important;
+  flex-direction: column !important;
+}
+.location-empty {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  color: #DC2626 !important;
+}
+.location-empty strong,
+.compact-empty-message { color: #DC2626 !important; }
+.location-empty-city-link {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #DC2626 !important;
+  font: inherit !important;
+  font-weight: 700 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.compact-empty-state .empty-error-icon { margin: 0 0 2px; }
+.empty-error-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(86%) saturate(3486%) hue-rotate(348deg) brightness(89%) contrast(90%);
+}
+.compact-empty-hint { color: #64748B !important; }
+
+.compact-empty-recommendation-row {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* Trait/category controls use a rounded, crisp perimeter instead of a square fading shadow. */
+.filter-button,
+.preference-options .filter-button {
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 1px rgb(15 23 42 / .08) !important;
+}
+.filter-button.active,
+.filter-button.active:hover,
+.preference-options .filter-button[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--category-color, rgb(30 41 59 / .20)) !important;
+}
+
+/* One-time calendar: event days have a quiet rounded outline; today is the stronger anchor. */
+.calendar-day.has-events {
+  border: 1px solid rgb(30 41 59 / .15) !important;
+}
+.calendar-day.today,
+.calendar-day.today.selected,
+.calendar-day.today:hover,
+.calendar-day.today:focus-visible {
+  border: 2px solid rgb(30 41 59 / .34) !important;
+}
+
+/* Category pills must not inherit the broad rectangular control shadow. */
+#category-filters .filter-button,
+#calendar-category-filters .filter-button,
+#calendar-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+.shared-category-filters .filter-button,
+.preference-options .filter-button {
+  box-shadow: none !important;
+  filter: none !important;
+  border-radius: 14px !important;
+}
+
+/* The recurring view turns the monthly grid into one compact weekday row. */
+.weekly-calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+.weekly-calendar-day {
+  min-width: 0 !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #1E293B !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: default !important;
+}
+.weekly-calendar-day.has-events {
+  background: #FFFFFF !important;
+  box-shadow: 0 2px 5px rgb(15 23 42 / .07) !important;
+}
+.weekly-calendar-day.today,
+.weekly-calendar-day.today:hover,
+.weekly-calendar-day.today:focus-visible {
+  border: 1px solid rgb(30 41 59 / .15) !important;
+}
+
+/* Calendar layout rules otherwise override the semantic hidden attribute. */
+.calendar-weekdays[hidden],
+.calendar-grid[hidden] { display: none !important; }
+
+.calendar-toolbar { grid-template-columns: 1fr !important; }
+.calendar-toolbar h3 { text-align: left !important; }
+.calendar-toolbar h3 { text-transform: none !important; }
+
+/* Trait pills retain a compact rounded elevation without the earlier broad shadow. */
+#category-filters .filter-button,
+#calendar-category-filters .filter-button,
+#calendar-filters .filter-button,
+#events-grid .event-group-filters .filter-button,
+.shared-category-filters .filter-button,
+.preference-options .filter-button {
+  box-shadow: 0 3px 8px rgb(15 23 42 / .13), 0 1px 2px rgb(15 23 42 / .06) !important;
+}
+
+/* The empty-state stack itself spans the rail, so icon and copy truly centre on the page. */
+.compact-empty-state {
+  width: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
