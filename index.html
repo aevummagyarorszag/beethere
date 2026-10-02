@@ -18,16 +18,12 @@
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
-  <link rel="stylesheet" href="home-redesign.css?v=20261002-84">
+  <link rel="stylesheet" href="home-redesign.css?v=20261002-92">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
     <div class="hero-content wrapper">
       <h1 class="sr-only">Bee There – Események</h1>
-      <div class="event-mode-bar" aria-label="Programok ára">
-        <button id="event-mode-current" class="event-mode-current" type="button" aria-label="Fizetős programok, váltás ingyenesre"><span id="event-mode-icon" aria-hidden="true"></span><span id="event-mode-label" aria-live="polite">Fizetős</span></button>
-        <button id="event-mode-toggle" class="event-mode-toggle" type="button" aria-label="Váltás ingyenes programokra"><span id="event-mode-other-icon" aria-hidden="true"></span></button>
-      </div>
     </div>
   </header>
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
@@ -47,7 +43,10 @@
     </section>
 
     <section class="all-events" aria-label="Események">
-      <div class="section-heading all-events-heading"><div><h2>Összes</h2></div></div>
+      <div class="section-heading all-events-heading">
+        <div><h2>Összes</h2></div>
+        <button id="event-filter-button" class="event-filter-button" type="button" aria-haspopup="dialog" aria-controls="event-filter-dialog" aria-expanded="false" aria-label="Eseményszűrők megnyitása"><img src="assets/icons/tune.svg" alt="" aria-hidden="true"><span class="event-filter-active-dot" hidden></span></button>
+      </div>
       <div id="category-filters" class="filter-bar shared-category-filters" aria-label="Kategóriaszűrők"></div>
       <div id="events-grid" class="events-grid recommendation-grid all-event-grid" tabindex="0" aria-live="polite" aria-label="Összes esemény"></div>
       <section id="nearby-section" class="discovery-feed-section" aria-labelledby="nearby-title">
@@ -121,7 +120,7 @@
             <span class="event-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span class="event-location-value"></span></span>
           </div>
           <h3 class="event-title"></h3>
-          <p class="event-description"></p>
+          <p class="event-description"><span class="event-description-price" aria-label="Jegyár"></span><span class="event-description-text"></span></p>
           <div class="event-bottom"><div class="badges"><span class="badge category-badge"></span><span class="badge price-badge"></span><span class="badge age-badge"></span></div></div>
           <section class="inline-details" hidden aria-live="polite">
             <header class="inline-details-header">
@@ -142,9 +141,7 @@
     </template>
   </main>
 
-  <section id="search-view" class="app-view wrapper" hidden aria-labelledby="search-view-title">
-    <p class="eyebrow">KERESÉS</p>
-    <h1 id="search-view-title" class="app-view-title">Melyik eseményt keresed?</h1>
+  <section id="search-view" class="app-view wrapper" hidden aria-label="Keresés">
     <div class="event-search-field"><label class="sr-only" for="event-search">Esemény keresése név szerint</label><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off" enterkeyhint="search"><button id="search-clear" class="search-clear" type="button" aria-label="Keresés törlése" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button></div>
     <div id="search-results" class="app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
@@ -237,6 +234,36 @@
     </div>
   </dialog>
 
+  <dialog id="event-filter-dialog" class="event-filter-dialog" aria-labelledby="event-filter-title">
+    <form id="event-filter-form" class="event-filter-dialog-content" method="dialog">
+      <header class="event-filter-dialog-heading">
+        <div><p class="eyebrow">SZŰRŐK</p><h2 id="event-filter-title">Események beállítása</h2></div>
+        <button id="event-filter-close" class="dialog-close" type="button" aria-label="Bezárás">×</button>
+      </header>
+      <fieldset class="event-filter-fieldset">
+        <legend>Programok ára</legend>
+        <div class="event-filter-options">
+          <label class="event-filter-choice"><input type="radio" name="event-price-filter" value="all" checked><span><strong>Összes</strong><small>Ingyenes és fizetős programok</small></span></label>
+          <label class="event-filter-choice"><input type="radio" name="event-price-filter" value="paid"><span><strong>Fizetős</strong><small>Jegyes programok</small></span></label>
+          <label class="event-filter-choice"><input type="radio" name="event-price-filter" value="free"><span><strong>Ingyenes</strong><small>Belépő nélkül</small></span></label>
+        </div>
+      </fieldset>
+      <fieldset class="event-filter-fieldset">
+        <legend>Rendezés</legend>
+        <div class="event-filter-options">
+          <label class="event-filter-choice"><input type="radio" name="event-sort-filter" value="recommended" checked><span><strong>Ajánlott</strong><small>Személyre szabott sorrend</small></span></label>
+          <label class="event-filter-choice"><input type="radio" name="event-sort-filter" value="distance"><span><strong>Távolság</strong><small>A legközelebbi legyen elöl</small></span></label>
+          <label class="event-filter-choice"><input type="radio" name="event-sort-filter" value="date"><span><strong>Időpont</strong><small>A legkorábbi legyen elöl</small></span></label>
+          <label class="event-filter-choice"><input type="radio" name="event-sort-filter" value="price"><span><strong>Ár</strong><small>Az olcsóbb legyen elöl</small></span></label>
+        </div>
+      </fieldset>
+      <footer class="event-filter-actions">
+        <button id="event-filter-reset" class="event-filter-reset" type="button">Alaphelyzet</button>
+        <button class="event-filter-apply" type="submit">Alkalmaz</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog id="delete-profile-dialog" class="delete-profile-dialog" aria-labelledby="delete-profile-title">
     <div class="delete-profile-content"><h2 id="delete-profile-title">Mindent törölni szeretnél?</h2><p>Ez törli a profilodat és minden helyben tárolt adatodat erről a készülékről. Ez a művelet nem visszavonható.</p><div class="delete-profile-actions"><button id="cancel-delete-profile" class="cancel-delete-profile" type="button">Nem</button><button id="confirm-delete-profile" class="confirm-delete-profile" type="button">Törlés</button></div></div>
   </dialog>
@@ -280,6 +307,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261002-34"></script>
+  <script src="script.js?v=20261002-41"></script>
 </body>
 </html>
