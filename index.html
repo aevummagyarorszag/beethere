@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
-  <link rel="stylesheet" href="home-redesign.css?v=20261001-78">
+  <link rel="stylesheet" href="home-redesign.css?v=20261002-84">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -49,7 +49,23 @@
     <section class="all-events" aria-label="Események">
       <div class="section-heading all-events-heading"><div><h2>Összes</h2></div></div>
       <div id="category-filters" class="filter-bar shared-category-filters" aria-label="Kategóriaszűrők"></div>
-      <div id="events-grid" aria-live="polite"><div class="events-grid"><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article><article class="skeleton-card compact-skeleton" aria-hidden="true"><span class="skeleton-image"></span><span class="skeleton-line wide"></span><span class="skeleton-line"></span></article></div></div>
+      <div id="events-grid" class="events-grid recommendation-grid all-event-grid" tabindex="0" aria-live="polite" aria-label="Összes esemény"></div>
+      <section id="nearby-section" class="discovery-feed-section" aria-labelledby="nearby-title">
+        <div class="section-heading discovery-heading"><h3 id="nearby-title">Közeledben</h3></div>
+        <div id="nearby-grid" class="events-grid vertical-event-list" tabindex="0" aria-label="Közeledben lévő események"></div>
+      </section>
+      <section id="recommended-section" class="discovery-feed-section" aria-labelledby="recommended-title">
+        <div class="section-heading discovery-heading"><h3 id="recommended-title">Neked ajánlott</h3></div>
+        <div id="recommended-grid" class="events-grid event-carousel medium-event-rail" tabindex="0" aria-label="Neked ajánlott események"></div>
+      </section>
+      <section id="upcoming-section" class="discovery-feed-section" aria-labelledby="upcoming-title">
+        <div class="section-heading discovery-heading"><h3 id="upcoming-title">Közelgő</h3></div>
+        <div id="upcoming-grid" class="events-grid event-carousel medium-event-rail" tabindex="0" aria-label="Közelgő események"></div>
+      </section>
+      <section id="viewed-section" class="discovery-feed-section" hidden aria-labelledby="viewed-title">
+        <div class="section-heading discovery-heading"><h3 id="viewed-title">Már megtekintetted</h3></div>
+        <div id="viewed-grid" class="events-grid vertical-event-list" tabindex="0" aria-label="Korábban megtekintett események"></div>
+      </section>
     </section>
 
     <section id="favorites-section" class="favorites-section" hidden aria-labelledby="favorites-title">
@@ -73,10 +89,10 @@
     </section>
 
     <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-title">
-      <div class="section-heading"><div><h2 id="calendar-title">Naptár</h2></div></div>
+      <div class="section-heading calendar-heading"><div><h2 id="calendar-title">Naptár</h2><span id="calendar-month-label" class="calendar-month-label" aria-live="polite"></span></div></div>
       <div id="calendar-category-filters" class="filter-bar calendar-filter-bar shared-category-filters" aria-label="Naptár kategóriaszűrői"></div>
       <div class="calendar-shell">
-        <div class="calendar-toolbar"><h3 id="calendar-month-label"></h3></div>
+        <div class="calendar-toolbar" aria-hidden="true"></div>
         <div class="calendar-weekdays" aria-hidden="true"><span>H</span><span>K</span><span>Sze</span><span>Cs</span><span>P</span><span>Szo</span><span>V</span></div>
         <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Eseménynaptár"></div>
       </div>
@@ -264,6 +280,6 @@
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261002-29"></script>
+  <script src="script.js?v=20261002-34"></script>
 </body>
 </html>

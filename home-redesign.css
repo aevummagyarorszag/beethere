@@ -1506,6 +1506,233 @@ button {
   box-shadow: 0 3px 8px rgb(15 23 42 / .13), 0 1px 2px rgb(15 23 42 / .06) !important;
 }
 
+/* Discovery feed: nearby items stay compact; recommendations keep the primary card treatment. */
+.discovery-feed-section { margin-top: 22px; }
+.recommendation-grid { display: grid !important; gap: 16px !important; }
+.recommendation-row { min-width: 0; }
+.discovery-heading { margin: 0 0 10px !important; }
+.discovery-heading h3 {
+  margin: 0;
+  color: #1E293B;
+  font: 800 22px/1.15 var(--font-sans);
+  letter-spacing: -.03em;
+}
+.mini-event-rail {
+  display: flex !important;
+  gap: 12px !important;
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 1px 0 5px !important;
+}
+.mini-event-rail::-webkit-scrollbar { display: none; }
+.mini-event-rail .event-card {
+  display: grid !important;
+  grid-template-columns: 88px minmax(0, 1fr) !important;
+  grid-template-areas: "image content" !important;
+  flex: 0 0 calc(100% - 34px) !important;
+  min-width: 0 !important;
+  min-height: 94px !important;
+  margin: 0 !important;
+  scroll-snap-align: start;
+  column-gap: 12px;
+  background: transparent !important;
+}
+.mini-event-rail .event-card .image-wrap {
+  grid-area: image;
+  width: 88px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 5px 14px rgb(15 23 42 / .12) !important;
+}
+.mini-event-rail .event-card .event-content {
+  grid-area: content;
+  min-width: 0;
+  min-height: 88px !important;
+  padding: 1px 0 !important;
+  display: grid !important;
+  grid-template-areas: "title" "meta" "description" !important;
+  grid-template-rows: minmax(0, 2.4em) auto minmax(0, 2.2em) !important;
+  row-gap: 3px !important;
+}
+.mini-event-rail .event-card .event-title {
+  align-self: start !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 16px !important;
+  line-height: 1.18 !important;
+}
+.mini-event-rail .event-card .event-meta {
+  min-width: 0;
+  font-size: 11px !important;
+  gap: 8px !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.mini-event-rail .event-card .event-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mini-event-rail .event-card .event-description {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 12px !important;
+  line-height: 1.28 !important;
+}
+.mini-event-rail .event-card .distance-pill,
+.mini-event-rail .event-card .event-bottom { display: none !important; }
+.mini-event-rail .event-card .favorite-button {
+  width: 32px !important;
+  height: 32px !important;
+  right: 4px !important;
+  top: 4px !important;
+}
+.mini-event-rail .event-card .favorite-button svg { width: 18px !important; height: 18px !important; }
+
+/* The discovery sections have deliberate, fixed layouts instead of exposing a clipped page edge. */
+html, body { max-width: 100%; overflow-x: hidden; }
+html, body { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+#events-grid, #nearby-grid, #recommended-grid, #upcoming-grid, #viewed-grid { max-width: 100%; }
+.all-event-grid { display: grid !important; gap: 14px !important; overflow: visible !important; padding: 2px 0 4px !important; }
+.all-event-grid .recommendation-row { display: flex !important; overflow-x: auto !important; padding: 2px 0 8px !important; }
+.medium-event-rail {
+  display: flex !important;
+  gap: 14px !important;
+  overflow-x: auto !important;
+  padding: 2px 0 8px !important;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.medium-event-rail::-webkit-scrollbar { display: none; }
+.medium-event-rail .event-card,
+.all-event-grid .recommendation-row .event-card { flex: 0 0 min(72vw, 330px) !important; scroll-snap-align: start; }
+.vertical-event-list {
+  display: grid !important;
+  gap: 12px !important;
+  overflow: visible !important;
+  padding: 1px 0 !important;
+  cursor: default !important;
+}
+.vertical-event-list .event-card {
+  display: grid !important;
+  grid-template-columns: 88px minmax(0, 1fr) !important;
+  grid-template-areas: "image content" !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 88px !important;
+  margin: 0 !important;
+  column-gap: 12px;
+  background: transparent !important;
+}
+.vertical-event-list .image-wrap {
+  grid-area: image;
+  width: 88px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  box-shadow: 0 5px 14px rgb(15 23 42 / .12) !important;
+}
+.vertical-event-list .event-content {
+  grid-area: content;
+  min-width: 0;
+  min-height: 88px !important;
+  padding: 1px 0 !important;
+  display: grid !important;
+  grid-template-areas: "title" "meta" "description" !important;
+  grid-template-rows: minmax(0, 1.2em) auto minmax(0, 2.6em) !important;
+  row-gap: 3px !important;
+}
+.vertical-event-list .event-title {
+  align-self: start !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  font-size: 16px !important;
+  line-height: 1.18 !important;
+}
+.vertical-event-list .event-card h3 { margin: 0 !important; }
+.vertical-event-list .event-meta { min-width: 0; gap: 8px !important; font-size: 11px !important; white-space: nowrap; overflow: hidden; }
+.vertical-event-list .event-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.vertical-event-list .event-description {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  padding-right: 40px;
+  font-size: 12px !important;
+  line-height: 1.28 !important;
+}
+.vertical-event-list .distance-pill,
+.vertical-event-list .event-bottom,
+.vertical-event-list .carousel-return { display: none !important; }
+.vertical-event-list .favorite-button {
+  width: 32px !important;
+  height: 32px !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: 0 !important;
+}
+.vertical-event-list .favorite-button svg { width: 18px !important; height: 18px !important; }
+.vertical-event-list .compact-list-card .favorite-button {
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+/* Compact horizontal cards use the same one-title/two-description-line structure. */
+.mini-event-rail .event-card .event-content { grid-template-rows: minmax(0, 1.2em) auto minmax(0, 2.6em) !important; }
+.mini-event-rail .event-card .event-title { -webkit-line-clamp: 1; }
+.mini-event-rail .event-card .event-description { padding-right: 40px; }
+.mini-event-rail .event-card .favorite-button { right: 0 !important; top: auto !important; bottom: 0 !important; }
+
+/* The month label belongs to the calendar heading, so the date context is visible before the grid. */
+.calendar-heading > div { display: flex; width: 100%; align-items: baseline; gap: 10px; }
+.calendar-month-label {
+  margin-left: auto;
+  text-align: right;
+  color: rgb(30 41 59 / .48);
+  font: 700 var(--type-heading)/1.25 var(--font-sans);
+  letter-spacing: -.025em;
+  text-transform: capitalize;
+}
+.calendar-toolbar { display: none !important; }
+
+/* Cards remain flat on the page; only their photographs carry elevation. */
+body .event-card:not(.featured-card),
+body .featured-grid .event-card.featured-card {
+  box-shadow: none !important;
+}
+body .event-card .image-wrap {
+  box-shadow: 0 5px 14px rgb(15 23 42 / .12) !important;
+}
+
+/* The active filter has a visible, rounded elevation after horizontal scrolling. */
+.shared-category-filters .filter-button.active,
+.shared-category-filters .filter-button.active:hover {
+  box-shadow: 0 6px 14px rgb(15 23 42 / .18), 0 2px 4px color-mix(in srgb, var(--category-color, #1E293B) 28%, transparent) !important;
+}
+
+/* A selected calendar day receives a short, quiet cyan-to-green flowing confirmation. */
+.calendar-day.is-selected-flow {
+  background: linear-gradient(115deg, #FFFFFF 0%, #DDF6F3 42%, #DDEEFF 66%, #FFFFFF 100%) !important;
+  background-size: 220% 100% !important;
+  animation: calendar-selected-flow 2.4s cubic-bezier(.2,.75,.3,1) infinite;
+}
+@keyframes calendar-selected-flow {
+  0% { background-position: 110% 0; box-shadow: 0 0 0 0 rgb(34 211 238 / 0); }
+  42% { background-position: 50% 0; box-shadow: 0 0 0 5px rgb(45 212 191 / .12); }
+  100% { background-position: -115% 0; box-shadow: 0 0 0 0 rgb(34 211 238 / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendar-day.is-selected-flow { animation: none; }
+}
+
 /* The empty-state stack itself spans the rail, so icon and copy truly centre on the page. */
 .compact-empty-state {
   width: 100% !important;

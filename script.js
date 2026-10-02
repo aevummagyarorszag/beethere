@@ -154,6 +154,15 @@ const findAll = (selector, scope = document) => {
 };
 
 const grid = find('#events-grid');
+const nearbySection = find('#nearby-section');
+const nearbyGrid = find('#nearby-grid');
+const recommendedSection = find('#recommended-section');
+const recommendedGrid = find('#recommended-grid');
+const upcomingSection = find('#upcoming-section');
+const upcomingGrid = find('#upcoming-grid');
+const upcomingTitle = find('#upcoming-title');
+const viewedSection = find('#viewed-section');
+const viewedGrid = find('#viewed-grid');
 const featuredGrid = find('#featured-grid');
 const favoritesGrid = find('#favorites-grid');
 const favoritesToTop = find('#favorites-to-top');
@@ -1023,7 +1032,7 @@ function navigateToAppView(view) {
 
 function renderPermanent() {
   if (!permanentGrid) return;
-  const source = [...events, ...permanentEvents]
+  const source = permanentEvents
     .filter(event => !isPastEvent(event))
     .filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
   if (source.length) renderCardsIncrementally(permanentGrid, position ? sortByDistance(source) : source);
@@ -1918,6 +1927,12 @@ function renderCard(event, target, { compact = false } = {}) {
 
   const favoriteButton = find('.favorite-button', fragment);
   if (card && favoriteButton) {
+    const compactListCard = target === nearbyGrid || target === viewedGrid || target?.classList.contains('mini-event-rail');
+    if (compactListCard) {
+      card.classList.add('compact-list-card');
+      const description = find('.event-description', card);
+      description?.after(favoriteButton);
+    }
     let lastTap = 0;
     let pointerStart = null;
     let openTimer = 0;
@@ -2086,7 +2101,7 @@ function rerankEventRows(excludedCarousel = null) {
   rerender(paidTarget, upcomingEvents.filter(event => !isFree(event)).filter(event => !paidCategory || eventCategories(event).includes(paidCategory)), { compact: true });
   const quickTarget = quickCalendarTarget();
   rerender(todayGrid, upcomingEvents.filter(event => dateKey(eventDateValue(event)) === quickTarget.key), { compact: true });
-  rerender(permanentGrid, sortByDistance([...events, ...permanentEvents].filter(event => !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)))));
+  rerender(permanentGrid, sortByDistance(permanentEvents.filter(event => !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)))));
 
   const calendarRail = calendarEvents?.querySelector('.events-grid');
   if (calendarSelectedDate && calendarRail) {
@@ -2198,6 +2213,17 @@ function syncCategoryButtonState(container, activeButton, hasSelection) {
   container?.classList.toggle('has-selection', Boolean(hasSelection));
 }
 
+function revealActiveFilter(button) {
+  if (!button) return;
+  window.requestAnimationFrame(() => {
+    button.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'nearest',
+      inline: 'center'
+    });
+  });
+}
+
 function createEventGroup(target, title, items, id) {
   if (!target) return;
   const group = document.createElement('section');
@@ -2211,7 +2237,11 @@ function createEventGroup(target, title, items, id) {
 
 function renderFeatured() {
   if (!featuredGrid || !featuredSection) return;
-  const upcomingFeatured = events.filter(event => matchesHomeMode(event) && isFeatured(event) && !isPastEvent(event));
+  const source = currentAppView === 'permanent' ? permanentEvents : events;
+  const highlighted = source.filter(event => (currentAppView === 'permanent' || matchesHomeMode(event)) && isFeatured(event) && !isPastEvent(event));
+  const upcomingFeatured = highlighted.length || currentAppView !== 'permanent'
+    ? highlighted
+    : source.filter(event => !isPastEvent(event)).slice(0, 3);
   const featured = position
     ? sortByDistance(upcomingFeatured)
     : upcomingFeatured.sort((first, second) => (first['Date and Time'] || '').localeCompare(second['Date and Time'] || ''));
@@ -2477,6 +2507,11 @@ function setupQuickNavigation() {
 
 function renderToday() {
   if (!todayGrid || !todaySection) return;
+  if (currentAppView === 'permanent') {
+    todaySection.hidden = true;
+    todayGrid.replaceChildren();
+    return;
+  }
   const target = quickCalendarTarget();
   const matching = position
     ? sortByDistance(events.filter(event => matchesHomeMode(event) && !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
@@ -2620,7 +2655,7 @@ function renderCalendar() {
       if (datesWithFavorites.has(key)) button.setAttribute('aria-label', `${day}. nap, kedvelt eseménnyel`);
     }
     if (key === today) button.classList.add('today');
-    if (calendarSelectedDate === key) button.classList.add('selected');
+    if (calendarSelectedDate === key) button.classList.add('selected', 'is-selected-flow');
     calendarGrid.append(button);
   }
   renderCalendarEvents();
@@ -2641,6 +2676,7 @@ function createCalendarFilters() {
       calendarCategory = isSecondClick ? '' : category;
       calendarSelectedDate = '';
       syncCategoryButtonState(calendarFilters, button, Boolean(calendarCategory));
+      if (!isSecondClick) revealActiveFilter(button);
       renderCalendar();
       vibrate(10);
     });
@@ -2712,16 +2748,60 @@ function setupCalendar() {
   renderCalendar();
 }
 
+function sortByGeographicDistance(list) {
+  return list.map(event => ({ ...event, distance: eventDistance(event) }))
+    .sort((first, second) => first.distance - second.distance);
+}
+
+function renderDiscoveryRail(target, items, { compact = true } = {}) {
+  if (!target) return;
+  if (!items.length) {
+    target.replaceChildren();
+    return;
+  }
+  renderCardsIncrementally(target, items, { compact });
+}
+
+function renderAllEventRows(items) {
+  if (!grid) return;
+  grid.replaceChildren();
+  const rowCount = items.length > 1 ? 2 : 1;
+  const rowSize = Math.ceil(items.length / rowCount);
+  for (let index = 0; index < rowCount; index += 1) {
+    const rowItems = items.slice(index * rowSize, (index + 1) * rowSize);
+    if (!rowItems.length) continue;
+    const row = document.createElement('div');
+    row.className = 'events-grid event-carousel recommendation-row';
+    row.tabIndex = 0;
+    row.setAttribute('aria-label', `Összes esemény, ${index + 1}. sor`);
+    grid.append(row);
+    renderCardsIncrementally(row, rowItems, { compact: false });
+  }
+}
+
 function renderEvents() {
   if (!grid || !allSection) return;
   awardPastFavoritePoints();
+  const isPermanentView = currentAppView === 'permanent';
+  const source = isPermanentView ? permanentEvents : events;
+  const available = source.filter(event => !isPastEvent(event) && (isPermanentView || matchesHomeMode(event)));
+  const nearby = sortByGeographicDistance(available).slice(0, 3);
+  const visible = sortByDistance(available).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
+  const viewed = sortByGeographicDistance(source.filter(event => detailedEventKeys.has(eventKey(event)))).slice(0, 3);
+
   grid.replaceChildren();
+  recommendedGrid?.replaceChildren();
   renderFeatured();
   renderCalendar();
   renderPermanent();
+  allSection.hidden = false;
+  if (filterBar) filterBar.hidden = !position;
+  if (nearbySection) nearbySection.hidden = !position || !nearby.length;
+  if (recommendedSection) recommendedSection.hidden = !position;
+  if (viewedSection) viewedSection.hidden = !position || !viewed.length;
+  if (upcomingSection) upcomingSection.hidden = !position;
+
   if (!position) {
-    allSection.hidden = false;
-    if (filterBar) filterBar.hidden = true;
     grid.innerHTML = '<p class="location-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span><strong>Hiba:</strong> <button class="location-empty-city-link" type="button">Válassz várost</button> az események megtekintéséhez.</span></p>';
     find('.location-empty-city-link', grid)?.addEventListener('click', () => {
       citySelector?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2732,49 +2812,42 @@ function renderEvents() {
     return;
   }
 
-  allSection.hidden = false;
-  if (filterBar) filterBar.hidden = false;
-  const visible = sortByDistance(events.filter(event => !isPastEvent(event))).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
+  renderDiscoveryRail(nearbyGrid, nearby);
+  renderDiscoveryRail(viewedGrid, viewed);
+
   if (!visible.length) {
-    const alternatives = events
-      .filter(event => !isPastEvent(event) && matchesHomeMode(event))
-      .filter(event => eventCategories(event).some(category => category !== selectedCategory));
-    const availableCategories = [...new Set(alternatives
-      .flatMap(eventCategories)
+    const alternatives = available.filter(event => eventCategories(event).some(category => category !== selectedCategory));
+    const availableCategories = [...new Set(alternatives.flatMap(eventCategories)
       .filter(category => category !== selectedCategory && CATEGORIES.includes(category)))];
-    const recommendedCategory = availableCategories.length
-      ? availableCategories[Math.floor(Math.random() * availableCategories.length)]
-      : '';
+    const recommendedCategory = availableCategories.length ? availableCategories[Math.floor(Math.random() * availableCategories.length)] : '';
     const empty = document.createElement('div');
     empty.className = 'compact-empty-state';
-    const icon = document.createElement('img');
-    icon.className = 'empty-error-icon';
-    icon.src = 'assets/icons/error.svg';
-    icon.alt = '';
-    icon.setAttribute('aria-hidden', 'true');
-    const message = document.createElement('span');
-    message.className = 'compact-empty-message';
-    message.textContent = 'Upsz! Ebben a városban nincs ilyen program.';
-    empty.append(icon, message);
+    empty.innerHTML = '<img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">Upsz! Ebben a városban nincs ilyen program.</span>';
     if (recommendedCategory) {
       const recommendationRow = document.createElement('span');
       recommendationRow.className = 'compact-empty-recommendation-row';
-      const hint = document.createElement('span');
-      hint.className = 'compact-empty-hint';
-      hint.textContent = 'Próbáld meg ezt:';
+      recommendationRow.innerHTML = '<span class="compact-empty-hint">Próbáld meg ezt:</span>';
       const recommendation = document.createElement('button');
       recommendation.type = 'button';
       recommendation.className = 'compact-empty-recommendation';
       recommendation.textContent = categoryLabel(recommendedCategory);
-      recommendation.addEventListener('click', () => {
-        findAll('.filter-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click();
-      });
-      recommendationRow.append(hint, recommendation);
+      recommendation.addEventListener('click', () => findAll('.filter-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click());
+      recommendationRow.append(recommendation);
       empty.append(recommendationRow);
     }
     grid.append(empty);
+    if (recommendedSection) recommendedSection.hidden = true;
+    if (upcomingSection) upcomingSection.hidden = true;
   } else {
-    createEventGroup(grid, 'Összes', visible.filter(matchesHomeMode), homeEventMode === 'free' ? 'free-events' : 'paid-events');
+    renderAllEventRows(visible);
+    const recommended = sortByDistance(available).filter(event => !favoriteIds.has(eventKey(event))).slice(0, 6);
+    renderDiscoveryRail(recommendedGrid, recommended, { compact: false });
+    const upcoming = isPermanentView
+      ? visible.filter(event => eventCategories(event).includes('sport'))
+      : [...visible].sort((first, second) => dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)))).slice(0, 6);
+    if (upcomingTitle) upcomingTitle.textContent = isPermanentView ? 'Sport' : 'Közelgő';
+    if (upcomingSection) upcomingSection.hidden = !upcoming.length;
+    renderDiscoveryRail(upcomingGrid, upcoming, { compact: false });
   }
   renderFavorites();
   renderToday();
@@ -2815,6 +2888,7 @@ function createFilters() {
       selectedCategory = isSecondClick ? '' : category;
       activeFilterButton = isSecondClick ? null : button;
       syncCategoryButtonState(filterBar, activeFilterButton, Boolean(selectedCategory));
+      if (!isSecondClick) revealActiveFilter(button);
       const gooey = find('.gooey-filter', filterBar);
       if (isSecondClick && gooey) {
         gooey.hidden = true;
