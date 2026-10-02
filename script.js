@@ -490,6 +490,17 @@ function eventPriceLabel(event) {
   if (isFree(event)) return 'Ingyenes';
   return (event.Price || '').trim() || 'Ár nincs megadva';
 }
+function eventCompactPriceLabel(event) {
+  if (isFree(event)) return 'Ingyenes';
+  const priceText = String(event.Price || '').trim();
+  const numberMatch = priceText.match(/\d[\d\s.]*/);
+  if (numberMatch) {
+    const amount = Number(numberMatch[0].replace(/[^0-9]/g, ''));
+    if (Number.isFinite(amount)) return `${new Intl.NumberFormat('hu-HU').format(amount)} Ft-tól`;
+  }
+  if (/adom/i.test(priceText)) return 'Adomány';
+  return 'Jegyár';
+}
 function eventKey(event) { return [event.Title, eventDateValue(event), event.Location, event['Ticket Link']].map(value => String(value || '').trim()).join('|'); }
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
 function eventDateOnly(event) { if (event.Permanent) return 'Állandó program'; const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
@@ -510,9 +521,12 @@ function isEventNearby(event, maxKm = 5) {
 function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
 function eventCardDateLabel(event) {
   if (event.Permanent) return 'Állandó program';
-  if (isToday(event)) return 'Ma';
-  if (isTomorrow(event)) return 'Holnap';
-  return eventDateOnly(event);
+  const key = dateKey(eventDateValue(event));
+  if (!key) return 'Dátum hamarosan';
+  const date = new Date(`${key}T00:00:00`);
+  const weekdays = ['Vas', 'Hét', 'Ked', 'Sze', 'Csüt', 'Pén', 'Szo'];
+  const months = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec'];
+  return `${weekdays[date.getDay()]} • ${months[date.getMonth()]} ${date.getDate()}`;
 }
 function setText(selector, value, scope) { const element = find(selector, scope); if (element) element.textContent = value; return element; }
 function vibrate(milliseconds = 16) { if ('vibrate' in navigator) navigator.vibrate(milliseconds); }
@@ -562,8 +576,9 @@ function updateQuickDate() {
   if (!quickDate) return;
   const today = new Date();
   quickDate.dateTime = today.toISOString().slice(0, 10);
-  const weekdays = ['Vas.', 'Hét.', 'Kedd', 'Sze.', 'Csüt.', 'Pén.', 'Szo.'];
-  quickDate.textContent = `${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}. ${weekdays[today.getDay()]}`;
+  const weekdays = ['Vas', 'Hét', 'Ked', 'Sze', 'Csüt', 'Pén', 'Szo'];
+  const months = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec'];
+  quickDate.textContent = `${weekdays[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`;
 }
 
 function initOutroMessage() {
@@ -1252,7 +1267,14 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     searchResults.append(picker);
     return;
   }
-  const ranked = rankedSearchEvents(query);
+  const categoryQuery = CATEGORIES.find(category => normalizeSearchText(category) === term);
+  const ranked = categoryQuery
+    ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
+    : rankedSearchEvents(query);
+  if (categoryQuery && !ranked.length) {
+    searchResults.innerHTML = '<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">Ebben a kategóriában jelenleg nincs esemény.</span></div>';
+    return;
+  }
   const directMatches = ranked.filter(event => normalizeSearchText(event.Title).includes(term));
   searchResults.replaceChildren();
   const rail = document.createElement('div');
@@ -1950,9 +1972,9 @@ function renderCard(event, target, { compact = false } = {}) {
   find('.event-location', inlineDetails)?.classList.toggle('is-nearby', isEventNearby(event));
   setText('.event-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventCardDateLabel(event), fragment);
   setText('.event-location-value', event.Location || 'Helyszín hamarosan', fragment);
+  setText('.event-meta-price', eventCompactPriceLabel(event), fragment);
   setText('.event-title', event.Title || 'Névtelen esemény', fragment);
   setText('.event-description-text', event.Description || 'Részletek hamarosan.', fragment);
-  setText('.event-description-price', eventPriceLabel(event), fragment);
   setText('.category-badge', eventCategories(event)[0] || 'program', fragment);
   setText('.price-badge', eventPriceLabel(event), fragment);
   setText('.age-badge', event['Age Requirement'] || 'Korhatár nincs megadva', fragment);
@@ -1972,8 +1994,9 @@ function renderCard(event, target, { compact = false } = {}) {
     }
     if (distance) distance.classList.add('featured-distance');
   }
-  setText('.inline-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event), fragment);
+  setText('.inline-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventCardDateLabel(event), fragment);
   setText('.inline-location-value', event.Location || 'Helyszín hamarosan', fragment);
+  setText('.inline-meta-price', eventCompactPriceLabel(event), fragment);
   setText('.inline-details-title', event.Title || 'Esemény', fragment);
   setText('.inline-details-time', eventStartTimeText(event), fragment);
   setText('.inline-details-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', fragment);
@@ -2311,10 +2334,10 @@ function createEventGroup(target, title, items, id) {
 function renderFeatured() {
   if (!featuredGrid || !featuredSection) return;
   const source = currentAppView === 'permanent' ? permanentEvents : events;
-  const highlighted = source.filter(event => matchesHomeMode(event) && isFeatured(event) && !isPastEvent(event));
+  const highlighted = source.filter(event => isFeatured(event) && !isPastEvent(event));
   const upcomingFeatured = highlighted.length || currentAppView !== 'permanent'
     ? highlighted
-    : source.filter(event => matchesHomeMode(event) && !isPastEvent(event)).slice(0, 3);
+    : source.filter(event => !isPastEvent(event)).slice(0, 3);
   const featured = position
     ? sortByDistance(upcomingFeatured)
     : upcomingFeatured.sort((first, second) => (first['Date and Time'] || '').localeCompare(second['Date and Time'] || ''));
@@ -2587,7 +2610,7 @@ function renderToday() {
   }
   const target = quickCalendarTarget();
   const matching = position
-    ? sortByDistance(events.filter(event => matchesHomeMode(event) && !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
+    ? sortByDistance(events.filter(event => !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
     : [];
   if (todayEyebrow) todayEyebrow.textContent = target.label === 'mai' ? 'MAI TERV' : 'HOLNAPI TERV';
   if (todayTitle) todayTitle.textContent = target.label === 'mai' ? 'Mai események' : 'Holnapi események';
@@ -2599,7 +2622,7 @@ function renderToday() {
 
 function calendarEventsForSelection() {
   return events
-    .filter(event => !isPastEvent(event) && matchesHomeMode(event))
+    .filter(event => !isPastEvent(event))
     .filter(event => (!calendarCategory || eventCategories(event).includes(calendarCategory)))
     .filter(event => !calendarSelectedDate || dateKey(eventDateValue(event)) === calendarSelectedDate);
 }
@@ -2680,7 +2703,7 @@ function renderCalendar() {
   const month = calendarMonth.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const categoryEvents = events.filter(event => matchesHomeMode(event) && !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
+  const categoryEvents = events.filter(event => !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
   const datesWithEvents = new Set(categoryEvents.map(event => dateKey(eventDateValue(event))).filter(Boolean));
   const datesWithFavorites = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
@@ -2903,10 +2926,11 @@ function renderEvents() {
   awardPastFavoritePoints();
   const isPermanentView = currentAppView === 'permanent';
   const source = isPermanentView ? permanentEvents : events;
-  const available = source.filter(event => !isPastEvent(event) && matchesHomeMode(event));
+  const available = source.filter(event => !isPastEvent(event));
+  const filteredForAll = available.filter(matchesHomeMode);
   const nearby = sortByGeographicDistance(available);
-  const visible = sortHomeFeedEvents(available).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
-  const viewed = sortByGeographicDistance(source.filter(event => !isPastEvent(event) && matchesHomeMode(event) && detailedEventKeys.has(eventKey(event))));
+  const visible = sortHomeFeedEvents(filteredForAll).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
+  const viewed = sortByGeographicDistance(source.filter(event => !isPastEvent(event) && detailedEventKeys.has(eventKey(event))));
 
   grid.replaceChildren();
   recommendedGrid?.replaceChildren();
@@ -2935,7 +2959,7 @@ function renderEvents() {
   renderCompactPagedRail(viewedGrid, viewed);
 
   if (!visible.length) {
-    const alternatives = available.filter(event => eventCategories(event).some(category => category !== selectedCategory));
+    const alternatives = filteredForAll.filter(event => eventCategories(event).some(category => category !== selectedCategory));
     const availableCategories = [...new Set(alternatives.flatMap(eventCategories)
       .filter(category => category !== selectedCategory && CATEGORIES.includes(category)))];
     const recommendedCategory = availableCategories.length ? availableCategories[Math.floor(Math.random() * availableCategories.length)] : '';
@@ -2962,8 +2986,8 @@ function renderEvents() {
     const recommended = sortByDistance(available).filter(event => !favoriteIds.has(eventKey(event))).slice(0, 6);
     renderDiscoveryRail(recommendedGrid, recommended, { compact: false });
     const upcoming = isPermanentView
-      ? visible.filter(event => eventCategories(event).includes('sport'))
-      : [...visible].sort((first, second) => dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)))).slice(0, 6);
+      ? available.filter(event => eventCategories(event).includes('sport'))
+      : [...available].sort((first, second) => dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)))).slice(0, 6);
     if (upcomingTitle) upcomingTitle.textContent = isPermanentView ? 'Sport' : 'Közelgő';
     if (upcomingSection) upcomingSection.hidden = !upcoming.length;
     renderDiscoveryRail(upcomingGrid, upcoming, { compact: false });

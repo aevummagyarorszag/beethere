@@ -2082,14 +2082,18 @@ html[data-theme="dark"] .event-description-price { color: #94A3B8; }
 }
 .event-description-price {
   float: right;
-  margin-top: 1.28em;
-  margin-left: 7px;
+  display: flex;
+  height: 2.56em;
+  margin: 0;
+  align-items: flex-end;
   max-width: 48%;
   overflow: hidden;
   color: inherit !important;
   font-size: inherit !important;
   font-weight: inherit !important;
   line-height: inherit !important;
+  shape-margin: 7px;
+  shape-outside: inset(1.28em 0 0 0);
   text-overflow: ellipsis;
 }
 .event-description-text {
@@ -2143,9 +2147,132 @@ html[data-theme="dark"] .event-description-price { color: #94A3B8; }
   min-height: 42px;
   margin: 0 !important;
 }
-.search-current-category .filter-button { border-color: #7C3AED; }
+.search-category-buttons .filter-button,
+.search-category-buttons .filter-button:hover,
+.search-current-category .filter-button {
+  border-color: transparent !important;
+  background: #FFFFFF !important;
+  color: #334155 !important;
+  box-shadow: 0 6px 14px rgb(15 23 42 / .1) !important;
+}
+html[data-theme="dark"] .search-category-buttons .filter-button,
+html[data-theme="dark"] .search-category-buttons .filter-button:hover {
+  border-color: transparent !important;
+  background: #1F2937 !important;
+  color: #E2E8F0 !important;
+  box-shadow: 0 6px 14px rgb(0 0 0 / .24) !important;
+}
 html[data-theme="dark"] #search-view .event-search-field { background: #1F2937; }
 html[data-theme="dark"] .search-category-picker-title { color: #E2E8F0; }
+
+/* The selected calendar day uses the same quiet gray as the month label. */
+.calendar-day.selected,
+.calendar-day.selected:hover,
+.calendar-day.selected:focus-visible,
+.calendar-day.selected.is-selected-flow,
+.calendar-day.selected.is-selected-flow:hover,
+.calendar-day.selected.is-selected-flow:focus-visible {
+  border-color: transparent !important;
+  background: #64748B !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Event metadata is one compact text line: date • place. */
+.event-card .event-meta {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 4px !important;
+  min-width: 0;
+}
+.event-card .event-meta-icon { display: none !important; }
+.event-card .event-date { flex: 0 0 auto; }
+.event-card .event-location {
+  display: flex !important;
+  min-width: 0 !important;
+  justify-content: flex-start !important;
+  overflow: hidden !important;
+}
+.event-card .event-location::before {
+  content: "•";
+  flex: 0 0 auto;
+  color: currentColor;
+}
+.event-card .event-location-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.event-meta-price,
+.inline-meta-price {
+  justify-self: end;
+  color: #64748B;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+html[data-theme="dark"] .event-meta-price,
+html[data-theme="dark"] .inline-meta-price { color: #94A3B8; }
+
+/* With the price in the metadata row, descriptions use two complete text lines. */
+.event-card .event-description,
+.event-card:not(.featured-card) .event-description,
+.mini-event-rail .event-card .event-description,
+.vertical-event-list .event-card.compact-list-card .event-description,
+.featured-grid .featured-card .event-description,
+.favorite-expanded-description {
+  display: -webkit-box !important;
+  height: 2.56em !important;
+  min-height: 2.56em !important;
+  max-height: 2.56em !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+.event-description-price { display: none !important; }
+.event-description-text { display: inline !important; }
+
+/* Favorite controls stay fully tappable while only the heart remains visible. */
+.favorite-button,
+.favorite-button:hover,
+.favorite-button:focus-visible,
+.favorite-button.is-favorite,
+.favorite-button.is-heart-feedback,
+#event-details-dialog .event-details-favorite-button,
+#event-details-dialog .event-details-favorite-button:hover,
+#event-details-dialog .event-details-favorite-button:focus-visible,
+#event-details-dialog .event-details-favorite-button.is-favorite,
+#event-details-dialog .event-details-favorite-button.is-heart-feedback {
+  border: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #111827 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.favorite-button svg,
+#event-details-dialog .event-details-favorite-button svg {
+  fill: transparent !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  filter: drop-shadow(0 1px 1px rgb(255 255 255 / .72));
+}
+.favorite-button.is-favorite,
+.favorite-button.is-heart-feedback,
+#event-details-dialog .event-details-favorite-button.is-favorite,
+#event-details-dialog .event-details-favorite-button.is-heart-feedback { color: #DC2626 !important; }
+.favorite-button.is-favorite svg,
+.favorite-button.is-heart-feedback svg,
+#event-details-dialog .event-details-favorite-button.is-favorite svg,
+#event-details-dialog .event-details-favorite-button.is-heart-feedback svg { fill: currentColor !important; }
+html[data-theme="dark"] .favorite-button:not(.is-favorite):not(.is-heart-feedback),
+html[data-theme="dark"] #event-details-dialog .event-details-favorite-button:not(.is-favorite):not(.is-heart-feedback) { color: #F8FAFC !important; }
 
 /* The empty-state stack itself spans the rail, so icon and copy truly centre on the page. */
 .compact-empty-state {
