@@ -1215,6 +1215,15 @@ body {
   overscroll-behavior-x: none;
 }
 
+/* Cards fade in continuously as they enter a horizontally swipeable rail. */
+.event-carousel .event-card {
+  opacity: var(--carousel-card-opacity, 1);
+  transition: opacity 90ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-carousel .event-card { transition: none; }
+}
+
 /* Compact event cards: one-line title, metadata, and up to two description lines. */
 .event-card:not(.featured-card) .event-content,
 .featured-grid .featured-card .event-content {
@@ -2274,9 +2283,247 @@ html[data-theme="dark"] .inline-meta-price { color: #94A3B8; }
 html[data-theme="dark"] .favorite-button:not(.is-favorite):not(.is-heart-feedback),
 html[data-theme="dark"] #event-details-dialog .event-details-favorite-button:not(.is-favorite):not(.is-heart-feedback) { color: #F8FAFC !important; }
 
+/* Hearts belong to the lower-right of the description on every card. */
+.event-card .event-description > .favorite-button,
+.vertical-event-list .event-card.compact-list-card .event-description > .favorite-button,
+.featured-grid .featured-card .event-description > .favorite-button {
+  position: static !important;
+  float: right;
+  display: grid !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 2.56em !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 0 1px !important;
+  place-items: end center !important;
+  shape-margin: 6px;
+  shape-outside: inset(1.28em 0 0 0);
+}
+.event-card .event-description,
+.featured-grid .featured-card .event-description,
+.vertical-event-list .event-card.compact-list-card .event-description {
+  display: block !important;
+  height: 2.56em !important;
+  max-height: 2.56em !important;
+  padding-right: 0 !important;
+  overflow: hidden !important;
+  line-height: 1.28 !important;
+  -webkit-line-clamp: unset !important;
+}
+
+/* Compact cards anchor the heart to the card's lower-right corner. */
+.mini-event-rail .event-card,
+.vertical-event-list .event-card.compact-list-card {
+  position: relative !important;
+}
+.mini-event-rail .event-card .event-description,
+.vertical-event-list .event-card.compact-list-card .event-description {
+  padding-right: 44px !important;
+}
+.mini-event-rail .event-card .event-description > .favorite-button,
+.vertical-event-list .event-card.compact-list-card .event-description > .favorite-button {
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  float: none !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  place-items: end center !important;
+  shape-outside: none !important;
+}
+
+/* Small-card titles always stay on one line and visibly truncate when needed. */
+.mini-event-rail .event-card .event-title,
+.vertical-event-list .event-card.compact-list-card .event-title {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  -webkit-line-clamp: unset !important;
+}
+
+/* A separator also precedes the right-aligned ticket price. */
+.event-meta-price::before,
+.inline-meta-price::before { content: "•"; margin-right: 4px; font-weight: 600; }
+
+/* Horizontal rails may scroll internally, but the document itself remains one viewport wide. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip !important;
+}
+body > * { max-width: 100%; }
+.events-section,
+.all-events,
+.discovery-feed-section,
+#events-grid,
+.event-carousel { min-width: 0; max-width: 100%; }
+
+.clear-home-filters {
+  display: block;
+  width: max-content;
+  min-height: 44px;
+  margin: 24px auto 0;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #475569;
+  font: 750 14px/1.2 var(--font-sans);
+  box-shadow: 0 6px 16px rgb(15 23 42 / .1);
+  cursor: pointer;
+}
+.clear-home-filters[hidden] { display: none !important; }
+html[data-theme="dark"] .clear-home-filters { background: #1F2937; color: #E2E8F0; }
+.compact-empty-state .clear-home-filters-inline {
+  flex: 0 0 100%;
+  margin-top: 10px;
+}
+.compact-empty-state:has(.clear-home-filters-inline) { flex-wrap: wrap !important; }
+.weekly-calendar-day:disabled {
+  cursor: default;
+  opacity: .38;
+}
+
+/* Metadata stays compact: the price follows the location whenever the row fits. */
+.event-card .event-meta {
+  display: flex !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  min-width: 0;
+}
+.event-card .event-date,
+.event-card .event-meta-price,
+.event-card .inline-meta-price { flex: 0 0 auto; }
+.event-card .event-location {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+/* The recurring calendar mirrors the one-time calendar's event and today cues. */
+.weekly-calendar-day,
+.weekly-calendar-day:disabled {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #64748B !important;
+  opacity: 1;
+}
+.weekly-calendar-day.has-events,
+.weekly-calendar-day.has-events:hover,
+.weekly-calendar-day.has-events:focus-visible {
+  border-color: rgb(30 41 59 / .12) !important;
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  cursor: pointer;
+}
+.weekly-calendar-day.today,
+.weekly-calendar-day.today.has-events {
+  border: 1px solid #94A3B8 !important;
+  outline: none !important;
+}
+.weekly-calendar-day.selected,
+.weekly-calendar-day.selected:hover,
+.weekly-calendar-day.selected:focus-visible {
+  border-color: transparent !important;
+  background: #64748B !important;
+  color: #FFFFFF !important;
+}
+.weekly-calendar-day.today.selected { border: 1px solid #94A3B8 !important; }
+html[data-theme="dark"] .weekly-calendar-day.has-events {
+  border-color: rgb(255 255 255 / .14) !important;
+  background: #F8FAFC !important;
+  color: #1E293B !important;
+}
+
+/* Today has the same clear, heavier outline in both calendar modes. */
+.calendar-day.today,
+.calendar-day.today.has-events,
+.weekly-calendar-day.today,
+.weekly-calendar-day.today.has-events,
+.weekly-calendar-day.today.selected {
+  border: 2px solid #94A3B8 !important;
+  outline: none !important;
+}
+
+/* Bundled OFL webfont keeps section headings identical across devices. */
+#featured-section .section-heading h2,
+.all-events-heading h2,
+.discovery-feed-section .section-heading h3,
+.calendar-heading h2,
+.today-section .section-heading h2,
+.favorites-section .section-heading h2 {
+  font-family: "Isometra", "Inter", sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 400 !important;
+  line-height: 1.25 !important;
+  letter-spacing: .005em !important;
+}
+
 /* The empty-state stack itself spans the rail, so icon and copy truly centre on the page. */
 .compact-empty-state {
   width: 100% !important;
   align-items: center !important;
   justify-content: center !important;
+}
+@font-face {
+  font-family: "Isometra";
+  src: url("assets/fonts/isometra/Isometra-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Search actions: a plain clear icon followed by the circular filter control. */
+#search-view .event-search-field {
+  gap: 6px;
+  padding-right: 9px;
+}
+#search-view .search-clear {
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 28px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #475569;
+  box-shadow: none !important;
+}
+#search-view .search-filter-button {
+  flex: 0 0 36px;
+  margin: 0;
+}
+
+/* The navigation shares the page colour; only the selected destination is surfaced. */
+#bottom-navigation {
+  border-color: rgb(30 41 59 / .1);
+  background: #F5F5F7;
+  box-shadow: 0 -5px 18px rgb(15 23 42 / .06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+#bottom-navigation .bottom-nav-button,
+#bottom-navigation .bottom-nav-button:hover {
+  background: transparent;
+  box-shadow: none;
+}
+#bottom-navigation .bottom-nav-button.is-active {
+  background: #FFFFFF;
+  box-shadow: 0 3px 12px rgb(15 23 42 / .1);
+}
+html[data-theme="dark"] #bottom-navigation { background: #0F172A; }
+html[data-theme="dark"] #bottom-navigation .bottom-nav-button.is-active {
+  background: #1F2937;
+  box-shadow: 0 3px 12px rgb(0 0 0 / .22);
 }

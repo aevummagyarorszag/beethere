@@ -14,11 +14,12 @@
   <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bowlby+One+SC&family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
-  <link rel="stylesheet" href="home-redesign.css?v=20261002-95">
+    <link rel="stylesheet" href="home-redesign.css?v=20261003-113">
+    <link rel="stylesheet" href="featured-card.css?v=20261003-3">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -51,7 +52,7 @@
       <div id="events-grid" class="events-grid recommendation-grid all-event-grid" tabindex="0" aria-live="polite" aria-label="Összes esemény"></div>
       <section id="nearby-section" class="discovery-feed-section" aria-labelledby="nearby-title">
         <div class="section-heading discovery-heading"><h3 id="nearby-title">Közeledben</h3></div>
-        <div id="nearby-grid" class="events-grid vertical-event-list" tabindex="0" aria-label="Közeledben lévő események"></div>
+        <div id="nearby-grid" class="events-grid event-carousel vertical-event-list" tabindex="0" aria-label="Közeledben lévő események"></div>
       </section>
       <section id="recommended-section" class="discovery-feed-section" aria-labelledby="recommended-title">
         <div class="section-heading discovery-heading"><h3 id="recommended-title">Neked ajánlott</h3></div>
@@ -63,8 +64,9 @@
       </section>
       <section id="viewed-section" class="discovery-feed-section" hidden aria-labelledby="viewed-title">
         <div class="section-heading discovery-heading"><h3 id="viewed-title">Már megtekintetted</h3></div>
-        <div id="viewed-grid" class="events-grid vertical-event-list" tabindex="0" aria-label="Korábban megtekintett események"></div>
+        <div id="viewed-grid" class="events-grid event-carousel vertical-event-list" tabindex="0" aria-label="Korábban megtekintett események"></div>
       </section>
+      <button id="clear-home-filters" class="clear-home-filters" type="button" hidden>Szűrők kikapcsolása</button>
     </section>
 
     <section id="favorites-section" class="favorites-section" hidden aria-labelledby="favorites-title">
@@ -144,7 +146,7 @@
   </main>
 
   <section id="search-view" class="app-view wrapper" hidden aria-label="Keresés">
-    <div class="event-search-field"><label class="sr-only" for="event-search">Esemény keresése név szerint</label><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off" enterkeyhint="search"><button id="search-clear" class="search-clear" type="button" aria-label="Keresés törlése" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button></div>
+    <div class="event-search-field"><label class="sr-only" for="event-search">Esemény keresése név szerint</label><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="event-search" type="search" placeholder="Írd be az esemény nevét" autocomplete="off" enterkeyhint="search"><button id="search-clear" class="search-clear" type="button" aria-label="Keresés törlése" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button><button id="search-filter-button" class="event-filter-button search-filter-button" type="button" aria-haspopup="dialog" aria-controls="event-filter-dialog" aria-expanded="false" aria-label="Eseményszűrők megnyitása"><img src="assets/icons/tune.svg" alt="" aria-hidden="true"><span class="event-filter-active-dot" hidden></span></button></div>
     <div id="search-results" class="app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
@@ -303,12 +305,14 @@
   </div>
 
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
-    <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
-    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><img class="bottom-nav-icon permanent-nav-icon" src="assets/icons/permanent.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Állandó</span></button>
     <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Egyszeri" title="Egyszeri"><img class="bottom-nav-icon one-time-nav-icon" src="assets/icons/event-upcoming.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Egyszeri</span></button>
+    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><img class="bottom-nav-icon permanent-nav-icon" src="assets/icons/permanent.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Állandó</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
+    <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261002-43"></script>
+  <script src="script.js?v=20261003-51"></script>
+    <script src="featured-carousel.js?v=20261003-2"></script>
+    <script src="relative-event-dates.js?v=20261003-1"></script>
 </body>
 </html>

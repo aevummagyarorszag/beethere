@@ -30,20 +30,25 @@ function matchesHomeMode(event) {
 }
 function setupHomeMode() {
   const filterButton = document.querySelector('#event-filter-button');
+  const searchFilterButton = document.querySelector('#search-filter-button');
+  const filterButtons = [filterButton, searchFilterButton].filter(Boolean);
   const filterDialog = document.querySelector('#event-filter-dialog');
   const filterForm = document.querySelector('#event-filter-form');
   const filterClose = document.querySelector('#event-filter-close');
   const filterReset = document.querySelector('#event-filter-reset');
-  const activeDot = document.querySelector('.event-filter-active-dot');
+  const clearHomeFilters = document.querySelector('#clear-home-filters');
+  const activeDots = filterButtons.map(button => button.querySelector('.event-filter-active-dot')).filter(Boolean);
   if (!filterButton || !filterDialog || !filterForm) return;
 
   const syncButton = () => {
     document.body.dataset.eventMode = homeEventMode;
     document.body.dataset.eventSort = homeEventSort;
     const hasCustomFilters = homeEventMode !== 'all' || homeEventSort !== 'recommended';
-    filterButton.classList.toggle('has-active-filters', hasCustomFilters);
-    filterButton.setAttribute('aria-label', hasCustomFilters ? 'Aktív eseményszűrők módosítása' : 'Eseményszűrők megnyitása');
-    if (activeDot) activeDot.hidden = !hasCustomFilters;
+    filterButtons.forEach(button => {
+      button.classList.toggle('has-active-filters', hasCustomFilters);
+      button.setAttribute('aria-label', hasCustomFilters ? 'Aktív eseményszűrők módosítása' : 'Eseményszűrők megnyitása');
+    });
+    activeDots.forEach(dot => { dot.hidden = !hasCustomFilters; });
   };
 
   const syncForm = () => {
@@ -75,25 +80,30 @@ function setupHomeMode() {
         { transform: 'translate(72%, 72%) scale(1.08)', opacity: 0 }
       ], { duration: 2000, easing: 'cubic-bezier(.22,.7,.2,1)' });
       // Replace the event list behind the fully opaque part of the passing wave.
-      contentSwapTimer = setTimeout(renderEvents, 450);
+      contentSwapTimer = setTimeout(() => {
+        renderEvents();
+        if (currentAppView === 'search' && searchInput?.value.trim()) renderSearchResults(searchInput.value, { showSuggestions: false });
+      }, 450);
     } else {
       renderEvents();
+      if (currentAppView === 'search' && searchInput?.value.trim()) renderSearchResults(searchInput.value, { showSuggestions: false });
     }
   };
 
-  filterButton.addEventListener('click', () => {
+  const openFilterDialog = event => {
     syncForm();
-    filterButton.setAttribute('aria-expanded', 'true');
+    filterButtons.forEach(button => button.setAttribute('aria-expanded', String(button === event.currentTarget)));
     document.body.classList.add('event-filter-open');
     if (typeof filterDialog.showModal === 'function') filterDialog.showModal();
     else filterDialog.setAttribute('open', '');
-  });
+  };
+  filterButtons.forEach(button => button.addEventListener('click', openFilterDialog));
   filterClose?.addEventListener('click', () => filterDialog.close('cancel'));
   filterDialog.addEventListener('click', event => {
     if (event.target === filterDialog) filterDialog.close('cancel');
   });
   filterDialog.addEventListener('close', () => {
-    filterButton.setAttribute('aria-expanded', 'false');
+    filterButtons.forEach(button => button.setAttribute('aria-expanded', 'false'));
     document.body.classList.remove('event-filter-open');
   });
   filterReset?.addEventListener('click', () => {
@@ -101,6 +111,15 @@ function setupHomeMode() {
     const defaultSort = filterForm.querySelector('[name="event-sort-filter"][value="recommended"]');
     if (defaultPrice) defaultPrice.checked = true;
     if (defaultSort) defaultSort.checked = true;
+  });
+  clearHomeFilters?.addEventListener('click', () => {
+    const activeCategory = filterBar?.querySelector('.filter-button.active');
+    if (activeCategory) activeCategory.click();
+    const defaultPrice = filterForm.querySelector('[name="event-price-filter"][value="all"]');
+    const defaultSort = filterForm.querySelector('[name="event-sort-filter"][value="recommended"]');
+    if (defaultPrice) defaultPrice.checked = true;
+    if (defaultSort) defaultSort.checked = true;
+    filterForm.requestSubmit();
   });
   filterForm.addEventListener('submit', event => {
     event.preventDefault();
@@ -520,13 +539,22 @@ function isEventNearby(event, maxKm = 5) {
 }
 function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
 function eventCardDateLabel(event) {
-  if (event.Permanent) return 'Állandó program';
+  if (event.Permanent) return String(event.Date || 'Minden nap').trim();
   const key = dateKey(eventDateValue(event));
   if (!key) return 'Dátum hamarosan';
   const date = new Date(`${key}T00:00:00`);
   const weekdays = ['Vas', 'Hét', 'Ked', 'Sze', 'Csüt', 'Pén', 'Szo'];
   const months = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec'];
   return `${weekdays[date.getDay()]} • ${months[date.getMonth()]} ${date.getDate()}`;
+}
+function permanentEventMatchesWeekday(event, dayIndex) {
+  const schedule = normalizedText(event.Date || '').trim();
+  if (!schedule) return true;
+  if (schedule.includes('minden nap') || schedule.includes('mindennap')) return true;
+  if (schedule.includes('hetkoznap')) return dayIndex >= 0 && dayIndex <= 4;
+  if (schedule.includes('hetvege')) return dayIndex >= 5;
+  const weekdayNames = ['hetfo', 'kedd', 'szerda', 'csutortok', 'pentek', 'szombat', 'vasarnap'];
+  return schedule.includes(weekdayNames[dayIndex]);
 }
 function setText(selector, value, scope) { const element = find(selector, scope); if (element) element.textContent = value; return element; }
 function vibrate(milliseconds = 16) { if ('vibrate' in navigator) navigator.vibrate(milliseconds); }
@@ -1268,9 +1296,10 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     return;
   }
   const categoryQuery = CATEGORIES.find(category => normalizeSearchText(category) === term);
-  const ranked = categoryQuery
+  const rankedBase = categoryQuery
     ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
     : rankedSearchEvents(query);
+  const ranked = sortHomeEvents(rankedBase.filter(matchesHomeMode));
   if (categoryQuery && !ranked.length) {
     searchResults.innerHTML = '<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">Ebben a kategóriában jelenleg nincs esemény.</span></div>';
     return;
@@ -1491,6 +1520,18 @@ function recordSkippedCards(carousel) {
   });
 }
 
+function updateCarouselCardVisibility(carousel) {
+  if (!carousel?.isConnected) return;
+  const carouselBounds = carousel.getBoundingClientRect();
+  findAll('.event-card', carousel).forEach(card => {
+    const cardBounds = card.getBoundingClientRect();
+    const visibleWidth = Math.max(0, Math.min(cardBounds.right, carouselBounds.right) - Math.max(cardBounds.left, carouselBounds.left));
+    const visibleRatio = Math.max(0, Math.min(1, visibleWidth / Math.max(1, cardBounds.width)));
+    const opacity = 0.32 + visibleRatio * 0.68;
+    card.style.setProperty('--carousel-card-opacity', opacity.toFixed(3));
+  });
+}
+
 function setupCarousel(carousel) {
   if (!carousel) return;
   let returnButton = carousel._returnButton;
@@ -1515,6 +1556,8 @@ function setupCarousel(carousel) {
   syncCarouselControls(carousel);
   if (carousel.dataset.carouselReady === 'true') {
     carousel._updateReturnButton?.();
+    carousel._updateCardVisibility?.();
+    carousel._updatePagination?.();
     return;
   }
   carousel.dataset.carouselReady = 'true';
@@ -1684,7 +1727,21 @@ function setupCarousel(carousel) {
     }, 120);
   };
   carousel._updateReturnButton = updateReturnButton;
-  carousel.addEventListener('scroll', updateReturnButton, { passive: true });
+  let visibilityFrame = 0;
+  const scheduleVisibilityUpdate = () => {
+    if (visibilityFrame) return;
+    visibilityFrame = window.requestAnimationFrame(() => {
+      visibilityFrame = 0;
+      updateCarouselCardVisibility(carousel);
+    });
+  };
+  carousel._updateCardVisibility = scheduleVisibilityUpdate;
+  carousel.addEventListener('scroll', () => {
+    updateReturnButton();
+    scheduleVisibilityUpdate();
+  }, { passive: true });
+  window.addEventListener('resize', scheduleVisibilityUpdate, { passive: true });
+  new MutationObserver(scheduleVisibilityUpdate).observe(carousel, { childList: true, subtree: true });
   carousel.addEventListener('keydown', event => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key) || event.target !== carousel) return;
     event.preventDefault();
@@ -1692,7 +1749,10 @@ function setupCarousel(carousel) {
     const previous = snapPositions().filter(left => left < carousel.scrollLeft - 12).pop() ?? 0;
     animateTo(event.key === 'Home' ? 0 : event.key === 'End' ? maximum() : event.key === 'ArrowLeft' ? previous : forwardLimit);
   });
-  window.requestAnimationFrame(updateReturnButton);
+  window.requestAnimationFrame(() => {
+    updateReturnButton();
+    updateCarouselCardVisibility(carousel);
+  });
 }
 
 function scrollCarousel(carousel, direction) {
@@ -1993,6 +2053,7 @@ function renderCard(event, target, { compact = false } = {}) {
       imageWrap.append(priceBadge);
     }
     if (distance) distance.classList.add('featured-distance');
+    if (imageWrap && eventContent) imageWrap.append(eventContent);
   }
   setText('.inline-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventCardDateLabel(event), fragment);
   setText('.inline-location-value', event.Location || 'Helyszín hamarosan', fragment);
@@ -2024,9 +2085,9 @@ function renderCard(event, target, { compact = false } = {}) {
       || target?.classList.contains('compact-event-page');
     if (compactListCard) {
       card.classList.add('compact-list-card');
-      const description = find('.event-description', card);
-      description?.after(favoriteButton);
     }
+    const description = find('.event-description', card);
+    description?.prepend(favoriteButton);
     let lastTap = 0;
     let pointerStart = null;
     let openTimer = 0;
@@ -2312,11 +2373,12 @@ function syncCategoryButtonState(container, activeButton, hasSelection) {
 function revealActiveFilter(button) {
   if (!button) return;
   window.requestAnimationFrame(() => {
-    button.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      block: 'nearest',
-      inline: 'center'
-    });
+    const scroller = button.closest('.shared-category-filters');
+    if (!scroller) return;
+    const scrollerBounds = scroller.getBoundingClientRect();
+    const buttonBounds = button.getBoundingClientRect();
+    const offset = buttonBounds.left + buttonBounds.width / 2 - (scrollerBounds.left + scrollerBounds.width / 2);
+    scroller.scrollBy({ left: offset, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   });
 }
 
@@ -2646,6 +2708,24 @@ function renderCalendarEvents() {
   renderCardsIncrementally(rail, selectedEvents, { compact: true });
 }
 
+function renderPermanentCalendarEvents(dayIndex) {
+  if (!calendarEvents) return;
+  calendarEvents.replaceChildren();
+  const selectedEvents = permanentEvents
+    .filter(event => permanentEventMatchesWeekday(event, dayIndex))
+    .filter(event => !calendarCategory || eventCategories(event).includes(calendarCategory));
+  if (!selectedEvents.length) {
+    calendarEvents.innerHTML = '<p class="calendar-empty">Erre a napra nincs állandó program.</p>';
+    return;
+  }
+  const rail = document.createElement('div');
+  rail.className = 'events-grid event-carousel';
+  rail.tabIndex = 0;
+  rail.setAttribute('aria-label', 'A kiválasztott nap állandó programjai');
+  calendarEvents.append(rail);
+  renderCardsIncrementally(rail, position ? sortByDistance(selectedEvents) : selectedEvents, { compact: true });
+}
+
 function refreshCalendarFavoriteMarkers() {
   const favoriteDates = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
@@ -2682,19 +2762,29 @@ function renderCalendar() {
     const todayIndex = (new Date().getDay() + 6) % 7;
     const weeklyLabels = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
     const weeklyNames = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap'];
-    const daysWithRecurringEvents = new Set(permanentEvents
-      .map(event => normalizedText(event.Date))
-      .filter(Boolean));
     weeklyLabels.forEach((label, index) => {
-      const day = document.createElement('span');
+      const day = document.createElement('button');
+      day.type = 'button';
       day.className = 'calendar-day weekly-calendar-day';
       if (index === todayIndex) day.classList.add('today');
-      if (daysWithRecurringEvents.has(normalizedText(weeklyNames[index]))) day.classList.add('has-events');
+      const hasEvents = permanentEvents.some(event => permanentEventMatchesWeekday(event, index)
+        && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
+      if (hasEvents) day.classList.add('has-events');
+      if (calendarSelectedDate === `weekly-${index}`) day.classList.add('selected');
       day.textContent = label;
-      day.setAttribute('aria-label', `${weeklyNames[index]}${day.classList.contains('has-events') ? ', állandó programokkal' : ''}`);
+      day.setAttribute('aria-label', `${weeklyNames[index]}${hasEvents ? ', állandó programokkal' : ''}`);
+      day.disabled = !hasEvents;
+      day.addEventListener('click', () => {
+        calendarSelectedDate = `weekly-${index}`;
+        findAll('.weekly-calendar-day', calendarGrid).forEach(button => button.classList.toggle('selected', button === day));
+        renderPermanentCalendarEvents(index);
+        vibrate(10);
+      });
       calendarGrid.append(day);
     });
-    calendarEvents?.replaceChildren();
+    const selectedWeeklyIndex = Number.parseInt(String(calendarSelectedDate).replace('weekly-', ''), 10);
+    if (String(calendarSelectedDate).startsWith('weekly-') && Number.isInteger(selectedWeeklyIndex)) renderPermanentCalendarEvents(selectedWeeklyIndex);
+    else calendarEvents?.replaceChildren();
     return;
   }
   calendarGrid.hidden = false;
@@ -2927,10 +3017,13 @@ function renderEvents() {
   const isPermanentView = currentAppView === 'permanent';
   const source = isPermanentView ? permanentEvents : events;
   const available = source.filter(event => !isPastEvent(event));
+  const categoryAvailable = available.filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
   const filteredForAll = available.filter(matchesHomeMode);
-  const nearby = sortByGeographicDistance(available);
+  const hasCustomFeedSettings = homeEventMode !== 'all' || homeEventSort !== 'recommended';
+  const hasActiveFeedFilter = hasCustomFeedSettings || Boolean(selectedCategory);
+  const nearby = sortByGeographicDistance(categoryAvailable);
   const visible = sortHomeFeedEvents(filteredForAll).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
-  const viewed = sortByGeographicDistance(source.filter(event => !isPastEvent(event) && detailedEventKeys.has(eventKey(event))));
+  const viewed = sortByGeographicDistance(categoryAvailable.filter(event => detailedEventKeys.has(eventKey(event))));
 
   grid.replaceChildren();
   recommendedGrid?.replaceChildren();
@@ -2939,10 +3032,12 @@ function renderEvents() {
   renderPermanent();
   allSection.hidden = false;
   if (filterBar) filterBar.hidden = !position;
-  if (nearbySection) nearbySection.hidden = !position || !nearby.length;
-  if (recommendedSection) recommendedSection.hidden = !position;
+  if (nearbySection) nearbySection.hidden = !position || hasActiveFeedFilter || !nearby.length;
+  if (recommendedSection) recommendedSection.hidden = true;
   if (viewedSection) viewedSection.hidden = !position || !viewed.length;
-  if (upcomingSection) upcomingSection.hidden = !position;
+  if (upcomingSection) upcomingSection.hidden = true;
+  const clearHomeFilters = document.querySelector('#clear-home-filters');
+  if (clearHomeFilters) clearHomeFilters.hidden = !hasActiveFeedFilter;
 
   if (!position) {
     grid.innerHTML = '<p class="location-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span><strong>Hiba:</strong> <button class="location-empty-city-link" type="button">Válassz várost</button> az események megtekintéséhez.</span></p>';
@@ -2966,7 +3061,16 @@ function renderEvents() {
     const empty = document.createElement('div');
     empty.className = 'compact-empty-state';
     empty.innerHTML = '<img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">Upsz! Ebben a városban nincs ilyen program.</span>';
-    if (recommendedCategory) {
+    if (hasCustomFeedSettings) {
+      const clearFilters = document.createElement('button');
+      clearFilters.type = 'button';
+      clearFilters.className = 'clear-home-filters clear-home-filters-inline';
+      clearFilters.textContent = 'Szűrők kikapcsolása';
+      clearFilters.addEventListener('click', () => document.querySelector('#clear-home-filters')?.click());
+      empty.append(clearFilters);
+      const persistentClearFilters = document.querySelector('#clear-home-filters');
+      if (persistentClearFilters) persistentClearFilters.hidden = true;
+    } else if (recommendedCategory) {
       const recommendationRow = document.createElement('span');
       recommendationRow.className = 'compact-empty-recommendation-row';
       recommendationRow.innerHTML = '<span class="compact-empty-hint">Próbáld meg ezt:</span>';
@@ -2983,13 +3087,14 @@ function renderEvents() {
     if (upcomingSection) upcomingSection.hidden = true;
   } else {
     renderAllEventRows(visible);
-    const recommended = sortByDistance(available).filter(event => !favoriteIds.has(eventKey(event))).slice(0, 6);
+    const recommended = sortByDistance(categoryAvailable).filter(event => !favoriteIds.has(eventKey(event))).slice(0, 6);
+    if (recommendedSection) recommendedSection.hidden = hasActiveFeedFilter || !recommended.length;
     renderDiscoveryRail(recommendedGrid, recommended, { compact: false });
     const upcoming = isPermanentView
-      ? available.filter(event => eventCategories(event).includes('sport'))
-      : [...available].sort((first, second) => dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)))).slice(0, 6);
+      ? categoryAvailable.filter(event => eventCategories(event).includes('sport'))
+      : [...categoryAvailable].sort((first, second) => dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)))).slice(0, 6);
     if (upcomingTitle) upcomingTitle.textContent = isPermanentView ? 'Sport' : 'Közelgő';
-    if (upcomingSection) upcomingSection.hidden = !upcoming.length;
+    if (upcomingSection) upcomingSection.hidden = hasActiveFeedFilter || !upcoming.length;
     renderDiscoveryRail(upcomingGrid, upcoming, { compact: false });
   }
   renderFavorites();
