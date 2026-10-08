@@ -98,11 +98,54 @@ function setupHomeMode() {
     else filterDialog.setAttribute('open', '');
   };
   filterButtons.forEach(button => button.addEventListener('click', openFilterDialog));
+  let filterDrag = null;
+  const resetFilterDrag = () => {
+    filterDialog.classList.remove('is-dragging');
+    filterDialog.style.removeProperty('transition');
+    filterDialog.style.removeProperty('transform');
+    filterDrag = null;
+  };
+  filterDialog.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch' || !event.isPrimary || filterDialog.scrollTop > 0) return;
+    filterDrag = { id: event.pointerId, startY: event.clientY, startX: event.clientX, startedAt: performance.now(), distance: 0 };
+  });
+  filterDialog.addEventListener('pointermove', event => {
+    if (!filterDrag || event.pointerId !== filterDrag.id) return;
+    const distance = Math.max(0, event.clientY - filterDrag.startY);
+    const horizontal = Math.abs(event.clientX - filterDrag.startX);
+    if (horizontal > distance || (!distance && filterDialog.scrollTop > 0)) return;
+    filterDrag.distance = distance;
+    if (distance < 6) return;
+    event.preventDefault();
+    filterDialog.classList.add('is-dragging');
+    filterDialog.style.transition = 'none';
+    filterDialog.style.transform = `translateY(${distance}px)`;
+  }, { passive: false });
+  const finishFilterDrag = event => {
+    if (!filterDrag || event.pointerId !== filterDrag.id) return;
+    const elapsed = Math.max(1, performance.now() - filterDrag.startedAt);
+    const shouldClose = filterDrag.distance > 96 || filterDrag.distance / elapsed > 0.55;
+    if (shouldClose) {
+      filterDialog.style.transition = 'transform 180ms ease';
+      filterDialog.style.transform = 'translateY(100%)';
+      window.setTimeout(() => {
+        if (filterDialog.open) filterDialog.close('swipe');
+        resetFilterDrag();
+      }, 180);
+    } else {
+      filterDialog.style.transition = 'transform 180ms ease';
+      filterDialog.style.transform = 'translateY(0)';
+      window.setTimeout(resetFilterDrag, 180);
+    }
+  };
+  filterDialog.addEventListener('pointerup', finishFilterDrag);
+  filterDialog.addEventListener('pointercancel', finishFilterDrag);
   filterClose?.addEventListener('click', () => filterDialog.close('cancel'));
   filterDialog.addEventListener('click', event => {
     if (event.target === filterDialog) filterDialog.close('cancel');
   });
   filterDialog.addEventListener('close', () => {
+    resetFilterDrag();
     filterButtons.forEach(button => button.setAttribute('aria-expanded', 'false'));
     document.body.classList.remove('event-filter-open');
   });
@@ -188,6 +231,7 @@ const CITIES = [
 ];
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
 const FAVORITE_NOTES_STORAGE_KEY = 'bee-there-favorite-notes';
+const PINNED_EVENT_STORAGE_KEY = 'bee-there-pinned-event';
 const EVENT_RATINGS_STORAGE_KEY = 'bee-there-event-ratings';
 const POINTS_STORAGE_KEY = 'bee-there-points-v1';
 const NEGATIVE_FEEDBACK_STORAGE_KEY = 'bee-there-negative-feedback';
@@ -260,6 +304,18 @@ const eventDetailsImage = find('#event-details-image');
 const eventDetailsImageWrap = find('#event-details-image-wrap');
 const eventDetailsFavorite = find('#event-details-favorite');
 const eventDetailsShare = find('#event-details-share');
+const plannerEvent = find('#planner-event');
+const plannerBack = find('#planner-back');
+const plannerPin = find('#planner-pin');
+const plannerShare = find('#planner-share');
+const plannerTicketButton = find('#planner-ticket-button');
+const plannerRedirectOverlay = find('#planner-redirect-overlay');
+const plannerRedirectMessage = find('#planner-redirect-message');
+const plannerRedirectTitle = find('#planner-redirect-title');
+const plannerEventExpired = find('#planner-event-expired');
+const eventDetailsExpired = find('#event-details-expired');
+const plannerNoteInput = find('#planner-note-input');
+const plannerNoteCopy = find('#planner-note-copy');
 const outroMessage = find('#outro-title');
 const navMenu = document.querySelector('#nav-menu');
 const navMenuToggle = document.querySelector('#nav-menu-toggle');
@@ -310,6 +366,24 @@ let position = null;
 let selectedCity = '';
 let favoriteIds = loadFavorites();
 let favoriteNotes = loadFavoriteNotes();
+const pinnedEventKeys = (() => {
+  try {
+    const stored = localStorage.getItem(PINNED_EVENT_STORAGE_KEY);
+    if (!stored) return new Set();
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return new Set(parsed.filter(key => typeof key === 'string'));
+    } catch { /* Migrate the previous single-pin value. */ }
+    return new Set([stored]);
+  } catch { return new Set(); }
+})();
+const SEARCH_HISTORY_STORAGE_KEY = 'bee-there-search-history';
+let searchHistory = (() => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SEARCH_HISTORY_STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.filter(query => typeof query === 'string' && query.trim()).slice(0, 5) : [];
+  } catch { return []; }
+})();
 let eventRatings = loadEventRatings();
 let pointAwards = loadPointAwards();
 let negativeFeedback = loadNegativeFeedback();
@@ -522,7 +596,23 @@ function eventCompactPriceLabel(event) {
 }
 function eventKey(event) { return [event.Title, eventDateValue(event), event.Location, event['Ticket Link']].map(value => String(value || '').trim()).join('|'); }
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
-function eventDateOnly(event) { if (event.Permanent) return 'Állandó program'; const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
+function relativeEventDateLabel(event) {
+  if (event.Permanent) return '';
+  if (isToday(event)) return 'Ma';
+  if (isTomorrow(event)) return 'Holnap';
+  return '';
+}
+function eventDateOnly(event) { if (event.Permanent) return 'Állandó program'; const relative = relativeEventDateLabel(event); if (relative) return relative; const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
+function eventLongDateLabel(event) {
+  if (event.Permanent) return String(event.Date || 'Állandó program').trim();
+  const relative = relativeEventDateLabel(event);
+  if (relative) return relative;
+  const key = dateKey(eventDateValue(event));
+  if (!key) return 'Dátum hamarosan';
+  const date = new Date(`${key}T00:00:00`);
+  const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'long' }).format(date);
+  return `${weekday.charAt(0).toLocaleUpperCase('hu-HU')}${weekday.slice(1)} • ${eventDateOnly(event)}`;
+}
 function dateKey(value) { const match = String(value || '').match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : ''; }
 function isWithinNextDays(event, days = 3) { const key = dateKey(eventDateValue(event)); if (!key) return false; const today = new Date(); today.setHours(0, 0, 0, 0); const target = new Date(`${key}T00:00:00`); const difference = Math.round((target - today) / 86400000); return difference >= 0 && difference <= days; }
 function isPastEvent(event) { const key = dateKey(eventDateValue(event)); return Boolean(key && key < todayKey()); }
@@ -540,6 +630,8 @@ function isEventNearby(event, maxKm = 5) {
 function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
 function eventCardDateLabel(event) {
   if (event.Permanent) return String(event.Date || 'Minden nap').trim();
+  const relative = relativeEventDateLabel(event);
+  if (relative) return relative;
   const key = dateKey(eventDateValue(event));
   if (!key) return 'Dátum hamarosan';
   const date = new Date(`${key}T00:00:00`);
@@ -1121,13 +1213,216 @@ function applyAppView(view, { scroll = true } = {}) {
   window.dispatchEvent(new Event('scroll'));
 }
 
-function navigateToAppView(view) {
+let appViewAnimations = [];
+
+function animateAppViewChange(previousView) {
+  appViewAnimations.forEach(animation => animation.cancel());
+  appViewAnimations = [];
+  if (previousView === currentAppView || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const order = ['home', 'permanent', 'favorites', 'search', 'profile'];
+  const offset = order.indexOf(currentAppView) > order.indexOf(previousView) ? 32 : -32;
+  const visibleContent = currentAppView === 'home' || currentAppView === 'permanent'
+    ? homeContent
+    : [{ search: searchView, favorites: favoritesView, profile: profileView }[currentAppView]];
+  visibleContent.filter(element => element && !element.hidden && element.animate).forEach(element => {
+    const animation = element.animate([
+      { transform: `translateX(${offset}px)`, opacity: .4 },
+      { transform: 'translateX(0)', opacity: 1 }
+    ], { duration: 260, easing: 'cubic-bezier(.22, 1, .36, 1)' });
+    appViewAnimations.push(animation);
+  });
+}
+
+function navigateToAppView(view, { animate = false } = {}) {
+  const previousView = currentAppView;
+  appViewAnimations.forEach(animation => animation.cancel());
+  appViewAnimations = [];
   const url = new URL(window.location.href);
   if (view === 'home') url.searchParams.delete('view');
   else url.searchParams.set('view', view);
   history.pushState({}, '', url);
   applyAppView(view);
+  if (animate) animateAppViewChange(previousView);
 
+}
+
+function closePlannerEvent() {
+  if (plannerEvent) plannerEvent.hidden = true;
+  if (favoritesSection) favoritesSection.hidden = currentAppView !== 'favorites';
+  document.body.classList.remove('has-planner-event');
+}
+
+function startPlannerRedirect(ticketUrl, button) {
+  if (!ticketUrl || !plannerRedirectOverlay) return;
+  const bounds = button?.getBoundingClientRect();
+  const originX = bounds ? bounds.left + bounds.width / 2 : window.innerWidth * 0.78;
+  const originY = bounds ? bounds.top + bounds.height / 2 : window.innerHeight - 100;
+  plannerRedirectOverlay.style.setProperty('--redirect-x', `${originX}px`);
+  plannerRedirectOverlay.style.setProperty('--redirect-y', `${originY}px`);
+  if (plannerRedirectMessage) plannerRedirectMessage.textContent = 'Átirányítás az esemény oldalára…';
+  if (plannerRedirectTitle) plannerRedirectTitle.textContent = 'Jegyvásárlás itt!';
+  plannerRedirectOverlay.hidden = false;
+  plannerRedirectOverlay.classList.remove('is-active');
+  void plannerRedirectOverlay.offsetWidth;
+  plannerRedirectOverlay.classList.add('is-active');
+  window.setTimeout(() => {
+    window.location.href = ticketUrl;
+  }, 1450);
+}
+
+function startPlannerFreeConfirmation(button) {
+  if (!plannerRedirectOverlay) return;
+  const bounds = button?.getBoundingClientRect();
+  plannerRedirectOverlay.style.setProperty('--redirect-x', `${bounds ? bounds.left + bounds.width / 2 : window.innerWidth * 0.78}px`);
+  plannerRedirectOverlay.style.setProperty('--redirect-y', `${bounds ? bounds.top + bounds.height / 2 : window.innerHeight - 64}px`);
+  if (plannerRedirectMessage) plannerRedirectMessage.textContent = '';
+  if (plannerRedirectTitle) plannerRedirectTitle.textContent = 'Csak el kell jönnöd!';
+  plannerRedirectOverlay.hidden = false;
+  plannerRedirectOverlay.classList.remove('is-active');
+  void plannerRedirectOverlay.offsetWidth;
+  plannerRedirectOverlay.classList.add('is-active');
+  window.setTimeout(() => {
+    plannerRedirectOverlay.classList.remove('is-active');
+    plannerRedirectOverlay.hidden = true;
+  }, 1650);
+}
+
+function savePinnedPlannerEvents() {
+  try { localStorage.setItem(PINNED_EVENT_STORAGE_KEY, JSON.stringify([...pinnedEventKeys])); }
+  catch { /* Keep the current session's pins when storage is unavailable. */ }
+}
+
+function setPinnedPlannerEvent(key) {
+  if (pinnedEventKeys.has(key)) pinnedEventKeys.delete(key);
+  else pinnedEventKeys.add(key);
+  savePinnedPlannerEvents();
+}
+
+function showPlannerEvent(event) {
+  if (!plannerEvent || !favoritesView) return;
+  const key = eventKey(event);
+  if (!favoriteIds.has(key)) {
+    favoriteIds.add(key);
+    saveFavorites();
+    updateFavoriteButtons();
+    refreshCalendarFavoriteMarkers();
+  }
+
+  closeEventDetails();
+  navigateToAppView('favorites');
+  if (favoritesSection) favoritesSection.hidden = true;
+  plannerEvent.hidden = false;
+  document.body.classList.add('has-planner-event');
+
+  const syncPin = () => {
+    if (!plannerPin) return;
+    const pinned = pinnedEventKeys.has(key);
+    plannerPin.classList.toggle('is-pinned', pinned);
+    plannerPin.setAttribute('aria-pressed', String(pinned));
+    plannerPin.setAttribute('aria-label', pinned ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
+  };
+  syncPin();
+  if (plannerPin) plannerPin.onclick = () => {
+    setPinnedPlannerEvent(key);
+    syncPin();
+    renderFavorites();
+    if (favoritesSection) favoritesSection.hidden = true;
+    vibrate(14);
+  };
+  if (plannerShare) plannerShare.onclick = () => shareEvent(event);
+
+  setText('#planner-event-title', event.Title || 'Esemény', plannerEvent);
+  setText('#planner-event-date', isPastEvent(event) ? `${eventLongDateLabel(event)} · Elmúlt` : eventLongDateLabel(event), plannerEvent);
+  setText('#planner-event-footer-date', eventDateOnly(event), plannerEvent);
+  setText('#planner-event-location', event.Location || 'Helyszín hamarosan', plannerEvent);
+  find('.event-date', plannerEvent)?.classList.toggle('is-today', isToday(event));
+  find('.planner-event-location', plannerEvent)?.classList.toggle('is-nearby', isEventNearby(event));
+  const plannerLocationText = find('#planner-event-location', plannerEvent);
+  if (plannerLocationText) {
+    plannerLocationText.scrollLeft = 0;
+    window.requestAnimationFrame(() => refreshLocationOverflowCue(plannerLocationText));
+  }
+  setText('#planner-event-time', eventStartTimeText(event), plannerEvent);
+  setText('#planner-event-price', eventPriceLabel(event), plannerEvent);
+  setText('#planner-event-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', plannerEvent);
+
+  const badges = find('#planner-event-badges', plannerEvent);
+  if (badges) {
+    badges.replaceChildren();
+    [eventCategories(event)[0] || 'program', eventPriceLabel(event), event['Age Requirement'] || 'Korhatár nincs megadva']
+      .forEach(value => {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = value;
+        badges.append(badge);
+      });
+  }
+
+  const imageWrap = find('#planner-event-image-wrap', plannerEvent);
+  const image = find('#planner-event-image', plannerEvent);
+  const imageUrl = optimizedImageUrl(event['Header Image']);
+  if (imageWrap && image) {
+    imageWrap.hidden = !imageUrl;
+    if (imageUrl) {
+      image.src = imageUrl;
+      image.alt = event.Title ? `${event.Title} eseményképe` : 'Esemény képe';
+    } else image.removeAttribute('src');
+  }
+
+  const ticketUrl = safeUrl(event['Ticket Link']);
+  const free = isFree(event);
+  const eventLink = find('#planner-event-link', plannerEvent);
+  const eventLinkAnchor = eventLink?.querySelector('a');
+  if (eventLink) eventLink.hidden = !free || !ticketUrl;
+  if (eventLinkAnchor) {
+    if (free && ticketUrl) {
+      eventLinkAnchor.href = ticketUrl;
+      eventLinkAnchor.textContent = ticketUrl.replace(/^https?:\/\//, '');
+    } else {
+      eventLinkAnchor.removeAttribute('href');
+      eventLinkAnchor.textContent = '';
+    }
+  }
+  const plannerIsPast = isPastEvent(event);
+  if (plannerEvent) plannerEvent.classList.toggle('is-past-event', plannerIsPast);
+  if (plannerEventExpired) plannerEventExpired.hidden = !plannerIsPast;
+  if (plannerTicketButton) plannerTicketButton.hidden = plannerIsPast;
+  const plannerPrice = find('#planner-event-price', plannerEvent);
+  const plannerDate = find('#planner-event-footer-date', plannerEvent);
+  if (plannerPrice) plannerPrice.hidden = plannerIsPast;
+  if (plannerDate) plannerDate.hidden = plannerIsPast;
+  if (plannerTicketButton) {
+    plannerTicketButton.classList.toggle('is-free', free);
+    plannerTicketButton.disabled = !free && !ticketUrl;
+    plannerTicketButton.textContent = free ? 'Várunk a helyszínen!' : ticketUrl ? 'Jegyvásárlás' : 'Nincs jegylink';
+    plannerTicketButton.onclick = free
+      ? () => startPlannerFreeConfirmation(plannerTicketButton)
+      : () => startPlannerRedirect(ticketUrl, plannerTicketButton);
+  }
+  if (plannerNoteInput) {
+    plannerNoteInput.value = favoriteNotes[key] || '';
+    plannerNoteInput.oninput = () => {
+      favoriteNotes[key] = plannerNoteInput.value.slice(0, 5000);
+      saveFavoriteNotes();
+      if (plannerNoteCopy) plannerNoteCopy.disabled = !plannerNoteInput.value.trim();
+    };
+  }
+  if (plannerNoteCopy && plannerNoteInput) {
+    plannerNoteCopy.disabled = !plannerNoteInput.value.trim();
+    plannerNoteCopy.onclick = async () => {
+      const note = plannerNoteInput.value.trim();
+      if (!note) return;
+      const text = `${event.Title || 'Esemény'}\n\n${eventDateOnly(event)} · ${event.Location || 'Helyszín hamarosan'}\n\n${note}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        plannerNoteCopy.classList.add('is-copied');
+        window.setTimeout(() => plannerNoteCopy.classList.remove('is-copied'), 1200);
+      } catch {
+        plannerNoteCopy.classList.remove('is-copied');
+      }
+    };
+  }
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function renderPermanent() {
@@ -1252,7 +1547,16 @@ function rankedSearchEvents(query) {
     .map(item => item.event);
 }
 
+function rememberSearch(query) {
+  const value = String(query || '').trim().slice(0, 160);
+  if (!value) return;
+  searchHistory = [value, ...searchHistory.filter(previous => normalizeSearchText(previous) !== normalizeSearchText(value))].slice(0, 5);
+  try { localStorage.setItem(SEARCH_HISTORY_STORAGE_KEY, JSON.stringify(searchHistory)); }
+  catch { /* Search history is still available during this session. */ }
+}
+
 function renderSearchResults(query, { showSuggestions = true } = {}) {
+  if (!showSuggestions) rememberSearch(query);
   const clearButton = find('#search-clear');
   if (clearButton) clearButton.hidden = !searchInput?.value;
   if (!searchResults) return;
@@ -1288,6 +1592,31 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
       group.append(heading, buttons);
       picker.append(group);
     };
+    if (searchHistory.length) {
+      const history = document.createElement('section');
+      history.className = 'search-history';
+      const heading = document.createElement('h2');
+      heading.className = 'search-category-picker-title';
+      heading.textContent = 'Korábbi keresések';
+      history.append(heading);
+      searchHistory.forEach(query => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'search-history-item';
+        const icon = document.createElement('span');
+        icon.className = 'search-history-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.textContent = query;
+        button.append(icon, label);
+        button.addEventListener('click', () => {
+          searchInput.value = query;
+          renderSearchResults(query, { showSuggestions: false });
+        });
+        history.append(button);
+      });
+      picker.append(history);
+    }
     const currentCategories = CATEGORIES.filter(category => category === 'halloween');
     const standardCategories = CATEGORIES.filter(category => category !== 'halloween');
     if (currentCategories.length) appendCategoryGroup('Aktuális', currentCategories, 'search-current-category');
@@ -1368,8 +1697,14 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
 
 function setupAppNavigation() {
   moveFavoritesToOwnView();
+  if (plannerBack) plannerBack.addEventListener('click', () => {
+    closePlannerEvent();
+    renderFavorites();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  });
   findAll('.bottom-nav-button', bottomNavigation).forEach(button => button.addEventListener('click', () => {
-    navigateToAppView(button.dataset.appView || 'home');
+    if (button.dataset.appView === 'favorites') closePlannerEvent();
+    navigateToAppView(button.dataset.appView || 'home', { animate: true });
     vibrate(10);
   }));
   findAll('[data-app-view-link]').forEach(link => link.addEventListener('click', event => {
@@ -1385,6 +1720,7 @@ function setupAppNavigation() {
       renderSearchResults('');
       searchInput.focus();
     });
+    searchInput.addEventListener('blur', () => rememberSearch(searchInput.value));
     searchInput.addEventListener('input', () => renderSearchResults(searchInput.value, { showSuggestions: true }));
     searchInput.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || !searchInput.value.trim()) return;
@@ -1451,7 +1787,7 @@ function refreshLocationOverflowCue(element) {
 }
 
 function setupLocationOverflowCues() {
-  const selector = '#event-details-location, .inline-location-value';
+  const selector = '#event-details-location, #planner-event-location, .inline-location-value';
   document.addEventListener('scroll', event => {
     if (event.target instanceof Element && event.target.matches(selector)) refreshLocationOverflowCue(event.target);
   }, true);
@@ -1609,7 +1945,7 @@ function setupCarousel(carousel) {
       carousel.scrollLeft = target;
       return;
     }
-    const duration = Math.max(220, Math.min(460, 240 + Math.abs(distance) * 0.16));
+    const duration = Math.max(160, Math.min(280, 180 + Math.abs(distance) * 0.1));
     const tangent = initialVelocity * distance > 0
       ? Math.max(0.8, Math.min(3, initialVelocity * duration / distance)) : 2.6;
     const started = performance.now();
@@ -1651,6 +1987,10 @@ function setupCarousel(carousel) {
     // A new deliberate press must work immediately, even while the carousel is
     // still settling from the previous swipe.
     suppressGestureClick = false;
+    if (event.pointerType === 'touch') {
+      cancelAnimation();
+      return;
+    }
     const interactive = event.target.closest('button, a, input, textarea');
     if (interactive && !interactive.classList.contains('details-button')) {
       cancelAnimation();
@@ -1727,21 +2067,26 @@ function setupCarousel(carousel) {
     }, 120);
   };
   carousel._updateReturnButton = updateReturnButton;
-  let visibilityFrame = 0;
-  const scheduleVisibilityUpdate = () => {
-    if (visibilityFrame) return;
-    visibilityFrame = window.requestAnimationFrame(() => {
-      visibilityFrame = 0;
-      updateCarouselCardVisibility(carousel);
+  const visibilityThresholds = Array.from({ length: 11 }, (_, index) => index / 10);
+  const visibilityObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const opacity = 0.32 + Math.max(0, Math.min(1, entry.intersectionRatio)) * 0.68;
+      entry.target.style.setProperty('--carousel-card-opacity', opacity.toFixed(3));
+    });
+  }, { root: carousel, threshold: visibilityThresholds });
+  const observeCarouselCards = () => {
+    findAll('.event-card', carousel).forEach(card => {
+      if (card.dataset.visibilityObserved === 'true') return;
+      card.dataset.visibilityObserved = 'true';
+      visibilityObserver.observe(card);
     });
   };
-  carousel._updateCardVisibility = scheduleVisibilityUpdate;
+  carousel._updateCardVisibility = observeCarouselCards;
   carousel.addEventListener('scroll', () => {
     updateReturnButton();
-    scheduleVisibilityUpdate();
   }, { passive: true });
-  window.addEventListener('resize', scheduleVisibilityUpdate, { passive: true });
-  new MutationObserver(scheduleVisibilityUpdate).observe(carousel, { childList: true, subtree: true });
+  window.addEventListener('resize', observeCarouselCards, { passive: true });
+  new MutationObserver(observeCarouselCards).observe(carousel, { childList: true, subtree: true });
   carousel.addEventListener('keydown', event => {
     if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key) || event.target !== carousel) return;
     event.preventDefault();
@@ -1751,7 +2096,7 @@ function setupCarousel(carousel) {
   });
   window.requestAnimationFrame(() => {
     updateReturnButton();
-    updateCarouselCardVisibility(carousel);
+    observeCarouselCards();
   });
 }
 
@@ -1803,7 +2148,10 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   rerankEventRows(triggerButton?.closest('.events-grid') || null);
   const isPast = isPastEvent(event);
   detailsWindow.classList.toggle('is-past-event', isPast);
-  setText('#event-details-date', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventDateOnly(event), document);
+  if (eventDetailsExpired) eventDetailsExpired.hidden = !isPast;
+  if (eventDetailsFavorite) eventDetailsFavorite.hidden = isPast;
+  if (eventDetailsShare) eventDetailsShare.hidden = isPast;
+  setText('#event-details-date', isPast ? `${eventLongDateLabel(event)} · Elmúlt` : eventLongDateLabel(event), document);
   setText('#event-details-location', event.Location || 'Helyszín hamarosan', document);
   find('.event-date', eventDetailsDialog)?.classList.toggle('is-today', isToday(event));
   find('.event-details-location', eventDetailsDialog)?.classList.toggle('is-nearby', isEventNearby(event));
@@ -1830,22 +2178,21 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   if (eventDetailsWeather) { eventDetailsWeather.hidden = Boolean(event.Permanent); eventDetailsWeather.textContent = 'Időjárás betöltése…'; }
   const ticketUrl = safeUrl(event['Ticket Link']);
   if (eventDetailsTicket) {
-    const free = isFree(event) && !(event.Permanent && ticketUrl);
-    eventDetailsTicket.hidden = !ticketUrl && !free;
-    eventDetailsTicket.classList.toggle('is-free', free);
-    if (free) {
-      eventDetailsTicket.textContent = 'Ingyenes';
-      eventDetailsTicket.setAttribute('aria-label', 'Ingyenes esemény – csak el kell jönnöd');
-      eventDetailsTicket.removeAttribute('href');
-      eventDetailsTicket.removeAttribute('target');
-    } else if (ticketUrl) {
-      eventDetailsTicket.textContent = event.Permanent ? 'Foglalás ↗' : 'Jegyvásárlás ↗';
-      eventDetailsTicket.removeAttribute('aria-label');
-      eventDetailsTicket.href = ticketUrl;
-      eventDetailsTicket.target = '_blank';
-    } else {
-      eventDetailsTicket.removeAttribute('aria-label');
-    }
+    eventDetailsTicket.hidden = isPast;
+    eventDetailsTicket.classList.remove('is-free');
+    eventDetailsTicket.replaceChildren(document.createTextNode('Tervezés '));
+    const chevron = document.createElement('img');
+    chevron.src = 'assets/icons/chevron-right.svg';
+    chevron.alt = '';
+    chevron.setAttribute('aria-hidden', 'true');
+    eventDetailsTicket.append(chevron);
+    eventDetailsTicket.setAttribute('aria-label', 'Esemény megnyitása a Tervezés nézetben');
+    eventDetailsTicket.onclick = input => {
+      input.preventDefault();
+      input.stopPropagation();
+      input.stopImmediatePropagation();
+      showPlannerEvent(event);
+    };
   }
   if (eventDetailsFreeMessage) {
     window.clearTimeout(freeArrivalMessageTimer);
@@ -1888,22 +2235,6 @@ function setupEventDetailsDialog() {
     event.preventDefault();
     event.stopPropagation();
     closeEventDetails();
-  });
-  if (eventDetailsTicket) eventDetailsTicket.addEventListener('click', event => {
-    if (!eventDetailsTicket.classList.contains('is-free')) {
-      triggerBounce(eventDetailsTicket);
-      return;
-    }
-    event.preventDefault();
-    if (!eventDetailsFreeMessage) return;
-    window.clearTimeout(freeArrivalMessageTimer);
-    eventDetailsFreeMessage.hidden = false;
-    window.requestAnimationFrame(() => eventDetailsFreeMessage.classList.add('is-visible'));
-    freeArrivalMessageTimer = window.setTimeout(() => {
-      eventDetailsFreeMessage.classList.remove('is-visible');
-      window.setTimeout(() => { if (!eventDetailsFreeMessage.classList.contains('is-visible')) eventDetailsFreeMessage.hidden = true; }, 220);
-    }, 1800);
-    triggerBounce(eventDetailsTicket);
   });
 }
 
@@ -2011,12 +2342,14 @@ function renderCard(event, target, { compact = false } = {}) {
         star.textContent = '★';
         star.setAttribute('aria-label', `${value} csillag az 5-ből`);
         star.addEventListener('click', input => {
-          input.stopPropagation();
+          input.preventDefault();
+          input.stopImmediatePropagation();
           eventRatings[key] = value;
           saveEventRatings();
           syncRating();
           vibrate(10);
         });
+        star.addEventListener('pointerdown', input => input.stopPropagation());
         rating.append(star);
       }
       syncRating();
@@ -2033,6 +2366,11 @@ function renderCard(event, target, { compact = false } = {}) {
   setText('.event-date-value', isPast ? `${eventDateOnly(event)} · Elmúlt` : eventCardDateLabel(event), fragment);
   setText('.event-location-value', event.Location || 'Helyszín hamarosan', fragment);
   setText('.event-meta-price', eventCompactPriceLabel(event), fragment);
+  find('.event-meta-price', fragment)?.toggleAttribute('hidden', isPast);
+  if (isPast) {
+    const eventBottom = find('.event-bottom', fragment);
+    if (eventBottom) eventBottom.hidden = true;
+  }
   setText('.event-title', event.Title || 'Névtelen esemény', fragment);
   setText('.event-description-text', event.Description || 'Részletek hamarosan.', fragment);
   setText('.category-badge', eventCategories(event)[0] || 'program', fragment);
@@ -2064,7 +2402,7 @@ function renderCard(event, target, { compact = false } = {}) {
   const inlineTicket = find('.inline-details-ticket', fragment);
   const inlineTicketUrl = safeUrl(event['Ticket Link']);
   if (inlineTicket) {
-    inlineTicket.hidden = !inlineTicketUrl || (isFree(event) && !event.Permanent);
+    inlineTicket.hidden = isPast || !inlineTicketUrl || (isFree(event) && !event.Permanent);
     inlineTicket.textContent = event.Permanent ? "Foglalás ↗" : "Jegyvásárlás ↗";
     if (inlineTicketUrl && (!isFree(event) || event.Permanent)) inlineTicket.href = inlineTicketUrl;
   }
@@ -2100,7 +2438,7 @@ function renderCard(event, target, { compact = false } = {}) {
       }, 160);
     };
     card.addEventListener('click', input => {
-      if (input.target.closest('button, a, textarea, input')) return;
+      if (input.target.closest('button, a, textarea, input, .event-rating, .planner-card-pin')) return;
       openCardDetails();
     });
     card.addEventListener('keydown', input => {
@@ -2115,7 +2453,7 @@ function renderCard(event, target, { compact = false } = {}) {
       pointerStart = { x: input.clientX, y: input.clientY };
     }, { passive: true });
     card.addEventListener('pointerup', input => {
-      if (!pointerStart || input.target.closest('button, a, textarea, input') || Math.hypot(input.clientX - pointerStart.x, input.clientY - pointerStart.y) > 10) {
+      if (!pointerStart || input.target.closest('button, a, textarea, input, .event-rating, .planner-card-pin') || Math.hypot(input.clientX - pointerStart.x, input.clientY - pointerStart.y) > 10) {
         lastTap = 0;
         return;
       }
@@ -2129,7 +2467,7 @@ function renderCard(event, target, { compact = false } = {}) {
     }, { passive: true });
     card.addEventListener('pointercancel', () => { pointerStart = null; lastTap = 0; });
     card.addEventListener('dblclick', input => {
-      if (input.target.closest('button, a, textarea, input') || favoriteIds.has(key)) return;
+      if (input.target.closest('button, a, textarea, input, .event-rating, .planner-card-pin') || favoriteIds.has(key)) return;
       input.preventDefault();
       if (openTimer) clearTimeout(openTimer);
       openTimer = 0;
@@ -2207,6 +2545,10 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
   if (sourceCard) sourceCard.dataset.interacted = 'true';
   if (favoriteIds.has(key)) {
     favoriteIds.delete(key);
+    if (pinnedEventKeys.has(key)) {
+      pinnedEventKeys.delete(key);
+      savePinnedPlannerEvents();
+    }
     recordNegativeFeedback(event);
     delete favoriteNotes[key];
     saveFavoriteNotes();
@@ -2512,12 +2854,68 @@ function promoteFavorite(event, pair) {
   }, 460);
 }
 
+async function animatePinnedPlannerEvent(key, pair, button) {
+  setPinnedPlannerEvent(key);
+  const pinned = pinnedEventKeys.has(key);
+  button.classList.toggle('is-pinned', pinned);
+  button.setAttribute('aria-pressed', String(pinned));
+  button.setAttribute('aria-label', pinned ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
+  vibrate(14);
+  if (!pinned || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !pair.animate) {
+    renderFavorites();
+    return;
+  }
+
+  const bounds = pair.getBoundingClientRect();
+  const flight = pair.cloneNode(true);
+  flight.classList.add('pin-flight');
+  flight.setAttribute('aria-hidden', 'true');
+  flight.tabIndex = -1;
+  flight.inert = true;
+  flight.style.setProperty('--pin-flight-width', `${bounds.width}px`);
+  flight.style.setProperty('--pin-flight-left', `${bounds.left}px`);
+  flight.style.setProperty('--pin-flight-top', `${bounds.top}px`);
+  favoritesView.append(flight);
+  pair.style.visibility = 'hidden';
+  button.disabled = true;
+  try {
+    await flight.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(.86)' }
+    ], { duration: 180, easing: 'ease-out', fill: 'forwards' }).finished;
+    renderFavorites();
+    if (currentAppView !== 'favorites' || !plannerEvent.hidden) return;
+    const destination = [...favoritesGrid.children].find(row => row.dataset.eventKey === key);
+    if (!destination) return;
+    const target = destination.getBoundingClientRect();
+    destination.style.visibility = 'hidden';
+    const move = `translate(${target.left - bounds.left}px, ${target.top - bounds.top}px)`;
+    try {
+      await flight.animate([
+        { transform: 'scale(.86)' },
+        { transform: `${move} scale(.86)`, offset: .78 },
+        { transform: `${move} scale(1)` }
+      ], { duration: 440, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' }).finished;
+    } finally {
+      destination.style.visibility = '';
+      find('.planner-card-pin', destination)?.focus({ preventScroll: true });
+    }
+  } catch {
+    renderFavorites();
+  } finally {
+    flight.remove();
+    pair.style.visibility = '';
+    button.disabled = false;
+  }
+}
+
 function renderFavoritePair(event, index) {
   const pair = document.createElement('div');
   pair.className = 'favorite-pair';
+  pair.dataset.eventKey = eventKey(event);
   pair.classList.toggle('is-past-event', isPastEvent(event));
   pair.tabIndex = 0;
-  pair.setAttribute('aria-label', `${event.Title || 'Esemény'} és jegyzetei`);
+  pair.setAttribute('aria-label', event.Title || 'Esemény');
   renderCard(event, pair);
   const favoriteCard = find('.event-card', pair);
   const favoriteDescription = find('.event-description', favoriteCard);
@@ -2526,19 +2924,36 @@ function renderFavoritePair(event, index) {
     favoriteDescription.classList.add('favorite-expanded-description');
   }
   find('.event-bottom', favoriteCard)?.remove();
-  if (index > 0 && !isPastEvent(event)) {
-    const eventCard = find('.event-card', pair);
-    const imageWrap = find('.image-wrap', eventCard);
-    const promoteButton = document.createElement('button');
-    promoteButton.type = 'button';
-    promoteButton.className = 'promote-favorite-button';
-    promoteButton.setAttribute('aria-label', `${event.Title || 'Esemény'} előre helyezése`);
-    promoteButton.title = 'Legyen ez az első';
-    promoteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(45 12 12)"><path d="M8 3a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2h-1v6l3 3v2H6v-2l3-3V3H8Z"/><path d="M11 15h2v6l-1 2-1-2v-6Z"/></g></svg>';
-    promoteButton.addEventListener('click', () => promoteFavorite(event, pair));
-    imageWrap?.append(promoteButton);
+  if (favoriteCard) {
+    const key = eventKey(event);
+    const imageWrap = find('.image-wrap', favoriteCard);
+    const pinButton = document.createElement('button');
+    pinButton.type = 'button';
+    pinButton.className = 'planner-card-pin';
+    pinButton.classList.toggle('is-pinned', pinnedEventKeys.has(key));
+    pinButton.setAttribute('aria-pressed', String(pinnedEventKeys.has(key)));
+    pinButton.setAttribute('aria-label', pinnedEventKeys.has(key) ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
+    pinButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(45 12 12)"><path d="M8 3a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2h-1v6l3 3v2H6v-2l3-3V3H8Z"/><path d="M11 15h2v6l-1 2-1-2v-6Z"/></g></svg>';
+    pinButton.addEventListener('click', input => {
+      input.preventDefault();
+      input.stopImmediatePropagation();
+      void animatePinnedPlannerEvent(key, pair, pinButton);
+    });
+    imageWrap?.append(pinButton);
+    favoriteCard.addEventListener('click', input => {
+      if (input.target.closest('.favorite-button, .planner-card-pin, .event-rating')) return;
+      input.preventDefault();
+      input.stopImmediatePropagation();
+      showPlannerEvent(event);
+    }, true);
+    favoriteCard.addEventListener('keydown', input => {
+      if (input.target.closest('.favorite-button, .planner-card-pin, .event-rating')) return;
+      if (!['Enter', ' '].includes(input.key)) return;
+      input.preventDefault();
+      input.stopImmediatePropagation();
+      showPlannerEvent(event);
+    }, true);
   }
-  pair.append(createFavoriteNoteCard(event));
   favoritesGrid.append(pair);
   favoritePairResetObserver?.observe(pair);
 }
@@ -2547,9 +2962,12 @@ function renderFavorites() {
   if (!favoritesGrid || !favoritesSection) return;
   awardPastFavoritePoints();
   const favoriteOrder = new Map([...favoriteIds].map((key, index) => [key, index]));
+  const pinnedOrder = new Map([...pinnedEventKeys].map((key, index) => [key, index]));
   const favorites = [...events, ...permanentEvents]
     .filter(event => favoriteIds.has(eventKey(event)))
-    .sort((first, second) => Number(isPastEvent(first)) - Number(isPastEvent(second))
+    .sort((first, second) => Number(pinnedEventKeys.has(eventKey(second))) - Number(pinnedEventKeys.has(eventKey(first)))
+      || ((pinnedOrder.get(eventKey(second)) ?? -1) - (pinnedOrder.get(eventKey(first)) ?? -1))
+      || Number(isPastEvent(first)) - Number(isPastEvent(second))
       || (favoriteOrder.get(eventKey(first)) ?? Infinity) - (favoriteOrder.get(eventKey(second)) ?? Infinity));
   favoritesSection.hidden = currentAppView === 'favorites' ? false : !favorites.length;
   favoritePairResetObserver?.disconnect();
@@ -2562,7 +2980,7 @@ function renderFavorites() {
   }
   favoritesGrid.replaceChildren();
   if (favorites.length) favorites.forEach(renderFavoritePair);
-  else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs kedvelt eseményed. A szív ikonra nyomva bármelyik programot elmentheted ide.</p>';
+  else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs tervezett eseményed. A szív ikonra vagy a Tervezés gombra nyomva bármelyik programot elmentheted ide.</p>';
   updateProfileSummary();
 }
 

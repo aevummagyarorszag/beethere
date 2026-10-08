@@ -19,8 +19,20 @@
           imageWrap.append(content);
         }
         const favoriteButton = card.querySelector(".favorite-button");
-        if (content && favoriteButton && favoriteButton.parentElement !== content) {
-          content.append(favoriteButton);
+        const description = content?.querySelector(".event-description");
+        if (description && favoriteButton && favoriteButton.parentElement !== description) {
+          description.append(favoriteButton);
+        }
+        const syncPanelHeight = () => {
+          if (content) card.style.setProperty(
+            "--featured-panel-height",
+            `${Math.ceil(content.getBoundingClientRect().height)}px`
+          );
+        };
+        if (content && !content.dataset.panelSizeObserved) {
+          content.dataset.panelSizeObserved = "true";
+          new ResizeObserver(syncPanelHeight).observe(content);
+          syncPanelHeight();
         }
       });
     };

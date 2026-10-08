@@ -14,12 +14,12 @@
   <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bowlby+One+SC&family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=20260929-52">
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
-    <link rel="stylesheet" href="home-redesign.css?v=20261003-113">
-    <link rel="stylesheet" href="featured-card.css?v=20261003-3">
+    <link rel="stylesheet" href="home-redesign.css?v=20261007-123">
+    <link rel="stylesheet" href="featured-card.css?v=20261008-34">
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -77,7 +77,7 @@
         </div>
       </div>
       <div id="favorites-grid" class="favorites-list" aria-label="Kedvelt események"></div>
-      <button id="favorites-to-top" class="favorites-to-top" type="button" aria-label="Vissza a kedvencek tetejére" title="Vissza a tetejére">
+      <button id="favorites-to-top" class="favorites-to-top" type="button" aria-label="Vissza a kedvelt események tetejére" title="Vissza a tetejére">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
       </button>
     </section>
@@ -150,12 +150,60 @@
     <div id="search-results" class="app-view-results" aria-live="polite"><p class="app-view-empty">Kezdd el beírni az esemény nevét.</p></div>
   </section>
 
-  <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title"></section>
+  <section id="favorites-view" class="app-view wrapper" hidden aria-labelledby="favorites-title">
+    <article id="planner-event" class="planner-event" hidden aria-labelledby="planner-event-title">
+      <header class="planner-event-header">
+        <button id="planner-back" class="planner-back" type="button" aria-label="Vissza a tervezett eseményekhez"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+        <button id="planner-pin" class="planner-pin" type="button" aria-label="Esemény kitűzése" aria-pressed="false" title="Kitűzés">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(45 12 12)"><path d="M8 3a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2h-1v6l3 3v2H6v-2l3-3V3H8Z"/><path d="M11 15h2v6l-1 2-1-2v-6Z"/></g></svg>
+        </button>
+        <button id="planner-share" class="planner-share" type="button" aria-label="Esemény megosztása" title="Megosztás">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.58 3.91c1.05-.35 2.03.64 1.68 1.69l-4.63 13.63c-.34 1.01-1.68 1.2-2.3.34l-3.67-5.03-5.87-2.62c-.98-.44-.91-1.86.11-2.2l14.68-5.81Z"/><path d="m10.66 14.54 4.87-4.87"/></svg>
+        </button>
+        <h1 id="planner-event-title"></h1>
+
+      </header>
+      <figure id="planner-event-image-wrap" class="planner-event-image-wrap" hidden>
+        <img id="planner-event-image" alt="" decoding="async">
+      </figure>
+      <div class="planner-event-content">
+        <div class="planner-event-meta">
+          <span class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span id="planner-event-date"></span></span>
+          <span class="event-location planner-event-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span id="planner-event-location"></span></span>
+        </div>
+        <p id="planner-event-time" class="planner-event-time"></p>
+        <p id="planner-event-description" class="planner-event-description"></p>
+        <p id="planner-event-link" class="planner-event-link" hidden>Esemény linkje: <a target="_blank" rel="noopener noreferrer"></a></p>
+        <div id="planner-event-badges" class="planner-event-badges"></div>
+        <section class="planner-note" aria-labelledby="planner-note-title">
+          <div class="planner-note-heading">
+            <h2 id="planner-note-title">Jegyzet</h2>
+            <button id="planner-note-copy" class="planner-note-copy" type="button" aria-label="Jegyzet másolása" title="Másolás"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>
+          </div>
+          <textarea id="planner-note-input" maxlength="5000" placeholder="Írj ide bármit az eseményről…" aria-label="Jegyzet az eseményhez"></textarea>
+        </section>
+      </div>
+      <footer class="planner-purchase-bar">
+        <div class="planner-purchase-summary">
+          <strong id="planner-event-price"></strong>
+          <span id="planner-event-footer-date"></span>
+        </div>
+        <button id="planner-ticket-button" class="planner-ticket-button" type="button">Jegyvásárlás</button>
+        <span id="planner-event-expired" class="planner-event-expired" hidden>Elmúlt</span>
+      </footer>
+    </article>
+  </section>
+  <div id="planner-redirect-overlay" class="planner-redirect-overlay" hidden aria-live="assertive">
+    <div class="planner-redirect-copy">
+      <p id="planner-redirect-message">Átirányítás az esemény oldalára…</p>
+      <strong id="planner-redirect-title">Jegyvásárlás itt!</strong>
+    </div>
+  </div>
 
   <section id="profile-view" class="app-view wrapper profile-view" hidden aria-labelledby="profile-view-title">
     <div class="profile-heading">
       <div class="profile-kicker-row"><p class="eyebrow">BEÁLLÍTÁSOK</p><button id="account-settings-button" class="account-settings-button" type="button" aria-expanded="false" aria-controls="account-settings-panel" aria-label="Beállítások" title="Beállítások"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.1a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Z"/><path d="M19.4 13.5a7.8 7.8 0 0 0 .05-1.5 7.8 7.8 0 0 0-.05-1.5l2-1.55-2-3.46-2.37.96a7.8 7.8 0 0 0-2.6-1.5L14.1 2h-4l-.34 2.9a7.8 7.8 0 0 0-2.6 1.5l-2.37-.96-2 3.46 2 1.55a7.8 7.8 0 0 0-.05 1.5 7.8 7.8 0 0 0 .05 1.5l-2 1.55 2 3.46 2.37-.96a7.8 7.8 0 0 0 2.6 1.5l.34 2.9h4l.34-2.9a7.8 7.8 0 0 0 2.6-1.5l2.37.96 2-3.46-2-1.55Z"/></svg></button></div>
-      <h1 id="profile-view-title" class="profile-title">Profil</h1><p class="ui-guidance">Jelöld be, ami érdekel. Többet is választhatsz; a beállításaid automatikusan mentődnek ezen az eszközön.</p>
+      <h1 id="profile-view-title" class="profile-title">Profil</h1>
     </div>
     <div class="profile-setting-row">
       <button id="profile-city-button" class="profile-city-button" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><span>Város</span><strong id="profile-city">Válassz várost</strong></button>
@@ -278,8 +326,8 @@
       <header class="event-details-header">
         <button id="event-details-close" class="dialog-close" type="button" aria-label="Bezárás">×</button>
         <div class="event-details-meta event-meta">
-          <span class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01"/></svg></span><span id="event-details-date"></span></span>
-          <span class="event-location event-details-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z"/><circle cx="12" cy="11" r="2"/></svg></span><span id="event-details-location"></span></span>
+          <span class="event-date"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01M16 17h.01" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="2"/></svg></span><span id="event-details-date"></span></span>
+          <span class="event-location event-details-location"><span class="event-meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-4.5 6-10a6 6 0 1 0-12 0c0 5.5 6 10 6 10Z" fill="#fff"/><circle cx="12" cy="11" r="2" fill="#080b11"/></svg></span><span id="event-details-location"></span></span>
         </div>
         <h2 id="event-details-title"></h2>
       </header>
@@ -294,10 +342,11 @@
         <div class="event-details-actions">
           <div class="event-primary-action">
             <span id="event-details-free-message" class="free-arrival-message" role="status" aria-live="polite" hidden>Csak el kell jönnöd!</span>
-            <a id="event-details-ticket" class="ticket-button" target="_blank" rel="noopener noreferrer">Jegyvásárlás ↗</a>
+            <button id="event-details-ticket" class="ticket-button" type="button">Tervezés <img src="assets/icons/chevron-right.svg" alt="" aria-hidden="true"></button>
             <button id="event-details-favorite" class="favorite-button event-details-favorite-button" type="button" aria-label="Esemény kedvelése" aria-pressed="false" title="Kedvelés"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg></button>
           </div>
           <button id="event-details-share" class="event-share-button" type="button" aria-label="Esemény megosztása" title="Megosztás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.58 3.91c1.05-.35 2.03.64 1.68 1.69l-4.63 13.63c-.34 1.01-1.68 1.2-2.3.34l-3.67-5.03-5.87-2.62c-.98-.44-.91-1.86.11-2.2l14.68-5.81Z"/><path d="m10.66 14.54 4.87-4.87"/></svg></button>
+          <span id="event-details-expired" class="event-details-expired" hidden>Elmúlt</span>
         </div>
       </div>
       </div>
@@ -305,14 +354,13 @@
   </div>
 
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="Alsó navigáció">
-    <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Egyszeri" title="Egyszeri"><img class="bottom-nav-icon one-time-nav-icon" src="assets/icons/event-upcoming.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Egyszeri</span></button>
-    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><img class="bottom-nav-icon permanent-nav-icon" src="assets/icons/permanent.svg" alt="" aria-hidden="true"><span class="bottom-nav-label">Állandó</span></button>
-    <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-0.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
+    <button class="bottom-nav-button is-active" type="button" data-app-view="home" aria-label="Főoldal" title="Főoldal"><svg class="nav-solid-icon" viewBox="0 -960 960 960" aria-hidden="true"><path fill-rule="evenodd" d="M208 -120Q160 -120 160 -168L160 -552Q160 -600 198.4 -628.8L441.6 -811.2Q480 -840 518.4 -811.2L761.6 -628.8Q800 -600 800 -552L800 -168Q800 -120 752 -120L568 -120Q520 -120 520 -168L520 -312Q520 -360 493.33 -360L466.67 -360Q440 -360 440 -312L440 -168Q440 -120 392 -120ZM240 -248Q240 -200 280 -200L320 -200Q360 -200 360 -248L360 -392Q360 -440 408 -440L552 -440Q600 -440 600 -392L600 -248Q600 -200 640 -200L680 -200Q720 -200 720 -248L720 -512Q720 -560 681.6 -588.8L518.4 -711.2Q480 -740 441.6 -711.2L278.4 -588.8Q240 -560 240 -512Z"/></svg><span class="bottom-nav-label">Főoldal</span></button>
+    <button class="bottom-nav-button" type="button" data-app-view="permanent" aria-label="Állandó lehetőségek" title="Állandó lehetőségek"><svg class="nav-solid-icon" viewBox="0 -960 960 960" aria-hidden="true"><path fill-rule="evenodd" d="M298.67 -99.33Q280 -80 246.06 -113.94L153.94 -206.06Q120 -240 153.94 -273.94L246.06 -366.06Q280 -400 298.67 -380.67L317.33 -361.33Q336 -342 315.33 -321.33L294.67 -300.67Q274 -280 322 -280L632 -280Q680 -280 680 -328L680 -392Q680 -440 706.67 -440L733.33 -440Q760 -440 760 -392L760 -248Q760 -200 712 -200L322 -200Q274 -200 294.67 -179.33L315.33 -158.67Q336 -138 317.33 -118.67ZM226.67 -520Q200 -520 200 -568L200 -712Q200 -760 248 -760L638 -760Q686 -760 665.33 -780.67L644.67 -801.33Q624 -822 642.67 -841.33L661.33 -860.67Q680 -880 713.94 -846.06L806.06 -753.94Q840 -720 806.06 -686.06L713.94 -593.94Q680 -560 661.33 -579.33L642.67 -598.67Q624 -618 644.67 -638.67L665.33 -659.33Q686 -680 638 -680L328 -680Q280 -680 280 -632L280 -568Q280 -520 253.33 -520Z"/></svg><span class="bottom-nav-label">Állandó</span></button>
+    <button class="bottom-nav-button" type="button" data-app-view="favorites" aria-label="Kedveltek" title="Kedveltek"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 5.2a5.1 5.1 0 0 0-7.2 0L12 6.1l-1-.9a5.1 5.1 0 0 0-7.2 7.2L12 20.6l8.2-8.2a5.1 5.1 0 0 0 0-7.2Z"/></svg><span class="bottom-nav-label">Kedveltek</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261003-51"></script>
-    <script src="featured-carousel.js?v=20261003-2"></script>
-    <script src="relative-event-dates.js?v=20261003-1"></script>
+  <script src="script.js?v=20261008-66"></script>
+    <script src="featured-carousel.js?v=20261007-5"></script>
 </body>
 </html>

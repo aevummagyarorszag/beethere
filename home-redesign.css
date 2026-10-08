@@ -1069,7 +1069,7 @@ html[data-theme="dark"] .featured-grid .featured-card .event-description { color
   position: absolute !important;
   z-index: 3 !important;
   right: 12px !important;
-  bottom: 12px !important;
+  bottom: calc(var(--featured-panel-height, 120px) + 16px) !important;
   width: auto !important;
   min-width: 0 !important;
   min-height: 0 !important;
@@ -2437,7 +2437,15 @@ html[data-theme="dark"] .clear-home-filters { background: #1F2937; color: #E2E8F
   background: #64748B !important;
   color: #FFFFFF !important;
 }
-.weekly-calendar-day.today.selected { border: 1px solid #94A3B8 !important; }
+.weekly-calendar-grid .weekly-calendar-day.selected,
+.weekly-calendar-grid .weekly-calendar-day.selected:hover,
+.weekly-calendar-grid .weekly-calendar-day.selected:focus-visible,
+html[data-theme="dark"] .weekly-calendar-grid .weekly-calendar-day.selected {
+  background: #64748B !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  animation: none !important;
+}
 html[data-theme="dark"] .weekly-calendar-day.has-events {
   border-color: rgb(255 255 255 / .14) !important;
   background: #F8FAFC !important;
@@ -2461,11 +2469,11 @@ html[data-theme="dark"] .weekly-calendar-day.has-events {
 .calendar-heading h2,
 .today-section .section-heading h2,
 .favorites-section .section-heading h2 {
-  font-family: "Isometra", "Inter", sans-serif !important;
+  font-family: "Inter", sans-serif !important;
   font-size: 24px !important;
-  font-weight: 400 !important;
-  line-height: 1.25 !important;
-  letter-spacing: .005em !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -.03em !important;
 }
 
 /* The empty-state stack itself spans the rail, so icon and copy truly centre on the page. */
@@ -2515,15 +2523,22 @@ html[data-theme="dark"] .weekly-calendar-day.has-events {
 }
 #bottom-navigation .bottom-nav-button,
 #bottom-navigation .bottom-nav-button:hover {
-  background: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0;
 }
 #bottom-navigation .bottom-nav-button.is-active {
-  background: #FFFFFF;
-  box-shadow: 0 3px 12px rgb(15 23 42 / .1);
+  background: #FFFFFF !important;
+  box-shadow: 0 3px 12px rgb(15 23 42 / .1) !important;
 }
 html[data-theme="dark"] #bottom-navigation { background: #0F172A; }
 html[data-theme="dark"] #bottom-navigation .bottom-nav-button.is-active {
-  background: #1F2937;
-  box-shadow: 0 3px 12px rgb(0 0 0 / .22);
+  background: #FFFFFF !important;
+  color: #1E293B;
+  box-shadow: 0 3px 12px rgb(0 0 0 / .22) !important;
+}
+
+#bottom-navigation .bottom-nav-button .nav-solid-icon {
+  fill: currentColor;
+  stroke: none;
 }
