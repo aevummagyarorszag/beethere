@@ -98,6 +98,7 @@
   --bt-space-8: 32px;
   --bt-divider-before: 16px;
   --bt-divider-after: 24px;
+  --bt-featured-inset: 2px;
   --bt-type-caption: 12px;
   --bt-type-body: 16px;
   --bt-type-heading: 32px;
@@ -112,6 +113,8 @@
 }
 
 #featured-grid {
+  padding-left: var(--bt-featured-inset) !important;
+  scroll-padding-left: var(--bt-featured-inset);
   padding-bottom: 0 !important;
 }
 
@@ -279,17 +282,22 @@
 
 /* Measure divider spacing from visible content, without rail padding. */
 .home-section-divider {
-  margin-top: var(--bt-divider-before) !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
 }
 
 #esemenyek {
-  padding-top: var(--bt-divider-after) !important;
+  padding-top: 8px !important;
+}
+
+#search-view .search-suggestions {
+  margin: 0 0 16px;
 }
 
 #featured-section {
   margin-top: 0 !important;
   padding-bottom: var(--bt-divider-before) !important;
+  border-bottom: 0 !important;
 }
 
 #esemenyek > .all-events {
@@ -317,6 +325,10 @@
   margin: 0 !important;
 }
 
+#esemenyek .featured-heading {
+  padding-left: var(--bt-featured-inset) !important;
+}
+
 #esemenyek .all-events-heading {
   position: relative;
   padding-right: 48px !important;
@@ -327,6 +339,149 @@
   top: 50%;
   right: 0;
   transform: translateY(-50%);
+}
+
+#esemenyek > .all-events { position: relative; }
+
+/* Clipping horizontal overflow must not create an extra sticky scroll container. */
+html, body { overflow-x: clip !important; }
+
+.home-topic-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-areas: "topics filters";
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 0;
+  padding: 8px 0;
+  pointer-events: auto;
+}
+
+.topic-window {
+  position: relative;
+  grid-area: topics;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.topic-window::after {
+  content: "";
+  position: absolute;
+  top: -16px;
+  bottom: 0;
+  right: 0;
+  z-index: 3;
+  width: 24px;
+  background: linear-gradient(to right, transparent, #f5f5f7);
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .topic-window::after {
+  background: linear-gradient(to right, transparent, #0f172a);
+}
+
+.home-topic-toolbar.is-stuck { background: #f5f5f7; }
+html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
+
+#esemenyek .all-events .all-events-heading {
+  position: static;
+  grid-area: filters;
+  width: 44px;
+  height: 44px;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: center !important;
+}
+
+#esemenyek .all-events .all-events-heading .event-filter-button {
+  /* Its absolute ::before hit area must be contained by the button itself. */
+  position: relative;
+  top: auto;
+  right: auto;
+  transform: none;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  flex: 0 0 44px !important;
+}
+
+#home-topic-toolbar .event-filter-button::before {
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Isolated native topic rail: legacy filter/grid/animation rules cannot apply. */
+.topic-rail {
+  position: relative;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  scroll-behavior: auto;
+  scroll-snap-type: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+  pointer-events: auto;
+  cursor: grab;
+}
+.topic-rail::-webkit-scrollbar { display: none; }
+.topic-rail.is-dragging { cursor: grabbing; user-select: none; }
+#home-topic-filters { margin: -16px 0; padding: 16px 24px 16px 0; }
+#calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
+.topic-button {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: max-content;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 13px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 3px 8px rgb(15 23 42 / .13), 0 1px 2px rgb(15 23 42 / .06);
+  font: 600 14px/1.2 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.topic-button::before, .topic-button::after { content: none; pointer-events: none; }
+.topic-button .topic-icon { display: flex; align-items: center; }
+.topic-button .ui-icon { width: 21px !important; height: 21px !important; filter: none !important; }
+.topic-button.active { border-color: var(--category-color, #2563eb); }
+.topic-button[data-category=""].active { color: #2563eb; border-color: #2563eb; }
+.topic-rail.has-selection .topic-button:not(.active) { opacity: .46; }
+html[data-theme="dark"] .topic-button { background: #334155; color: #f8fafc; }
+
+#events-grid.all-event-grid,
+#events-grid .recommendation-row { padding-top: 0 !important; }
+#event-filter-dialog .event-filter-choice input[type="checkbox"] {
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+#event-filter-dialog .event-filter-choice input[type="checkbox"]:checked {
+  border: 2px solid #2563eb;
+  background: #2563eb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4 10 4 4 8-8' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
 
 #events-grid.all-event-grid,
@@ -409,14 +564,15 @@ html[data-theme="dark"] #calendar-section {
   -webkit-user-drag: none;
 }
 
-@media (pointer: coarse) {
-  .events-grid[data-carousel-ready="true"],
-  .events-grid[data-carousel-ready="true"]:active {
-    scroll-snap-type: x proximity !important;
-    scroll-behavior: auto !important;
-    touch-action: pan-x pan-y pinch-zoom !important;
-  }
+.events-grid[data-carousel-ready="true"],
+.events-grid[data-carousel-ready="true"]:active {
+  scroll-snap-type: none !important;
+  scroll-behavior: auto !important;
+  touch-action: pan-y pinch-zoom !important;
+  overscroll-behavior-x: contain;
+}
 
+@media (pointer: coarse) {
   .event-card:not(.featured-card):active .image-wrap,
   .featured-grid .featured-card:active .image-wrap {
     transform: none !important;
@@ -684,15 +840,96 @@ body.has-planner-event #favorites-view {
   border-radius: 50% !important;
 }
 
-/* Planning list is a compact vertical list without sidecar note cards. */
+/* Planning overview reuses the discovery feed's compact and medium cards. */
+#favorites-view, #profile-view { padding-top: 0; }
+
+#favorites-view .planning-overview-heading,
+#profile-view .profile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0;
+  margin: 0;
+  padding: 24px 0 8px;
+  border: 0;
+}
+
+#favorites-view #favorites-title,
+#profile-view #profile-view-title {
+  margin: 0;
+  font: 800 24px/1.2 var(--font-sans) !important;
+  letter-spacing: -.03em !important;
+}
+
+#favorites-view .planning-overview-heading {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+#favorites-view .planning-overview-heading > div {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-target);
+}
+
+#favorites-view #favorites-title { text-align: left; }
+
+#profile-view { padding-bottom: 16px; }
+#profile-view .personalization-settings { padding-bottom: 0; }
+
+#favorites-view .planning-overview-heading + .planning-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+#favorites-view .planning-section {
+  min-width: 0;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgb(30 41 59 / .16);
+}
+
+#favorites-view .planning-section h3 {
+  margin: 0 0 16px;
+  color: var(--text);
+  font: 800 22px/1.15 var(--font-sans);
+  letter-spacing: -.03em;
+}
+
+#planning-note-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 80px;
+  padding: 12px 16px;
+  border: 1px solid rgb(30 41 59 / .16);
+  border-radius: 16px;
+  background: #fff;
+  color: #1e293b;
+  font: 400 16px/1.5 var(--font-sans);
+  resize: vertical;
+}
+
+html[data-theme="dark"] #planning-note-input {
+  background: #334155;
+  color: #f8fafc;
+}
+
 #favorites-view .favorites-list {
-  display: grid !important;
-  gap: 40px !important;
+  display: flex !important;
+  gap: 16px !important;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto !important;
 }
 
 #favorites-view .favorite-pair {
   display: block !important;
-  width: 100% !important;
+  width: min(72vw, 330px) !important;
+  flex: 0 0 min(72vw, 330px) !important;
+  min-width: 0;
   margin: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
@@ -702,6 +939,29 @@ body.has-planner-event #favorites-view {
   width: 100% !important;
   max-width: none !important;
   margin: 0 !important;
+}
+
+#favorites-view #pinned-events-grid .favorite-pair {
+  width: 100% !important;
+}
+
+#pinned-events-grid[hidden] { display: none !important; }
+
+#favorites-view #pinned-events-grid .planner-card-pin {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  top: 4px;
+  right: 4px;
+  padding: 0 !important;
+}
+
+#pinned-events-grid .planner-card-pin svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 body.has-planner-event .bottom-navigation,
@@ -888,7 +1148,7 @@ body.has-planner-event .planner-purchase-bar {
   position: absolute;
   z-index: 7;
   top: 12px;
-  right: 12px;
+  right: 8px;
   display: grid;
   width: 44px;
   height: 44px;
@@ -1096,6 +1356,44 @@ body.has-planner-event #favorites-view {
   mask: url("assets/icons/history.svg") center / contain no-repeat;
 }
 
+/* Snapshot both pages so navigation slides out and in together. */
+::view-transition { pointer-events: none; }
+
+#bottom-navigation {
+  view-transition-name: bottom-navigation;
+}
+
+::view-transition-group(bottom-navigation),
+::view-transition-old(bottom-navigation),
+::view-transition-new(bottom-navigation) {
+  animation: none;
+}
+
+::view-transition-old(bottom-navigation) { display: none; }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+  animation-fill-mode: both;
+}
+
+html[data-navigation-direction="forward"]::view-transition-old(root) { animation-name: app-page-out-left; }
+html[data-navigation-direction="forward"]::view-transition-new(root) { animation-name: app-page-in-right; }
+html[data-navigation-direction="backward"]::view-transition-old(root) { animation-name: app-page-out-right; }
+html[data-navigation-direction="backward"]::view-transition-new(root) { animation-name: app-page-in-left; }
+
+@keyframes app-page-out-left { to { transform: translateX(-100%); } }
+@keyframes app-page-in-right { from { transform: translateX(100%); } }
+@keyframes app-page-out-right { to { transform: translateX(100%); } }
+@keyframes app-page-in-left { from { transform: translateX(-100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+
 #profile-view .personalization-settings {
   gap: 24px;
   margin-top: 24px;
@@ -1108,6 +1406,10 @@ body.has-planner-event #favorites-view {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+#profile-view .personalization-settings > .preference-group:last-child {
+  border-bottom: 0;
 }
 
 #profile-view .preference-heading {
@@ -1202,6 +1504,331 @@ html[data-theme="dark"] #profile-view .preference-options .filter-button[aria-pr
   width: var(--pin-flight-width) !important;
   margin: 0 !important;
   pointer-events: none;
-  transform-origin: top center;
+  transform-origin: top left;
   will-change: transform;
 }
+
+/* Attendance uses a readable pill in both planning views. */
+#favorites-view .planner-card-pin,
+#planner-event .planner-pin {
+  width: auto !important;
+  min-width: 96px !important;
+  max-width: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  aspect-ratio: auto;
+  padding: 0 12px !important;
+  border: 1px solid rgb(255 255 255 / .38) !important;
+  border-radius: 999px !important;
+  background: rgb(15 23 42 / .84) !important;
+  color: #fff !important;
+  font: 600 14px/1.2 var(--font-sans);
+  white-space: nowrap;
+}
+
+#planner-event .planner-pin {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  border-color: rgb(15 23 42 / .12) !important;
+}
+
+#planner-event .planner-pin:not(.is-pinned) {
+  background: #fff !important;
+  color: #111827 !important;
+}
+
+#favorites-view #pinned-events-grid .planner-card-pin {
+  width: auto !important;
+  min-width: 80px !important;
+  max-width: none !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 12px;
+}
+
+#favorites-view .planner-card-pin.is-pinned,
+#planner-event .planner-pin.is-pinned {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+#planner-event .planner-share { right: 112px; }
+
+/* Compact planner controls stay visible independently of the event title. */
+#planner-event .planner-event-header {
+  position: sticky;
+  top: 0;
+  z-index: 890;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  background: var(--bg);
+}
+
+#planner-event .planner-back,
+#planner-event .planner-share,
+#planner-event .planner-pin {
+  position: static;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  flex: 0 0 auto;
+}
+
+#planner-event .planner-back,
+#planner-event .planner-share {
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+}
+
+#planner-event .planner-back {
+  margin: 0 auto 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#planner-event .planner-back::before,
+#planner-event .planner-back::after {
+  display: none;
+}
+
+#planner-event .planner-event-title {
+  width: min(100% - 32px, 760px);
+  margin: 16px auto;
+  font: 800 24px/1.25 Inter, sans-serif;
+  letter-spacing: -.035em;
+}
+
+#planner-event .planner-event-image-wrap {
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  max-height: 240px;
+  aspect-ratio: 2 / 1;
+  border-radius: 16px;
+}
+
+#planner-event .planner-event-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#planner-event .planner-event-content { padding-top: 16px; }
+
+body.has-planner-event #favorites-view {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+}
+
+body.has-planner-event .planner-purchase-bar {
+  min-height: 60px;
+  box-sizing: border-box;
+  gap: 12px;
+  padding: 8px max(16px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+#planner-event .planner-ticket-button {
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+/* Settings is a separate full-page view with grouped rows. */
+.account-settings-button .settings-nav-icon {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  stroke: none;
+}
+
+body.has-settings-view .bottom-navigation { display: none; }
+body.has-settings-view { padding-bottom: 0; }
+body.settings-sheet-open { overflow-y: hidden; }
+#settings-view { min-height: 100dvh; padding: 0 0 24px; }
+#settings-view #account-settings-panel {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#settings-view .account-settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  margin-inline: -16px;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  background: var(--surface);
+}
+#settings-view .account-settings-header h1 {
+  margin: 0;
+  font: 800 24px/1.2 var(--font-sans);
+  letter-spacing: -.03em;
+}
+.settings-back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+.settings-back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.settings-category { margin-bottom: 24px; }
+.settings-category h2 { margin: 0 0 8px; font: 800 20px/1.2 var(--font-sans); }
+#settings-view .settings-summary button { min-height: 48px; font-size: 16px; }
+#settings-view .settings-sheet {
+  top: auto;
+  bottom: 0;
+  width: 100%;
+  max-width: 720px;
+  min-height: 0;
+  max-height: 50dvh;
+  box-sizing: border-box;
+  margin: auto;
+  padding: 0 24px calc(24px + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 24px 24px 0 0;
+}
+
+#settings-view .settings-subpage-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  margin: 0 -24px 16px;
+  padding: 8px 16px;
+  background: var(--surface);
+}
+
+#settings-view .settings-sheet-close {
+  position: static;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#settings-view .settings-sheet-close svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#settings-view .settings-back::before,
+#settings-view .settings-back::after,
+#settings-view .settings-sheet-close::before,
+#settings-view .settings-sheet-close::after { display: none; }
+
+/* These controls deliberately have no surface, including the global button shadow. */
+#planner-event .planner-back,
+#settings-view .settings-back,
+#settings-view .settings-sheet-close,
+#settings-view .settings-summary button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#settings-view .settings-summary button { gap: 12px; }
+#settings-view .settings-row-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  fill: currentColor;
+  stroke: none;
+  filter: none;
+  box-shadow: none;
+}
+
+#planner-event .planner-back,
+#settings-view .settings-back,
+#settings-view .settings-sheet-close { border: 0 !important; }
+
+#settings-view .account-settings-header,
+#settings-view .settings-subpage-header,
+#settings-view .settings-sheet {
+  background: var(--bg);
+  box-shadow: none;
+}
+
+/* One temporary message, positioned above the current fixed bottom bar. */
+#app-snackbar {
+  position: fixed;
+  z-index: 3000;
+  inset: auto;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  transform: translateX(calc(-50% + var(--snackbar-drag-x, 0px)));
+  opacity: var(--snackbar-opacity, 1);
+  touch-action: pan-y;
+  user-select: none;
+  transition: transform 150ms ease-out, opacity 150ms ease-out;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(32 41 56 / .88);
+  color: #fff;
+  font: 500 14px/1.4 var(--font-sans);
+  box-shadow: 0 4px 16px rgb(15 23 42 / .16);
+  animation: snackbar-enter 180ms ease-out;
+}
+#app-snackbar[hidden], #app-snackbar button[hidden] { display: none !important; }
+#app-snackbar.is-dragging { transition: none; }
+#app-snackbar > span { min-width: 0; }
+#app-snackbar button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  margin: -10px -8px -10px 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #a9c7ff;
+  font: 700 14px/1.4 var(--font-sans);
+  cursor: pointer;
+}
+#app-snackbar button::before, #app-snackbar button::after { display: none; }
+#app-snackbar button:focus-visible { outline: 2px solid #a9c7ff; outline-offset: 2px; }
+@keyframes snackbar-enter {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { #app-snackbar { animation: none; transition: none; } }

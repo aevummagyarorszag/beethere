@@ -23,7 +23,8 @@ body > * { position: relative; z-index: 1; }
 [data-home-content][hidden] { display: none !important; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { position: relative; }
-button::before { position: absolute; z-index: 1; inset: -7px; content: ""; }
+/* Decorative pseudo-elements must never create invisible button overlays. */
+button::before { position: absolute; z-index: 1; inset: -7px; content: ""; pointer-events: none; }
 button > * { position: relative; z-index: 2; }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }

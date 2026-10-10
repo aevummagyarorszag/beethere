@@ -1215,10 +1215,9 @@ body {
   overscroll-behavior-x: none;
 }
 
-/* Cards fade in continuously as they enter a horizontally swipeable rail. */
+/* Event cards retain their full contrast throughout horizontal scrolling. */
 .event-carousel .event-card {
-  opacity: var(--carousel-card-opacity, 1);
-  transition: opacity 90ms linear;
+  opacity: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .event-carousel .event-card { transition: none; }
@@ -2040,8 +2039,8 @@ html[data-theme="dark"] .event-description-price { color: #94A3B8; }
 .quick-navigation {
   grid-template-columns: minmax(0, 1fr) max-content !important;
   grid-template-rows: 1fr !important;
-  min-height: 58px !important;
-  height: 58px !important;
+  min-height: 40px !important;
+  height: 40px !important;
   padding-top: 0 !important;
 }
 .quick-navigation #city-selector {

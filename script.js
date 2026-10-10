@@ -1,4 +1,107 @@
 const EVENTS_FILE = 'events.json';
+let snackbarState = null;
+function showSnackbar(message, { actionLabel = '', action = null } = {}) {
+  if (!snackbarState) {
+    const element = document.createElement('div');
+    element.id = 'app-snackbar';
+    element.hidden = true;
+    element.setAttribute('popover', 'manual');
+    const text = document.createElement('span');
+    text.setAttribute('role', 'status');
+    text.setAttribute('aria-live', 'polite');
+    text.setAttribute('aria-atomic', 'true');
+    const button = document.createElement('button');
+    button.type = 'button';
+    element.append(text, button);
+    document.body.append(element);
+    snackbarState = { element, text, button, timer: null, action: null };
+    element.addEventListener('pointerdown', event => {
+      if (!event.isPrimary || event.button !== 0) return;
+      snackbarState.drag = { id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0 };
+      snackbarState.suppressClick = false;
+    });
+    element.addEventListener('pointermove', event => {
+      const drag = snackbarState.drag;
+      if (!drag || drag.id !== event.pointerId) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (!drag.active) {
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { snackbarState.drag = null; return; }
+        if (Math.abs(dx) < 8) return;
+        drag.active = true;
+        snackbarState.suppressClick = true;
+        element.setPointerCapture(event.pointerId);
+        element.classList.add('is-dragging');
+      }
+      drag.dx = dx;
+      element.style.setProperty('--snackbar-drag-x', `${dx}px`);
+      element.style.setProperty('--snackbar-opacity', String(Math.max(.2, 1 - Math.abs(dx) / element.offsetWidth)));
+    });
+    const finishDrag = event => {
+      const drag = snackbarState.drag;
+      if (!drag || drag.id !== event.pointerId) return;
+      if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
+      if (event.type === 'pointerup' && drag.active && Math.abs(drag.dx) >= Math.min(64, element.offsetWidth * .2)) {
+        hideSnackbar();
+      } else {
+        snackbarState.drag = null;
+        element.classList.remove('is-dragging');
+        element.style.removeProperty('--snackbar-drag-x');
+        element.style.removeProperty('--snackbar-opacity');
+      }
+    };
+    element.addEventListener('pointerup', finishDrag);
+    element.addEventListener('pointercancel', finishDrag);
+    element.addEventListener('click', event => {
+      if (!snackbarState.suppressClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      snackbarState.suppressClick = false;
+    }, true);
+    button.addEventListener('click', () => {
+      const callback = snackbarState.action;
+      hideSnackbar();
+      callback?.();
+    });
+    window.addEventListener('resize', positionSnackbar);
+  }
+  const state = snackbarState;
+  window.clearTimeout(state.timer);
+  state.drag = null;
+  state.suppressClick = false;
+  state.element.classList.remove('is-dragging');
+  state.element.style.removeProperty('--snackbar-drag-x');
+  state.element.style.removeProperty('--snackbar-opacity');
+  state.action = action;
+  state.text.textContent = message;
+  state.button.textContent = actionLabel;
+  state.button.hidden = !action || !actionLabel;
+  state.element.hidden = false;
+  if (state.element.showPopover && !state.element.matches(':popover-open')) state.element.showPopover();
+  positionSnackbar();
+  state.timer = window.setTimeout(hideSnackbar, 3000);
+}
+
+function hideSnackbar() {
+  if (!snackbarState) return;
+  window.clearTimeout(snackbarState.timer);
+  if (snackbarState.element.hidePopover && snackbarState.element.matches(':popover-open')) snackbarState.element.hidePopover();
+  snackbarState.element.hidden = true;
+  snackbarState.drag = null;
+  snackbarState.action = null;
+}
+
+function positionSnackbar() {
+  if (!snackbarState || snackbarState.element.hidden) return;
+  const bar = document.body.classList.contains('has-planner-event')
+    ? document.querySelector('.planner-purchase-bar')
+    : document.querySelector('#bottom-navigation');
+  const bounds = bar?.getBoundingClientRect();
+  const visible = bar && getComputedStyle(bar).display !== 'none' && bounds.height > 0;
+  snackbarState.element.style.bottom = visible
+    ? `${Math.max(0, window.innerHeight - bounds.top) + 12}px`
+    : 'calc(16px + env(safe-area-inset-bottom))';
+}
 const BASE_CATEGORIES = ['party', 'kultúra', 'sport', 'családi', 'gasztro', 'romantika', 'mi', 'tanulás', 'látnivalók'];
 let CATEGORIES = ['halloween', ...BASE_CATEGORIES];
 const CATEGORY_LABELS = {
@@ -22,7 +125,7 @@ const UI_ICON_PATHS = {
 
 let uiIconInstance = 0;
 let homeEventMode = 'all';
-let homeEventSort = 'recommended';
+let homeEventSort = [];
 function matchesHomeMode(event) {
   if (homeEventMode === 'free') return isFree(event);
   if (homeEventMode === 'paid') return !isFree(event);
@@ -42,8 +145,8 @@ function setupHomeMode() {
 
   const syncButton = () => {
     document.body.dataset.eventMode = homeEventMode;
-    document.body.dataset.eventSort = homeEventSort;
-    const hasCustomFilters = homeEventMode !== 'all' || homeEventSort !== 'recommended';
+    document.body.dataset.eventSort = homeEventSort.join(',') || 'recommended';
+    const hasCustomFilters = homeEventMode !== 'all' || homeEventSort.length > 0;
     filterButtons.forEach(button => {
       button.classList.toggle('has-active-filters', hasCustomFilters);
       button.setAttribute('aria-label', hasCustomFilters ? 'Aktív eseményszűrők módosítása' : 'Eseményszűrők megnyitása');
@@ -53,10 +156,18 @@ function setupHomeMode() {
 
   const syncForm = () => {
     const price = filterForm.querySelector(`[name="event-price-filter"][value="${homeEventMode}"]`);
-    const sort = filterForm.querySelector(`[name="event-sort-filter"][value="${homeEventSort}"]`);
     if (price) price.checked = true;
-    if (sort) sort.checked = true;
+    filterForm.querySelectorAll('[name="event-sort-filter"]').forEach(input => {
+      input.checked = input.value === 'recommended' ? !homeEventSort.length : homeEventSort.includes(input.value);
+    });
   };
+  filterForm.addEventListener('change', event => {
+    if (event.target.name !== 'event-sort-filter') return;
+    const recommended = filterForm.querySelector('[name="event-sort-filter"][value="recommended"]');
+    const choices = [...filterForm.querySelectorAll('[name="event-sort-filter"][type="checkbox"]')];
+    if (event.target.value === 'recommended') choices.forEach(input => { input.checked = false; });
+    if (recommended) recommended.checked = !choices.some(input => input.checked);
+  });
 
   const sweep = document.createElement('div');
   sweep.className = 'mode-sweep';
@@ -151,26 +262,32 @@ function setupHomeMode() {
   });
   filterReset?.addEventListener('click', () => {
     const defaultPrice = filterForm.querySelector('[name="event-price-filter"][value="all"]');
-    const defaultSort = filterForm.querySelector('[name="event-sort-filter"][value="recommended"]');
     if (defaultPrice) defaultPrice.checked = true;
-    if (defaultSort) defaultSort.checked = true;
+    filterForm.querySelectorAll('[name="event-sort-filter"]').forEach(input => { input.checked = false; });
+    homeEventMode = 'all';
+    homeEventSort = [];
+    syncForm();
+    calendarSelectedDate = '';
+    syncButton();
+    filterDialog.close('reset');
+    renderFilterChange(false);
+    showSnackbar('Szűrők kikapcsolva.');
   });
   clearHomeFilters?.addEventListener('click', () => {
-    const activeCategory = filterBar?.querySelector('.filter-button.active');
+    const activeCategory = filterBar?.querySelector('.topic-button.active');
     if (activeCategory) activeCategory.click();
     const defaultPrice = filterForm.querySelector('[name="event-price-filter"][value="all"]');
-    const defaultSort = filterForm.querySelector('[name="event-sort-filter"][value="recommended"]');
     if (defaultPrice) defaultPrice.checked = true;
-    if (defaultSort) defaultSort.checked = true;
+    filterForm.querySelectorAll('[name="event-sort-filter"]').forEach(input => { input.checked = false; });
     filterForm.requestSubmit();
+    showSnackbar('Szűrők kikapcsolva.');
   });
   filterForm.addEventListener('submit', event => {
     event.preventDefault();
     const data = new FormData(filterForm);
     const requestedMode = String(data.get('event-price-filter') || 'all');
     const nextMode = ['all', 'paid', 'free'].includes(requestedMode) ? requestedMode : 'all';
-    const requestedSort = String(data.get('event-sort-filter') || 'recommended');
-    const nextSort = ['recommended', 'distance', 'date', 'price'].includes(requestedSort) ? requestedSort : 'recommended';
+    const nextSort = data.getAll('event-sort-filter').filter(value => ['distance', 'date', 'price'].includes(value));
     const modeChanged = nextMode !== homeEventMode;
     homeEventMode = nextMode;
     homeEventSort = nextSort;
@@ -190,6 +307,7 @@ function setupHomeMode() {
 
 // External SVG documents isolate gradient/filter IDs and keep the detailed artwork cacheable.
 const UI_ICON_ASSETS = Object.freeze({
+  all: 'assets/icons/all-match.svg',
   paid: 'assets/icons/paid.svg',
   ticket: 'assets/icons/ticket.svg',
   calendar: 'assets/icons/calendar.svg',
@@ -273,6 +391,9 @@ const viewedSection = find('#viewed-section');
 const viewedGrid = find('#viewed-grid');
 const featuredGrid = find('#featured-grid');
 const favoritesGrid = find('#favorites-grid');
+const pinnedEventsGrid = find('#pinned-events-grid');
+const planningNoteInput = find('#planning-note-input');
+const PLANNING_NOTE_STORAGE_KEY = 'bee-there-planning-note';
 const favoritesToTop = find('#favorites-to-top');
 const todayGrid = find('#today-grid');
 const todayTitle = find('#today-title');
@@ -283,7 +404,7 @@ const featuredSection = find('#featured-section');
 const featuredTitle = find('#featured-title');
 const favoritesSection = find('#favorites-section');
 const todaySection = find('#today-section');
-const filterBar = find('#category-filters');
+const filterBar = find('#home-topic-filters');
 const locationText = find('#location-text');
 const citySelector = find('#city-selector');
 const citySelectorLabel = find('#city-selector-label');
@@ -330,7 +451,7 @@ const pointsCounter = find('#points-counter');
 const pointsCounterControl = find('.points-counter');
 const quickDate = find('#quick-date');
 const calendarSection = find('#calendar-section');
-const calendarFilters = find('#calendar-category-filters');
+const calendarFilters = find('#calendar-topic-filters');
 const calendarGrid = find('#calendar-grid');
 const calendarMonthLabel = find('#calendar-month-label');
 const calendarEvents = find('#calendar-events');
@@ -341,6 +462,7 @@ const permanentView = find('#permanent-view');
 const permanentGrid = find('#permanent-grid');
 let permanentEvents = [];
 const profileView = find('#profile-view');
+const settingsView = find('#settings-view');
 const searchInput = find('#event-search');
 const searchResults = find('#search-results');
 const profileCity = find('#profile-city');
@@ -361,7 +483,7 @@ const homeContent = findAll('[data-home-content]');
 let events = [];
 let selectedCategory = '';
 let freeArrivalMessageTimer = 0;
-let activeFilterButton = null;
+
 let position = null;
 let selectedCity = '';
 let favoriteIds = loadFavorites();
@@ -698,7 +820,7 @@ function updateQuickDate() {
   quickDate.dateTime = today.toISOString().slice(0, 10);
   const weekdays = ['Vas', 'Hét', 'Ked', 'Sze', 'Csüt', 'Pén', 'Szo'];
   const months = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec'];
-  quickDate.textContent = `${weekdays[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`;
+  quickDate.textContent = `${weekdays[today.getDay()]} • ${months[today.getMonth()]} ${today.getDate()}`;
 }
 
 function initOutroMessage() {
@@ -1186,17 +1308,30 @@ function moveFavoritesToOwnView() {
 function appViewFromUrl() {
   const value = new URLSearchParams(window.location.search).get('view');
   if (value === 'send') return 'permanent';
-  return ['search', 'permanent', 'favorites', 'profile'].includes(value) ? value : 'home';
+  return ['search', 'permanent', 'favorites', 'profile', 'settings'].includes(value) ? value : 'home';
 }
 
 function applyAppView(view, { scroll = true } = {}) {
-  currentAppView = ['search', 'permanent', 'favorites', 'profile'].includes(view) ? view : 'home';
+  hideSnackbar();
+  cancelPendingSearch();
+  currentAppView = ['search', 'permanent', 'favorites', 'profile', 'settings'].includes(view) ? view : 'home';
+  closePlannerEvent();
   const isHome = currentAppView === 'home' || currentAppView === 'permanent';
   homeContent.forEach(element => { if (element.hasAttribute('data-home-content')) element.hidden = !isHome; });
-  const views = { search: searchView, favorites: favoritesView, profile: profileView };
+  const views = { search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView };
   Object.entries(views).forEach(([name, element]) => { if (element) element.hidden = name !== currentAppView; });
+  const isSettings = currentAppView === 'settings';
+  document.body.classList.toggle('has-settings-view', isSettings);
+  if (accountSettingsPanel) accountSettingsPanel.hidden = !isSettings;
+  accountSettingsButton?.setAttribute('aria-expanded', String(isSettings));
+  if (!isSettings) {
+    document.body.classList.remove('settings-sheet-open');
+    findAll('.settings-sheet', accountSettingsPanel).forEach(sheet => { sheet.hidden = true; sheet.classList.remove('is-open'); });
+    const backdrop = find('#settings-sheet-backdrop');
+    if (backdrop) backdrop.hidden = true;
+  }
   findAll('.bottom-nav-button', bottomNavigation).forEach(button => {
-    const active = button.dataset.appView === currentAppView;
+    const active = button.dataset.appView === (isSettings ? 'profile' : currentAppView);
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-current', active ? 'page' : 'false');
   });
@@ -1214,35 +1349,50 @@ function applyAppView(view, { scroll = true } = {}) {
 }
 
 let appViewAnimations = [];
+let appViewTransition = null;
 
 function animateAppViewChange(previousView) {
   appViewAnimations.forEach(animation => animation.cancel());
   appViewAnimations = [];
   if (previousView === currentAppView || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const order = ['home', 'permanent', 'favorites', 'search', 'profile'];
-  const offset = order.indexOf(currentAppView) > order.indexOf(previousView) ? 32 : -32;
+  const offset = (order.indexOf(currentAppView) > order.indexOf(previousView) ? 1 : -1) * window.innerWidth;
   const visibleContent = currentAppView === 'home' || currentAppView === 'permanent'
     ? homeContent
-    : [{ search: searchView, favorites: favoritesView, profile: profileView }[currentAppView]];
+    : [{ search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView }[currentAppView]];
   visibleContent.filter(element => element && !element.hidden && element.animate).forEach(element => {
     const animation = element.animate([
-      { transform: `translateX(${offset}px)`, opacity: .4 },
+      { transform: `translateX(${offset}px)`, opacity: 1 },
       { transform: 'translateX(0)', opacity: 1 }
-    ], { duration: 260, easing: 'cubic-bezier(.22, 1, .36, 1)' });
+    ], { duration: 300, easing: 'cubic-bezier(.22, 1, .36, 1)' });
     appViewAnimations.push(animation);
   });
 }
 
 function navigateToAppView(view, { animate = false } = {}) {
   const previousView = currentAppView;
+  appViewTransition?.skipTransition();
   appViewAnimations.forEach(animation => animation.cancel());
   appViewAnimations = [];
   const url = new URL(window.location.href);
   if (view === 'home') url.searchParams.delete('view');
   else url.searchParams.set('view', view);
   history.pushState({}, '', url);
-  applyAppView(view);
-  if (animate) animateAppViewChange(previousView);
+  if (animate && previousView !== view && document.startViewTransition
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const order = ['home', 'permanent', 'favorites', 'search', 'profile'];
+    document.documentElement.dataset.navigationDirection = order.indexOf(view) > order.indexOf(previousView) ? 'forward' : 'backward';
+    const transition = document.startViewTransition(() => {
+      applyAppView(view);
+    });
+    appViewTransition = transition;
+    transition.finished.catch(() => {}).finally(() => {
+      if (appViewTransition === transition) appViewTransition = null;
+    });
+  } else {
+    applyAppView(view);
+    if (animate) animateAppViewChange(previousView);
+  }
 
 }
 
@@ -1293,7 +1443,22 @@ function savePinnedPlannerEvents() {
 }
 
 function setPinnedPlannerEvent(key) {
-  if (pinnedEventKeys.has(key)) pinnedEventKeys.delete(key);
+  if (pinnedEventKeys.has(key)) {
+    pinnedEventKeys.delete(key);
+    showSnackbar('Esemény eltávolítva.', {
+      actionLabel: 'Mégis megyek rá',
+      action: () => {
+        pinnedEventKeys.add(key);
+        savePinnedPlannerEvents();
+        preservePageScroll(() => renderFavorites());
+        if (plannerEvent?.dataset.eventKey === key && plannerPin) {
+          plannerPin.classList.add('is-pinned');
+          plannerPin.setAttribute('aria-pressed', 'true');
+          plannerPin.setAttribute('aria-label', 'Mégsem megyek rá');
+        }
+      }
+    });
+  }
   else pinnedEventKeys.add(key);
   savePinnedPlannerEvents();
 }
@@ -1312,6 +1477,7 @@ function showPlannerEvent(event) {
   navigateToAppView('favorites');
   if (favoritesSection) favoritesSection.hidden = true;
   plannerEvent.hidden = false;
+  plannerEvent.dataset.eventKey = key;
   document.body.classList.add('has-planner-event');
 
   const syncPin = () => {
@@ -1319,7 +1485,7 @@ function showPlannerEvent(event) {
     const pinned = pinnedEventKeys.has(key);
     plannerPin.classList.toggle('is-pinned', pinned);
     plannerPin.setAttribute('aria-pressed', String(pinned));
-    plannerPin.setAttribute('aria-label', pinned ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
+    plannerPin.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
   };
   syncPin();
   if (plannerPin) plannerPin.onclick = () => {
@@ -1415,10 +1581,12 @@ function showPlannerEvent(event) {
       const text = `${event.Title || 'Esemény'}\n\n${eventDateOnly(event)} · ${event.Location || 'Helyszín hamarosan'}\n\n${note}`;
       try {
         await navigator.clipboard.writeText(text);
+        showSnackbar('Jegyzet kimásolva.');
         plannerNoteCopy.classList.add('is-copied');
         window.setTimeout(() => plannerNoteCopy.classList.remove('is-copied'), 1200);
       } catch {
         plannerNoteCopy.classList.remove('is-copied');
+        showSnackbar('Nem sikerült a másolás.', { actionLabel: 'Újra', action: () => plannerNoteCopy.click() });
       }
     };
   }
@@ -1555,7 +1723,30 @@ function rememberSearch(query) {
   catch { /* Search history is still available during this session. */ }
 }
 
+let searchDebounceTimer = 0;
+let searchDebounceVersion = 0;
+
+function cancelPendingSearch() {
+  window.clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = 0;
+  searchDebounceVersion += 1;
+}
+
+function scheduleSearchSuggestions() {
+  cancelPendingSearch();
+  const query = searchInput?.value || '';
+  const clearButton = find('#search-clear');
+  if (clearButton) clearButton.hidden = !query;
+  if (!query.trim()) { renderSearchResults(''); return; }
+  const version = searchDebounceVersion;
+  searchDebounceTimer = window.setTimeout(() => {
+    if (version !== searchDebounceVersion || currentAppView !== 'search' || searchInput?.value !== query) return;
+    renderSearchResults(query, { showSuggestions: true });
+  }, 300);
+}
+
 function renderSearchResults(query, { showSuggestions = true } = {}) {
+  cancelPendingSearch();
   if (!showSuggestions) rememberSearch(query);
   const clearButton = find('#search-clear');
   if (clearButton) clearButton.hidden = !searchInput?.value;
@@ -1629,8 +1820,8 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
     : rankedSearchEvents(query);
   const ranked = sortHomeEvents(rankedBase.filter(matchesHomeMode));
-  if (categoryQuery && !ranked.length) {
-    searchResults.innerHTML = '<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">Ebben a kategóriában jelenleg nincs esemény.</span></div>';
+  if (!ranked.length) {
+    searchResults.innerHTML = `<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">${categoryQuery ? 'Ebben a kategóriában jelenleg nincs esemény.' : 'A jelenlegi szűrőkkel nincs találat. Próbálj más keresést, vagy kapcsold ki a szűrőket.'}</span></div>`;
     return;
   }
   const directMatches = ranked.filter(event => normalizeSearchText(event.Title).includes(term));
@@ -1691,7 +1882,7 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
       list.append(button);
     });
     section.append(heading, list);
-    searchResults.append(section);
+    searchResults.prepend(section);
   }
 }
 
@@ -1721,7 +1912,11 @@ function setupAppNavigation() {
       searchInput.focus();
     });
     searchInput.addEventListener('blur', () => rememberSearch(searchInput.value));
-    searchInput.addEventListener('input', () => renderSearchResults(searchInput.value, { showSuggestions: true }));
+    searchInput.addEventListener('input', event => {
+      if (event.isComposing) { cancelPendingSearch(); return; }
+      scheduleSearchSuggestions();
+    });
+    searchInput.addEventListener('compositionend', scheduleSearchSuggestions);
     searchInput.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || !searchInput.value.trim()) return;
       event.preventDefault();
@@ -1858,13 +2053,8 @@ function recordSkippedCards(carousel) {
 
 function updateCarouselCardVisibility(carousel) {
   if (!carousel?.isConnected) return;
-  const carouselBounds = carousel.getBoundingClientRect();
   findAll('.event-card', carousel).forEach(card => {
-    const cardBounds = card.getBoundingClientRect();
-    const visibleWidth = Math.max(0, Math.min(cardBounds.right, carouselBounds.right) - Math.max(cardBounds.left, carouselBounds.left));
-    const visibleRatio = Math.max(0, Math.min(1, visibleWidth / Math.max(1, cardBounds.width)));
-    const opacity = 0.32 + visibleRatio * 0.68;
-    card.style.setProperty('--carousel-card-opacity', opacity.toFixed(3));
+    card.style.removeProperty('--carousel-card-opacity');
   });
 }
 
@@ -1903,6 +2093,7 @@ function setupCarousel(carousel) {
   let startY = 0;
   let startScrollLeft = 0;
   let forwardLimit = Infinity;
+  let gestureAnchor = 0;
   let samples = [];
   let animationFrame = 0;
   let wheelTimer = 0;
@@ -1913,7 +2104,9 @@ function setupCarousel(carousel) {
   const snapPositions = () => {
     const bounds = carousel.getBoundingClientRect();
     const padding = parseFloat(getComputedStyle(carousel).scrollPaddingLeft) || 0;
-    return [...new Set([0, ...findAll('.event-card, .favorite-note-card', carousel)
+    const pages = [...carousel.children].filter(child => child.matches('.compact-event-page'));
+    const items = pages.length ? pages : findAll('.event-card, .favorite-note-card', carousel);
+    return [...new Set([0, ...items
       .map(card => Math.round(clamp(card.getBoundingClientRect().left - bounds.left + carousel.scrollLeft - padding))), maximum()])].sort((a, b) => a - b);
   };
   const nearest = value => snapPositions().reduce((best, point) => Math.abs(point - value) < Math.abs(best - value) ? point : best, 0);
@@ -1964,19 +2157,30 @@ function setupCarousel(carousel) {
   const beginGesture = () => {
     cancelAnimation();
     startScrollLeft = carousel.scrollLeft;
-    forwardLimit = snapPositions().find(left => left > startScrollLeft + 12) ?? maximum();
+    gestureAnchor = nearest(startScrollLeft);
+    forwardLimit = snapPositions().find(left => left > gestureAnchor + 1) ?? maximum();
     samples = [];
     sample();
+  };
+  const dragPosition = displacement => {
+    const step = Math.max(1, forwardLimit - gestureAnchor);
+    // Follow the finger continuously; extra forward travel becomes soft resistance,
+    // while releasing the gesture always chooses the adjacent page.
+    const travel = displacement > step
+      ? step + step * .12 * (1 - Math.exp(-(displacement - step) / step))
+      : displacement;
+    return clamp(startScrollLeft + travel);
   };
   const settleGesture = () => {
     const speed = velocity();
     const moved = carousel.scrollLeft - startScrollLeft;
     if (moved > 0) {
       const threshold = Math.min(60, (forwardLimit - startScrollLeft) * 0.18);
-      animateTo(moved >= threshold || speed > 0.35 ? forwardLimit : nearest(startScrollLeft), speed);
+      animateTo(moved >= threshold || speed > 0.35 ? forwardLimit : gestureAnchor, speed);
     } else {
       // Backward flicks retain momentum and can cross several cards.
-      const step = findAll('.event-card', carousel)[0]?.getBoundingClientRect().width || carousel.clientWidth;
+      const points = snapPositions();
+      const step = points.find(point => point > gestureAnchor + 1) - gestureAnchor || carousel.clientWidth;
       const momentum = Math.max(-step * 3, Math.min(0, speed * 260));
       animateTo(nearest(clamp(carousel.scrollLeft + momentum)), speed);
     }
@@ -1987,10 +2191,6 @@ function setupCarousel(carousel) {
     // A new deliberate press must work immediately, even while the carousel is
     // still settling from the previous swipe.
     suppressGestureClick = false;
-    if (event.pointerType === 'touch') {
-      cancelAnimation();
-      return;
-    }
     const interactive = event.target.closest('button, a, input, textarea');
     if (interactive && !interactive.classList.contains('details-button')) {
       cancelAnimation();
@@ -2015,7 +2215,7 @@ function setupCarousel(carousel) {
     carousel.setPointerCapture?.(event.pointerId);
     carousel.classList.add('is-dragging');
     event.preventDefault();
-    carousel.scrollLeft = clamp(Math.min(forwardLimit, startScrollLeft + dx));
+    carousel.scrollLeft = dragPosition(dx);
     sample();
   });
   const stopDragging = event => {
@@ -2033,6 +2233,7 @@ function setupCarousel(carousel) {
   };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
+  carousel.addEventListener('lostpointercapture', stopDragging);
   carousel.addEventListener('wheel', event => {
     if (isDragging || event.target.closest('input, textarea')) return;
     if (!event.shiftKey && Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
@@ -2040,11 +2241,16 @@ function setupCarousel(carousel) {
     if (!delta) return;
     event.preventDefault();
     if (!wheelActive) { beginGesture(); wheelActive = true; }
-    carousel.scrollLeft = clamp(Math.min(forwardLimit, carousel.scrollLeft + delta));
+    carousel.scrollLeft = dragPosition(carousel.scrollLeft - startScrollLeft + delta);
     sample();
     window.clearTimeout(wheelTimer);
     wheelTimer = window.setTimeout(() => { wheelActive = false; settleGesture(); }, 140);
   }, { passive: false });
+  carousel._stepPage = direction => {
+    beginGesture();
+    const previous = snapPositions().filter(left => left < gestureAnchor - 1).pop() ?? 0;
+    animateTo(direction < 0 ? previous : forwardLimit);
+  };
   carousel.addEventListener('click', event => {
     // Suppress only the synthetic click belonging to the swipe itself. A new
     // pointerdown clears this flag, so every deliberate follow-up tap is instant.
@@ -2067,20 +2273,7 @@ function setupCarousel(carousel) {
     }, 120);
   };
   carousel._updateReturnButton = updateReturnButton;
-  const visibilityThresholds = Array.from({ length: 11 }, (_, index) => index / 10);
-  const visibilityObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      const opacity = 0.32 + Math.max(0, Math.min(1, entry.intersectionRatio)) * 0.68;
-      entry.target.style.setProperty('--carousel-card-opacity', opacity.toFixed(3));
-    });
-  }, { root: carousel, threshold: visibilityThresholds });
-  const observeCarouselCards = () => {
-    findAll('.event-card', carousel).forEach(card => {
-      if (card.dataset.visibilityObserved === 'true') return;
-      card.dataset.visibilityObserved = 'true';
-      visibilityObserver.observe(card);
-    });
-  };
+  const observeCarouselCards = () => updateCarouselCardVisibility(carousel);
   carousel._updateCardVisibility = observeCarouselCards;
   carousel.addEventListener('scroll', () => {
     updateReturnButton();
@@ -2102,6 +2295,7 @@ function setupCarousel(carousel) {
 
 function scrollCarousel(carousel, direction) {
   if (!carousel) { console.warn('[Bee There] A lapozható eseménysáv nem található.'); return; }
+  if (carousel._stepPage) { carousel._stepPage(direction); return; }
   carousel.scrollBy({ left: direction * carousel.clientWidth * 0.82, behavior: 'smooth' });
 }
 
@@ -2534,14 +2728,26 @@ function fitFeaturedDescription(card) {
 
 function preservePageScroll(callback) {
   const scrollTop = window.scrollY;
+  const previousMinHeight = document.body.style.minHeight;
+  document.body.style.minHeight = `${document.documentElement.scrollHeight}px`;
   callback();
   const restore = () => window.scrollTo({ top: scrollTop, behavior: 'auto' });
   restore();
-  window.requestAnimationFrame(restore);
+  window.requestAnimationFrame(() => {
+    restore();
+    window.requestAnimationFrame(() => {
+      document.body.style.minHeight = previousMinHeight;
+      restore();
+    });
+  });
 }
 
 function toggleFavoriteForEvent(event, button, sourceCard = null) {
   const key = eventKey(event);
+  const removed = favoriteIds.has(key);
+  const oldNote = favoriteNotes[key];
+  const wasPinned = pinnedEventKeys.has(key);
+  const oldFeedback = negativeFeedback[key];
   if (sourceCard) sourceCard.dataset.interacted = 'true';
   if (favoriteIds.has(key)) {
     favoriteIds.delete(key);
@@ -2563,6 +2769,26 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
     if (currentAppView !== 'favorites') renderFavorites();
     else updateProfileSummary();
   });
+  showSnackbar(removed ? 'Eltávolítva a kedveltekből.' : 'Hozzáadva a kedveltekhez.', removed ? {
+    actionLabel: 'Visszavonás',
+    action: () => {
+      favoriteIds.add(key);
+      if (wasPinned) pinnedEventKeys.add(key);
+      if (oldNote !== undefined) favoriteNotes[key] = oldNote;
+      if (oldFeedback === undefined) delete negativeFeedback[key];
+      else negativeFeedback[key] = oldFeedback;
+      try { localStorage.setItem(NEGATIVE_FEEDBACK_STORAGE_KEY, JSON.stringify(negativeFeedback)); } catch { /* Session remains usable without storage. */ }
+      saveFavorites();
+      saveFavoriteNotes();
+      savePinnedPlannerEvents();
+      preservePageScroll(() => {
+        updateFavoriteButtons();
+        refreshCalendarFavoriteMarkers();
+        rerankEventRows();
+        renderFavorites();
+      });
+    }
+  } : {});
 }
 
 function syncFavoriteButton(button, isFavorite) {
@@ -2691,39 +2917,61 @@ function renderCardsIncrementally(target, items, options = {}) {
   window.requestAnimationFrame(renderBatch);
 }
 
-function createCategoryRows(container) {
-  if (!container) return [];
+function populateTopicRail(container, selected, onSelect) {
+  if (!container) return;
   container.replaceChildren();
-  return [0, 1].map(index => {
-    const row = document.createElement('div');
-    row.className = 'category-filter-row';
-    row.dataset.categoryRow = String(index + 1);
-    container.append(row);
-    return row;
+  ['', ...CATEGORIES].forEach(category => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'topic-button';
+    button.dataset.category = category;
+    button.style.setProperty('--category-color', CATEGORY_COLORS[category] || '#2563eb');
+    button.innerHTML = category
+      ? `<span>${categoryLabel(category)}</span><span class="topic-icon" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`
+      : '<span>Összes</span>';
+    button.addEventListener('click', () => {
+      const next = category && container.dataset.selectedCategory === category ? '' : category;
+      syncTopicSelection(container, next);
+      onSelect(next);
+    });
+    container.append(button);
   });
+  syncTopicSelection(container, selected);
 }
 
-function syncCategoryButtonState(container, activeButton, hasSelection) {
-  findAll('.filter-button', container).forEach(button => {
-    const active = Boolean(hasSelection) && button === activeButton;
+function syncTopicSelection(container, selected) {
+  container.dataset.selectedCategory = selected;
+  container.classList.toggle('has-selection', Boolean(selected));
+  findAll('.topic-button', container).forEach(button => {
+    const active = button.dataset.category === selected;
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', String(active));
   });
-  container?.classList.toggle('has-selection', Boolean(hasSelection));
-}
-
-function revealActiveFilter(button) {
-  if (!button) return;
   window.requestAnimationFrame(() => {
-    const scroller = button.closest('.shared-category-filters');
-    if (!scroller) return;
-    const scrollerBounds = scroller.getBoundingClientRect();
-    const buttonBounds = button.getBoundingClientRect();
-    const offset = buttonBounds.left + buttonBounds.width / 2 - (scrollerBounds.left + scrollerBounds.width / 2);
-    scroller.scrollBy({ left: offset, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (!container.clientWidth) return;
+    const button = find('.topic-button.active', container);
+    if (!button) return;
+    container.style.removeProperty('padding-right');
+    const rail = container.getBoundingClientRect();
+    const bounds = button.getBoundingClientRect();
+    const rightInset = container.closest('.topic-window') ? 24 : 4;
+    let offset = bounds.left < rail.left + 4
+      ? bounds.left - rail.left - 4
+      : Math.max(0, bounds.right - rail.right + rightInset);
+    const next = button.nextElementSibling;
+    if (next?.classList.contains('topic-button')) {
+      const nextBounds = next.getBoundingClientRect();
+      offset = Math.max(offset, Math.min(
+        nextBounds.right - rail.right + rightInset,
+        bounds.left - rail.left - 4
+      ));
+    }
+    if (Math.abs(offset) > 1) container.scrollBy({
+      left: offset,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    });
   });
 }
-
 function createEventGroup(target, title, items, id) {
   if (!target) return;
   const group = document.createElement('section');
@@ -2823,9 +3071,16 @@ function createFavoriteNoteCard(event) {
       fallback.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
       document.body.append(fallback);
       fallback.select();
-      document.execCommand('copy');
-      fallback.remove();
+      let copied = false;
+      try { copied = document.execCommand('copy'); }
+      catch { /* Report failure below rather than claiming a successful copy. */ }
+      finally { fallback.remove(); }
+      if (!copied) {
+        showSnackbar('Nem sikerült a másolás.', { actionLabel: 'Újra', action: () => copyButton.click() });
+        return;
+      }
     }
+    showSnackbar('Jegyzet kimásolva.');
     copyButton.classList.add('is-copied');
     copyButton.setAttribute('aria-label', 'Jegyzet kimásolva');
     window.setTimeout(() => {
@@ -2859,7 +3114,7 @@ async function animatePinnedPlannerEvent(key, pair, button) {
   const pinned = pinnedEventKeys.has(key);
   button.classList.toggle('is-pinned', pinned);
   button.setAttribute('aria-pressed', String(pinned));
-  button.setAttribute('aria-label', pinned ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
+  button.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
   vibrate(14);
   if (!pinned || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !pair.animate) {
     renderFavorites();
@@ -2885,16 +3140,16 @@ async function animatePinnedPlannerEvent(key, pair, button) {
     ], { duration: 180, easing: 'ease-out', fill: 'forwards' }).finished;
     renderFavorites();
     if (currentAppView !== 'favorites' || !plannerEvent.hidden) return;
-    const destination = [...favoritesGrid.children].find(row => row.dataset.eventKey === key);
+    const destination = findAll('.favorite-pair', pinnedEventsGrid).find(row => row.dataset.eventKey === key);
     if (!destination) return;
     const target = destination.getBoundingClientRect();
     destination.style.visibility = 'hidden';
     const move = `translate(${target.left - bounds.left}px, ${target.top - bounds.top}px)`;
+    const scale = Math.min(target.width / bounds.width, target.height / bounds.height);
     try {
       await flight.animate([
         { transform: 'scale(.86)' },
-        { transform: `${move} scale(.86)`, offset: .78 },
-        { transform: `${move} scale(1)` }
+        { transform: `${move} scale(${scale})` }
       ], { duration: 440, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' }).finished;
     } finally {
       destination.style.visibility = '';
@@ -2909,19 +3164,18 @@ async function animatePinnedPlannerEvent(key, pair, button) {
   }
 }
 
-function renderFavoritePair(event, index) {
+function renderFavoritePair(event, index, target = favoritesGrid, { compact = false } = {}) {
   const pair = document.createElement('div');
   pair.className = 'favorite-pair';
   pair.dataset.eventKey = eventKey(event);
   pair.classList.toggle('is-past-event', isPastEvent(event));
   pair.tabIndex = 0;
   pair.setAttribute('aria-label', event.Title || 'Esemény');
-  renderCard(event, pair);
+  renderCard(event, pair, { compact });
   const favoriteCard = find('.event-card', pair);
-  const favoriteDescription = find('.event-description', favoriteCard);
-  if (favoriteDescription) {
-    setText('.event-description-text', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', favoriteDescription);
-    favoriteDescription.classList.add('favorite-expanded-description');
+  if (compact) {
+    favoriteCard?.classList.add('compact-list-card');
+    find('.event-rating', favoriteCard)?.remove();
   }
   find('.event-bottom', favoriteCard)?.remove();
   if (favoriteCard) {
@@ -2932,8 +3186,8 @@ function renderFavoritePair(event, index) {
     pinButton.className = 'planner-card-pin';
     pinButton.classList.toggle('is-pinned', pinnedEventKeys.has(key));
     pinButton.setAttribute('aria-pressed', String(pinnedEventKeys.has(key)));
-    pinButton.setAttribute('aria-label', pinnedEventKeys.has(key) ? 'Kitűzés megszüntetése' : 'Esemény kitűzése');
-    pinButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g transform="rotate(45 12 12)"><path d="M8 3a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2h-1v6l3 3v2H6v-2l3-3V3H8Z"/><path d="M11 15h2v6l-1 2-1-2v-6Z"/></g></svg>';
+    pinButton.setAttribute('aria-label', pinnedEventKeys.has(key) ? 'Mégsem megyek rá' : 'Megyek rá');
+    pinButton.textContent = 'Megyek rá';
     pinButton.addEventListener('click', input => {
       input.preventDefault();
       input.stopImmediatePropagation();
@@ -2954,8 +3208,7 @@ function renderFavoritePair(event, index) {
       showPlannerEvent(event);
     }, true);
   }
-  favoritesGrid.append(pair);
-  favoritePairResetObserver?.observe(pair);
+  target.append(pair);
 }
 
 function renderFavorites() {
@@ -2971,16 +3224,29 @@ function renderFavorites() {
       || (favoriteOrder.get(eventKey(first)) ?? Infinity) - (favoriteOrder.get(eventKey(second)) ?? Infinity));
   favoritesSection.hidden = currentAppView === 'favorites' ? false : !favorites.length;
   favoritePairResetObserver?.disconnect();
-  if (!favoritePairResetObserver && 'IntersectionObserver' in window) {
-    favoritePairResetObserver = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting && entry.target.scrollLeft > 2) entry.target.scrollTo({ left: 0, behavior: 'auto' });
-      });
-    }, { threshold: 0.08 });
+  findAll('.event-card', favoritesSection).forEach(card => eventVisibilityObserver?.unobserve(card));
+  if (pinnedEventsGrid) {
+    pinnedEventsGrid.replaceChildren();
+    const pinned = favorites.filter(event => pinnedEventKeys.has(eventKey(event)) && !isPastEvent(event));
+    setText('#pinned-events-title', pinned.length === 1 ? 'Következő eseményed' : 'Következő eseményeid');
+    const empty = find('#pinned-events-empty');
+    if (empty) empty.hidden = Boolean(pinned.length);
+    pinnedEventsGrid.hidden = !pinned.length;
+    for (let index = 0; index < pinned.length; index += 3) {
+      const page = document.createElement('div');
+      page.className = 'compact-event-page';
+      page.setAttribute('aria-label', `${Math.floor(index / 3) + 1}. oldal`);
+      pinnedEventsGrid.append(page);
+      pinned.slice(index, index + 3).forEach((event, offset) => renderFavoritePair(event, index + offset, page, { compact: true }));
+    }
+    setupCarousel(pinnedEventsGrid);
+    syncCarouselControls(pinnedEventsGrid);
   }
   favoritesGrid.replaceChildren();
-  if (favorites.length) favorites.forEach(renderFavoritePair);
+  if (favorites.length) favorites.forEach((event, index) => renderFavoritePair(event, index));
   else favoritesGrid.innerHTML = '<p class="app-view-empty">Még nincs tervezett eseményed. A szív ikonra vagy a Tervezés gombra nyomva bármelyik programot elmentheted ide.</p>';
+  setupCarousel(favoritesGrid);
+  syncCarouselControls(favoritesGrid);
   updateProfileSummary();
 }
 
@@ -3266,28 +3532,13 @@ function renderCalendar() {
 }
 
 function createCalendarFilters() {
-  if (!calendarFilters) return;
-  const categoryRows = createCategoryRows(calendarFilters);
-  CATEGORIES.forEach((category, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'filter-button';
-    button.style.setProperty('--category-color', CATEGORY_COLORS[category] || '#1E293B');
-    button.innerHTML = `<span>${categoryLabel(category)}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
-    button.setAttribute('aria-pressed', 'false');
-    button.addEventListener('click', () => {
-      const isSecondClick = calendarCategory === category;
-      calendarCategory = isSecondClick ? '' : category;
-      calendarSelectedDate = '';
-      syncCategoryButtonState(calendarFilters, button, Boolean(calendarCategory));
-      if (!isSecondClick) revealActiveFilter(button);
-      renderCalendar();
-      vibrate(10);
-    });
-    categoryRows[index % 2]?.append(button);
+  populateTopicRail(calendarFilters, calendarCategory, category => {
+    calendarCategory = category;
+    calendarSelectedDate = '';
+    preservePageScroll(() => renderCalendar());
+    vibrate(10);
   });
 }
-
 async function shareEvent(event) {
   const url = eventShareUrl(event);
   const data = { title: event.Title || 'Bee there esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
@@ -3299,15 +3550,19 @@ async function shareEvent(event) {
     }
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(url);
+      showSnackbar('Esemény linkje kimásolva.');
       recordShareInterest(event);
       if (eventDetailsShare) {
         eventDetailsShare.classList.add('is-copied');
         eventDetailsShare.setAttribute('aria-label', 'Link kimásolva');
         window.setTimeout(() => { eventDetailsShare?.classList.remove('is-copied'); eventDetailsShare?.setAttribute('aria-label', 'Esemény megosztása'); }, 1800);
       }
-    }
+    } else throw new Error('Clipboard unavailable');
   } catch (error) {
-    if (error?.name !== 'AbortError') console.warn('[Bee There] A megosztás nem sikerült:', error);
+    if (error?.name !== 'AbortError') {
+      console.warn('[Bee There] A megosztás nem sikerült:', error);
+      showSnackbar('Nem sikerült a megosztás.', { actionLabel: 'Újra', action: () => shareEvent(event) });
+    }
   }
 }
 
@@ -3365,24 +3620,28 @@ function eventStartMinutes(event) {
 }
 
 function sortHomeFeedEvents(list) {
-  if (homeEventSort === 'distance') return sortByGeographicDistance(list);
-  if (homeEventSort === 'date') {
-    return [...list].sort((first, second) => {
-      const firstDate = dateKey(eventDateValue(first)) || '9999-12-31';
-      const secondDate = dateKey(eventDateValue(second)) || '9999-12-31';
-      return firstDate.localeCompare(secondDate) || eventStartMinutes(first) - eventStartMinutes(second);
+  const recommended = sortByDistance(list);
+  if (!homeEventSort.length) return recommended;
+  const valueFor = {
+    distance: eventDistance,
+    date: event => {
+      const key = dateKey(eventDateValue(event));
+      return key ? Date.parse(`${key}T00:00:00`) + eventStartMinutes(event) * 60000 : Infinity;
+    },
+    price: event => numericPrice(event) ?? Infinity,
+  };
+  const scores = new Map(list.map(event => [event, 0]));
+  // Equal rank weight lets every checked criterion contribute to the result.
+  homeEventSort.forEach(criterion => {
+    const ranked = list.map(event => ({ event, value: valueFor[criterion](event) }))
+      .sort((a, b) => a.value === b.value ? 0 : a.value < b.value ? -1 : 1);
+    let rank = 0;
+    ranked.forEach((item, index) => {
+      if (index && item.value !== ranked[index - 1].value) rank = index;
+      scores.set(item.event, scores.get(item.event) + rank);
     });
-  }
-  if (homeEventSort === 'price') {
-    return [...list].sort((first, second) => {
-      const firstPrice = numericPrice(first);
-      const secondPrice = numericPrice(second);
-      const normalizedFirst = firstPrice === null ? Number.POSITIVE_INFINITY : firstPrice;
-      const normalizedSecond = secondPrice === null ? Number.POSITIVE_INFINITY : secondPrice;
-      return normalizedFirst - normalizedSecond || dateKey(eventDateValue(first)).localeCompare(dateKey(eventDateValue(second)));
-    });
-  }
-  return sortByDistance(list);
+  });
+  return recommended.sort((a, b) => scores.get(a) - scores.get(b));
 }
 
 function renderDiscoveryRail(target, items, { compact = true } = {}) {
@@ -3429,7 +3688,7 @@ function renderAllEventRows(items) {
   }
 }
 
-function renderEvents() {
+function renderEvents({ refreshFeatured = true } = {}) {
   if (!grid || !allSection) return;
   awardPastFavoritePoints();
   const isPermanentView = currentAppView === 'permanent';
@@ -3437,7 +3696,7 @@ function renderEvents() {
   const available = source.filter(event => !isPastEvent(event));
   const categoryAvailable = available.filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
   const filteredForAll = available.filter(matchesHomeMode);
-  const hasCustomFeedSettings = homeEventMode !== 'all' || homeEventSort !== 'recommended';
+  const hasCustomFeedSettings = homeEventMode !== 'all' || homeEventSort.length > 0;
   const hasActiveFeedFilter = hasCustomFeedSettings || Boolean(selectedCategory);
   const nearby = sortByGeographicDistance(categoryAvailable);
   const visible = sortHomeFeedEvents(filteredForAll).filter(event => !selectedCategory || eventCategories(event).includes(selectedCategory));
@@ -3445,11 +3704,11 @@ function renderEvents() {
 
   grid.replaceChildren();
   recommendedGrid?.replaceChildren();
-  renderFeatured();
+  if (refreshFeatured) renderFeatured();
   renderCalendar();
   renderPermanent();
   allSection.hidden = false;
-  if (filterBar) filterBar.hidden = !position;
+  if (filterBar) filterBar.hidden = false;
   if (nearbySection) nearbySection.hidden = !position || hasActiveFeedFilter || !nearby.length;
   if (recommendedSection) recommendedSection.hidden = true;
   if (viewedSection) viewedSection.hidden = !position || !viewed.length;
@@ -3496,7 +3755,7 @@ function renderEvents() {
       recommendation.type = 'button';
       recommendation.className = 'compact-empty-recommendation';
       recommendation.textContent = categoryLabel(recommendedCategory);
-      recommendation.addEventListener('click', () => findAll('.filter-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click());
+      recommendation.addEventListener('click', () => findAll('.topic-button', filterBar).find(button => button.dataset.category === recommendedCategory)?.click());
       recommendationRow.append(recommendation);
       empty.append(recommendationRow);
     }
@@ -3539,45 +3798,84 @@ function updateProfileFilterSummary() {
   if (clearProfileFilters) clearProfileFilters.disabled = !values.length;
 }
 
-function createFilters() {
-  if (!filterBar) return;
-  const categoryRows = createCategoryRows(filterBar);
-  CATEGORIES.forEach((category, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.style.setProperty('--category-color', CATEGORY_COLORS[category] || '#1E293B');
-    button.setAttribute('aria-pressed', 'false');
-    button.innerHTML = `<span>${categoryLabel(category)}</span><span class="filter-emoji" aria-hidden="true">${uiIconMarkup(CATEGORY_ICONS[category])}</span>`;
-    button.className = 'filter-button';
-    button.addEventListener('click', () => {
-      const isSecondClick = activeFilterButton === button;
-      selectedCategory = isSecondClick ? '' : category;
-      activeFilterButton = isSecondClick ? null : button;
-      syncCategoryButtonState(filterBar, activeFilterButton, Boolean(selectedCategory));
-      if (!isSecondClick) revealActiveFilter(button);
-      const gooey = find('.gooey-filter', filterBar);
-      if (isSecondClick && gooey) {
-        gooey.hidden = true;
-        gooey.style.removeProperty('left');
-        gooey.style.removeProperty('top');
-        gooey.style.removeProperty('width');
-        gooey.style.removeProperty('height');
-      } else if (selectedCategory) moveGooeyFilter(button);
-      vibrate(10);
-      preservePageScroll(() => {
-        renderEvents();
-        renderPermanent();
-      });
-    });
-    button.dataset.category = category;
-    categoryRows[index % 2]?.append(button);
+function setupCategoryScrolling(container) {
+  if (!container) return;
+  let drag = null;
+  let suppressClick = false;
+  container.addEventListener('pointerdown', event => {
+    suppressClick = false;
+    // Touch scrolls natively, so a swipe cannot capture or suppress the next tap.
+    if (!event.isPrimary || event.button !== 0 || event.pointerType === 'touch') return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: container.scrollLeft, moved: false };
   });
-  const gooey = document.createElement('span');
-  gooey.className = 'gooey-filter';
-  gooey.hidden = true;
-  filterBar.append(gooey);
+  container.addEventListener('pointermove', event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+      drag.moved = true;
+      container.setPointerCapture(event.pointerId);
+      container.classList.add('is-dragging');
+    }
+    event.preventDefault();
+    container.scrollLeft = drag.left - dx;
+  });
+  const finish = event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    suppressClick = drag.moved;
+    drag = null;
+    container.classList.remove('is-dragging');
+    if (container.hasPointerCapture(event.pointerId)) container.releasePointerCapture(event.pointerId);
+  };
+  window.addEventListener('pointerup', finish);
+  container.addEventListener('pointercancel', finish);
+  container.addEventListener('click', event => {
+    if (!suppressClick) return;
+    suppressClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  container.addEventListener('dragstart', event => event.preventDefault());
+  container.addEventListener('wheel', event => {
+    if (!event.shiftKey && Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+    const delta = (event.deltaX || event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? container.clientWidth : 1);
+    event.preventDefault();
+    container.scrollLeft += delta;
+  }, { passive: false });
 }
 
+function setupStickyTopicToolbar() {
+  const toolbar = find('#home-topic-toolbar');
+  const content = find('#esemenyek');
+  if (!toolbar || !content) return;
+  toolbar.inert = false;
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const bounds = toolbar.getBoundingClientRect();
+    const visible = ['home', 'permanent'].includes(currentAppView) && !content.hidden;
+    const stuck = visible && bounds.top <= 0;
+    toolbar.classList.toggle('is-stuck', stuck);
+  };
+  const schedule = () => {
+    if (!frame) frame = window.requestAnimationFrame(update);
+  };
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  new ResizeObserver(schedule).observe(content);
+  new MutationObserver(schedule).observe(content, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  schedule();
+}
+
+function createFilters() {
+  populateTopicRail(filterBar, selectedCategory, category => {
+    selectedCategory = category;
+    preservePageScroll(() => renderEvents({ refreshFeatured: false }));
+    vibrate(10);
+  });
+}
 function setCity(city, isManual = false) {
   if (!city) return;
   position = { latitude: city.latitude, longitude: city.longitude };
@@ -3820,6 +4118,7 @@ function setupProfileSettings() {
     }
     renderEvents();
     triggerBounce(clearProfileFilters);
+    showSnackbar('Szűrők kikapcsolva.');
     vibrate(10);
   });
 }
@@ -3868,16 +4167,18 @@ function setupAccountSettings() {
   };
   sync();
   accountSettingsButton?.addEventListener('click', () => {
-    if (!accountSettingsPanel) return;
-    const willOpen = accountSettingsPanel.hidden;
-    accountSettingsPanel.hidden = !willOpen;
-    accountSettingsButton.setAttribute('aria-expanded', String(willOpen));
-    if (willOpen) accountSettingsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    navigateToAppView('settings');
+    find('#settings-back')?.focus({ preventScroll: true });
+  });
+  find('#settings-back')?.addEventListener('click', () => {
+    navigateToAppView('profile');
+    accountSettingsButton?.focus({ preventScroll: true });
   });
   const settingsBackdrop = find('#settings-sheet-backdrop', accountSettingsPanel);
   const closeSettingsSheet = () => {
     findAll('.settings-sheet', accountSettingsPanel).forEach(sheet => { sheet.hidden = true; sheet.classList.remove('is-open'); });
     if (settingsBackdrop) settingsBackdrop.hidden = true;
+    document.body.classList.remove('settings-sheet-open');
   };
   findAll('[data-settings-sheet]', accountSettingsPanel).forEach(button => button.addEventListener('click', () => {
     const sheet = find(`#settings-sheet-${button.dataset.settingsSheet}`, accountSettingsPanel);
@@ -3885,11 +4186,45 @@ function setupAccountSettings() {
     closeSettingsSheet();
     if (settingsBackdrop) settingsBackdrop.hidden = false;
     sheet.hidden = false;
-    window.requestAnimationFrame(() => sheet.classList.add('is-open'));
+    sheet.scrollTop = 0;
+    void sheet.offsetHeight;
+    document.body.classList.add('settings-sheet-open');
+    window.requestAnimationFrame(() => {
+      sheet.classList.add('is-open');
+      find('.settings-sheet-close', sheet)?.focus({ preventScroll: true });
+    });
   }));
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || currentAppView !== 'settings') return;
+    if (find('.settings-sheet:not([hidden])', accountSettingsPanel)) closeSettingsSheet();
+    else navigateToAppView('profile');
+  });
   settingsBackdrop?.addEventListener('click', closeSettingsSheet);
   findAll('.settings-sheet-close', accountSettingsPanel).forEach(button => button.addEventListener('click', closeSettingsSheet));
-  find('.organizer-link', accountSettingsPanel)?.addEventListener('click', event => event.preventDefault());
+  find('#edit-content-preferences')?.addEventListener('click', () => {
+    navigateToAppView('profile');
+    find('.personalization-settings', profileView)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const notificationButton = find('#notification-permission-button');
+  const syncNotifications = () => {
+    const supported = 'Notification' in window && window.isSecureContext;
+    const permission = supported ? Notification.permission : 'unsupported';
+    setText('#notification-permission-status', {
+      unsupported: 'Ebben a böngészőben az értesítési engedély nem érhető el.',
+      default: 'Az értesítésekhez még nem adtál engedélyt.',
+      granted: 'Az értesítési engedély megadva.',
+      denied: 'Az értesítések tiltva vannak. A böngésző beállításaiban engedélyezheted őket.'
+    }[permission]);
+    if (notificationButton) notificationButton.hidden = permission !== 'default';
+  };
+  syncNotifications();
+  notificationButton?.addEventListener('click', async () => {
+    if (!('Notification' in window) || !window.isSecureContext) return;
+    notificationButton.disabled = true;
+    try { await Notification.requestPermission(); syncNotifications(); }
+    catch { setText('#notification-permission-status', 'Az engedélykérés nem sikerült. Próbáld újra a böngésző beállításaiban.'); }
+    finally { notificationButton.disabled = false; }
+  });
   if (accountUsername) accountUsername.addEventListener('change', () => { accountSettings.username = accountUsername.value.trim().slice(0, 40); accountUsername.value = accountSettings.username; saveAccountSettings(); });
   findAll('[data-theme-choice]').forEach(button => button.addEventListener('click', () => {
     accountSettings.theme = button.dataset.themeChoice || 'system';
@@ -3987,6 +4322,12 @@ async function loadEvents() {
 }
 
 function init() {
+  if (planningNoteInput) {
+    try { planningNoteInput.value = localStorage.getItem(PLANNING_NOTE_STORAGE_KEY) || ''; } catch {}
+    planningNoteInput.addEventListener('input', () => {
+      try { localStorage.setItem(PLANNING_NOTE_STORAGE_KEY, planningNoteInput.value); } catch {}
+    });
+  }
   hydrateUiIcons();
   setupGenerousButtonHitAreas();
   setupLocationOverflowCues();
@@ -4003,6 +4344,9 @@ function init() {
   setupAccountSettings();
   setupEventDetailsDialog();
   setupCalendar();
+  setupStickyTopicToolbar();
+  setupCategoryScrolling(filterBar);
+  setupCategoryScrolling(calendarFilters);
   initOutroMessage();
   updateQuickDate();
   updatePointsCounter();
