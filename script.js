@@ -93,6 +93,10 @@ function hideSnackbar() {
 
 function positionSnackbar() {
   if (!snackbarState || snackbarState.element.hidden) return;
+  if (document.body.classList.contains('has-open-dialog')) {
+    snackbarState.element.style.bottom = 'calc(16px + env(safe-area-inset-bottom))';
+    return;
+  }
   const bar = document.body.classList.contains('has-planner-event')
     ? document.querySelector('.planner-purchase-bar')
     : document.querySelector('#bottom-navigation');
@@ -1753,7 +1757,7 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
   if (clearButton) clearButton.hidden = !searchInput?.value;
   if (!searchResults) return;
   const term = normalizeSearchText(query);
-  if (!term) {
+  if (!String(query || '').trim()) {
     searchResults.replaceChildren();
     const picker = document.createElement('section');
     picker.className = 'search-category-picker';
@@ -1821,7 +1825,9 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
     : rankedSearchEvents(query);
   const filtered = rankedBase.filter(matchesHomeMode);
-  const ranked = homeEventSort.length ? sortHomeFeedEvents(filtered) : filtered;
+  let ranked = homeEventSort.length ? sortHomeFeedEvents(filtered) : filtered;
+  const outsideFilters = !ranked.length;
+  if (outsideFilters) ranked = rankedSearchEvents(query);
   if (!ranked.length) {
     searchResults.innerHTML = `<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">${categoryQuery ? 'Ebben a kategóriában jelenleg nincs esemény.' : 'A jelenlegi szűrőkkel nincs találat. Próbálj más keresést, vagy kapcsold ki a szűrőket.'}</span></div>`;
     return;
@@ -1834,13 +1840,15 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
   rail.setAttribute('aria-label', showSuggestions ? 'Keresési eredmények' : 'Keresési eredmények');
   searchResults.append(rail);
   renderCardsIncrementally(rail, ranked.slice(0, 12));
-  if (showSuggestions && !directMatches.length) {
+  if (outsideFilters || (showSuggestions && !directMatches.length)) {
     const recommendedCategory = ranked.flatMap(eventCategories).find(Boolean) || 'gasztro';
     const empty = document.createElement('div');
     empty.className = 'compact-empty-state search-empty-message';
     const message = document.createElement('span');
     message.className = 'compact-empty-message';
-    message.textContent = 'Ebben a városban ma nincs ilyen program.';
+    message.textContent = outsideFilters
+      ? 'Ezek a javaslatok a kiválasztott szűrőkön kívül esnek.'
+      : 'Nincs pontos cím szerinti találat. Nézd meg ezeket az eseményeket!';
     const hint = document.createElement('span');
     hint.className = 'compact-empty-hint';
     hint.textContent = 'Próbáld meg ezt:';
@@ -1857,13 +1865,13 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     empty.append(message, hint, recommendation);
     searchResults.append(empty);
   }
-  if (showSuggestions) {
+  if (showSuggestions || outsideFilters) {
     const section = document.createElement('section');
     section.className = 'search-suggestions';
     section.setAttribute('aria-label', 'Eseményjavaslatok');
     const heading = document.createElement('p');
     heading.className = 'search-suggestions-title';
-    heading.textContent = directMatches.length ? 'Legjobb találatok:' : 'Lehet, hogy ezekre gondoltál:';
+    heading.textContent = outsideFilters ? 'További eseményjavaslatok:' : directMatches.length ? 'Legjobb találatok:' : 'Lehet, hogy ezekre gondoltál:';
     const list = document.createElement('div');
     list.className = 'search-suggestions-list';
     ranked.slice(0, Math.min(5, ranked.length)).forEach(event => {
@@ -2187,7 +2195,7 @@ function setupCarousel(carousel) {
     const moved = carousel.scrollLeft - startScrollLeft;
     if (moved > 0) {
       const threshold = Math.min(60, (forwardLimit - startScrollLeft) * 0.18);
-      animateTo(moved >= threshold || speed > 0.35 ? forwardLimit : gestureAnchor, speed);
+      animateTo(moved >= threshold || (moved >= 24 && speed > 0.35) ? forwardLimit : gestureAnchor, speed);
     } else {
       // Backward flicks retain momentum and can cross several cards.
       const points = gesturePoints;
@@ -2213,11 +2221,16 @@ function setupCarousel(carousel) {
   });
   carousel.addEventListener('pointermove', event => {
     if (!isDragging || event.pointerId !== pointerId) return;
+    // A mouse release outside the rail must never turn a later hover into a swipe.
+    if (event.buttons === 0) {
+      stopDragging({ pointerId: event.pointerId, type: 'pointercancel' });
+      return;
+    }
     const dx = startX - event.clientX;
     const dy = startY - event.clientY;
     if (!carousel.classList.contains('is-dragging')) {
-      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) { isDragging = false; return; }
-      if (Math.abs(dx) < 6) return;
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { isDragging = false; pointerId = null; return; }
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
       beginGesture();
       carousel.setPointerCapture?.(event.pointerId);
       carousel.classList.add('is-dragging');
@@ -2234,7 +2247,7 @@ function setupCarousel(carousel) {
     pointerId = null;
     if (wasDragging) {
       suppressGestureClick = true;
-      if (event.type === 'pointercancel') animateTo(nearest(carousel.scrollLeft));
+      if (event.type !== 'pointerup') animateTo(nearest(carousel.scrollLeft));
       else settleGesture();
     }
     if (carousel.hasPointerCapture?.(event.pointerId)) carousel.releasePointerCapture(event.pointerId);
@@ -2242,6 +2255,11 @@ function setupCarousel(carousel) {
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
   carousel.addEventListener('lostpointercapture', stopDragging);
+  carousel.addEventListener('pointerleave', event => {
+    if (event.pointerId !== pointerId || carousel.classList.contains('is-dragging')) return;
+    isDragging = false;
+    pointerId = null;
+  });
   carousel.addEventListener('wheel', event => {
     if (event.target.closest('[data-carousel-ready="true"]') !== carousel) return;
     if (isDragging || event.target.closest('input, textarea')) return;
@@ -2331,6 +2349,7 @@ function closeEventDetails() {
     detailsWindow.style.removeProperty('left');
   }
   document.body.classList.remove('has-open-dialog');
+  positionSnackbar();
   const savedScrollY = Number(document.body.dataset.detailsScrollY || 0);
   document.body.style.removeProperty('position');
   document.body.style.removeProperty('top');
@@ -2421,6 +2440,7 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   }
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
+  positionSnackbar();
   if (!event.Permanent) fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
     if (eventDetailsWeather) eventDetailsWeather.textContent = `Várható időjárás: ${value}`;
   });

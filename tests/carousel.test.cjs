@@ -47,7 +47,7 @@ function fixture({ compact = false, reduced = false } = {}) {
   } });
   let prevented = false;
   const fire = (type, values = {}) => {
-    const event = { type, pointerId: 1, isPrimary: true, button: 0, clientX: 250, clientY: 20,
+    const event = { type, pointerId: 1, isPrimary: true, button: 0, buttons: 1, clientX: 250, clientY: 20,
       target: target('card'), preventDefault() { prevented = true; }, stopPropagation() {}, ...values };
     listeners.get(type)?.(event); return event;
   };
@@ -120,4 +120,21 @@ test('another nested carousel or an editable input cannot start this carousel', 
   const nested = { closest: () => ({}) };
   f.fire('pointerdown', { target: nested }); f.fire('pointermove', { clientX: 10, target: nested }); f.fire('pointerup');
   f.drag(100, 'input'); f.finish(); assert.equal(f.carousel.scrollLeft, 0);
+});
+
+test('hover after a release outside the rail never moves a card', () => {
+  const f = fixture();
+  f.fire('pointerdown');
+  f.fire('pointermove', { clientX: 100, buttons: 0 });
+  f.finish(); assert.equal(f.carousel.scrollLeft, 0);
+  f.fire('pointerdown'); f.fire('pointerleave');
+  f.fire('pointermove', { clientX: 80, buttons: 0 });
+  f.finish(); assert.equal(f.carousel.scrollLeft, 0);
+});
+
+test('tiny quick movements and diagonal taps do not advance', () => {
+  const f = fixture(); f.drag(8); f.finish(); assert.equal(f.carousel.scrollLeft, 0);
+  f.drag(15); f.finish(); assert.equal(f.carousel.scrollLeft, 0);
+  f.fire('pointerdown'); f.fire('pointermove', { clientX: 236, clientY: 33 }); f.fire('pointerup');
+  f.finish(); assert.equal(f.carousel.scrollLeft, 0);
 });
