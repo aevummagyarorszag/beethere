@@ -876,6 +876,7 @@ body.has-planner-event #favorites-view {
 #favorites-view #favorites-title { text-align: left; }
 
 #profile-view { padding-bottom: 16px; }
+#profile-view .profile-heading + .profile-setting-row { margin-top: 0; }
 #profile-view .personalization-settings { padding-bottom: 0; }
 
 #favorites-view .planning-overview-heading + .planning-section {
@@ -1591,10 +1592,19 @@ html[data-theme="dark"] #profile-view .preference-options .filter-button[aria-pr
 }
 
 #planner-event .planner-back {
-  margin: 0 auto 0 0;
+  margin: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+#planner-event .planner-toolbar-title {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 700 16px/1.25 var(--font-sans);
 }
 
 #planner-event .planner-back::before,

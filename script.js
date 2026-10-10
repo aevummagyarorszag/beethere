@@ -1498,6 +1498,7 @@ function showPlannerEvent(event) {
   if (plannerShare) plannerShare.onclick = () => shareEvent(event);
 
   setText('#planner-event-title', event.Title || 'Esemény', plannerEvent);
+  setText('#planner-toolbar-title', event.Title || 'Esemény', plannerEvent);
   setText('#planner-event-date', isPastEvent(event) ? `${eventLongDateLabel(event)} · Elmúlt` : eventLongDateLabel(event), plannerEvent);
   setText('#planner-event-footer-date', eventDateOnly(event), plannerEvent);
   setText('#planner-event-location', event.Location || 'Helyszín hamarosan', plannerEvent);
@@ -1819,7 +1820,8 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
   const rankedBase = categoryQuery
     ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
     : rankedSearchEvents(query);
-  const ranked = sortHomeEvents(rankedBase.filter(matchesHomeMode));
+  const filtered = rankedBase.filter(matchesHomeMode);
+  const ranked = homeEventSort.length ? sortHomeFeedEvents(filtered) : filtered;
   if (!ranked.length) {
     searchResults.innerHTML = `<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">${categoryQuery ? 'Ebben a kategóriában jelenleg nincs esemény.' : 'A jelenlegi szűrőkkel nincs találat. Próbálj más keresést, vagy kapcsold ki a szűrőket.'}</span></div>`;
     return;
@@ -1944,6 +1946,7 @@ function setupGenerousButtonHitAreas() {
   document.addEventListener('pointerup', event => {
     const start = starts.get(event.pointerId);
     starts.delete(event.pointerId);
+    if (event.target.closest('[data-carousel-ready="true"].is-dragging')) return;
     if (!start || hasBlockingOverlay() || !event.isPrimary || event.target.closest('button, a, input, textarea, select, label')) return;
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) return;
     const hit = findAll('button:not(:disabled):not([hidden])')
@@ -2099,6 +2102,9 @@ function setupCarousel(carousel) {
   let wheelTimer = 0;
   let wheelActive = false;
   let suppressGestureClick = false;
+  let settlingTarget = null;
+  let gesturePoints = [];
+  let gestureMaximum = 0;
   const maximum = () => Math.max(0, carousel.scrollWidth - carousel.clientWidth);
   const clamp = value => Math.max(0, Math.min(maximum(), value));
   const snapPositions = () => {
@@ -2114,6 +2120,7 @@ function setupCarousel(carousel) {
     window.cancelAnimationFrame(animationFrame);
     animationFrame = 0;
     carousel.classList.remove('is-settling');
+    settlingTarget = null;
   };
   const velocity = () => {
     const now = performance.now();
@@ -2142,6 +2149,7 @@ function setupCarousel(carousel) {
     const tangent = initialVelocity * distance > 0
       ? Math.max(0.8, Math.min(3, initialVelocity * duration / distance)) : 2.6;
     const started = performance.now();
+    settlingTarget = target;
     carousel.classList.add('is-settling');
     const frame = now => {
       if (!carousel.isConnected) { cancelAnimation(); return; }
@@ -2155,21 +2163,24 @@ function setupCarousel(carousel) {
   };
   carousel._smoothScrollTo = animateTo;
   const beginGesture = () => {
+    const interruptedTarget = settlingTarget;
     cancelAnimation();
+    gesturePoints = snapPositions();
+    gestureMaximum = maximum();
     startScrollLeft = carousel.scrollLeft;
-    gestureAnchor = nearest(startScrollLeft);
-    forwardLimit = snapPositions().find(left => left > gestureAnchor + 1) ?? maximum();
+    gestureAnchor = interruptedTarget === null ? nearest(startScrollLeft) : clamp(interruptedTarget);
+    forwardLimit = gesturePoints.find(left => left > gestureAnchor + 1) ?? gestureMaximum;
     samples = [];
     sample();
   };
   const dragPosition = displacement => {
-    const step = Math.max(1, forwardLimit - gestureAnchor);
+    const step = Math.max(1, forwardLimit - startScrollLeft);
     // Follow the finger continuously; extra forward travel becomes soft resistance,
     // while releasing the gesture always chooses the adjacent page.
     const travel = displacement > step
       ? step + step * .12 * (1 - Math.exp(-(displacement - step) / step))
       : displacement;
-    return clamp(startScrollLeft + travel);
+    return Math.max(0, Math.min(gestureMaximum, startScrollLeft + travel));
   };
   const settleGesture = () => {
     const speed = velocity();
@@ -2179,7 +2190,7 @@ function setupCarousel(carousel) {
       animateTo(moved >= threshold || speed > 0.35 ? forwardLimit : gestureAnchor, speed);
     } else {
       // Backward flicks retain momentum and can cross several cards.
-      const points = snapPositions();
+      const points = gesturePoints;
       const step = points.find(point => point > gestureAnchor + 1) - gestureAnchor || carousel.clientWidth;
       const momentum = Math.max(-step * 3, Math.min(0, speed * 260));
       animateTo(nearest(clamp(carousel.scrollLeft + momentum)), speed);
@@ -2191,14 +2202,10 @@ function setupCarousel(carousel) {
     // A new deliberate press must work immediately, even while the carousel is
     // still settling from the previous swipe.
     suppressGestureClick = false;
-    const interactive = event.target.closest('button, a, input, textarea');
-    if (interactive && !interactive.classList.contains('details-button')) {
-      cancelAnimation();
-      return;
-    }
+    if (event.target.closest('[data-carousel-ready="true"]') !== carousel) return;
+    if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     window.clearTimeout(wheelTimer);
     wheelActive = false;
-    beginGesture();
     isDragging = true;
     pointerId = event.pointerId;
     startX = event.clientX;
@@ -2211,9 +2218,10 @@ function setupCarousel(carousel) {
     if (!carousel.classList.contains('is-dragging')) {
       if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) { isDragging = false; return; }
       if (Math.abs(dx) < 6) return;
+      beginGesture();
+      carousel.setPointerCapture?.(event.pointerId);
+      carousel.classList.add('is-dragging');
     }
-    carousel.setPointerCapture?.(event.pointerId);
-    carousel.classList.add('is-dragging');
     event.preventDefault();
     carousel.scrollLeft = dragPosition(dx);
     sample();
@@ -2222,19 +2230,20 @@ function setupCarousel(carousel) {
     if (event.pointerId !== pointerId) return;
     const wasDragging = carousel.classList.contains('is-dragging');
     carousel.classList.remove('is-dragging');
+    isDragging = false;
+    pointerId = null;
     if (wasDragging) {
       suppressGestureClick = true;
       if (event.type === 'pointercancel') animateTo(nearest(carousel.scrollLeft));
       else settleGesture();
     }
     if (carousel.hasPointerCapture?.(event.pointerId)) carousel.releasePointerCapture(event.pointerId);
-    isDragging = false;
-    pointerId = null;
   };
   carousel.addEventListener('pointerup', stopDragging);
   carousel.addEventListener('pointercancel', stopDragging);
   carousel.addEventListener('lostpointercapture', stopDragging);
   carousel.addEventListener('wheel', event => {
+    if (event.target.closest('[data-carousel-ready="true"]') !== carousel) return;
     if (isDragging || event.target.closest('input, textarea')) return;
     if (!event.shiftKey && Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
     const delta = (event.deltaX || event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? carousel.clientWidth : 1);
@@ -2267,10 +2276,11 @@ function setupCarousel(carousel) {
     const atEnd = carousel._hasMultipleCards && overflow > 36 && carousel.scrollLeft >= overflow - 28;
     returnButton.classList.toggle('is-visible', atEnd);
     // Recommendation bookkeeping must not measure every card on each animation frame.
-    if (!feedbackTimer) feedbackTimer = window.setTimeout(() => {
+    window.clearTimeout(feedbackTimer);
+    feedbackTimer = window.setTimeout(() => {
       feedbackTimer = 0;
       if (carousel.isConnected) recordSkippedCards(carousel);
-    }, 120);
+    }, 180);
   };
   carousel._updateReturnButton = updateReturnButton;
   const observeCarouselCards = () => updateCarouselCardVisibility(carousel);

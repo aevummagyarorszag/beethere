@@ -39,14 +39,14 @@
 
     const cards = () => [...carousel.querySelectorAll(".event-card.featured-card")];
 
-    const activeIndex = (items) => {
-      const bounds = carousel.getBoundingClientRect();
-      const center = bounds.left + bounds.width / 2;
+    let itemCenters = [];
+    let viewportWidth = 0;
+    const activeIndex = () => {
+      const center = carousel.scrollLeft + viewportWidth / 2;
       let selected = 0;
       let nearest = Number.POSITIVE_INFINITY;
-      items.forEach((card, index) => {
-        const rect = card.getBoundingClientRect();
-        const distance = Math.abs(rect.left + rect.width / 2 - center);
+      itemCenters.forEach((itemCenter, index) => {
+        const distance = Math.abs(itemCenter - center);
         if (distance < nearest) {
           nearest = distance;
           selected = index;
@@ -55,9 +55,15 @@
       return selected;
     };
 
-    const update = () => {
+    const refreshLayout = () => {
       prepareCards();
       const items = cards();
+      const bounds = carousel.getBoundingClientRect();
+      viewportWidth = carousel.clientWidth;
+      itemCenters = items.map(card => {
+        const rect = card.getBoundingClientRect();
+        return rect.left - bounds.left + carousel.scrollLeft + rect.width / 2;
+      });
       if (pagination.childElementCount !== items.length) {
         pagination.replaceChildren(...items.map(() => {
           const dot = document.createElement("span");
@@ -66,7 +72,10 @@
         }));
       }
       pagination.hidden = items.length < 2;
-      const selected = activeIndex(items);
+      update();
+    };
+    const update = () => {
+      const selected = activeIndex();
       [...pagination.children].forEach((dot, index) => {
         dot.classList.toggle("is-active", index === selected);
       });
@@ -79,12 +88,12 @@
     };
 
     carousel.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("resize", scheduleUpdate, { passive: true });
-    new MutationObserver(scheduleUpdate).observe(carousel, {
+    new ResizeObserver(refreshLayout).observe(carousel);
+    new MutationObserver(refreshLayout).observe(carousel, {
       childList: true,
       subtree: true
     });
-    update();
+    refreshLayout();
   };
 
   if (document.readyState === "loading") {
