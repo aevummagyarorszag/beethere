@@ -1039,7 +1039,7 @@ function recordDetailInterest(event) {
   if (detailedEventKeysThisSession.has(key)) return;
   detailedEventKeysThisSession.add(key);
   eventPreferenceTraits(event).forEach(trait => {
-    detailInterestWeights[trait] = Math.min(5, (detailInterestWeights[trait] ?? 0.1) * 1.1);
+    detailInterestWeights[trait] = Math.min(5, (detailInterestWeights[trait] || 0) + 0.4);
   });
   try {
     localStorage.setItem(DETAIL_INTEREST_STORAGE_KEY, JSON.stringify(detailInterestWeights));
@@ -1208,16 +1208,27 @@ function eventPreferenceTraits(event) {
   return [...new Set(traits)];
 }
 
-function favoritePreferenceTraits() {
+function userPreferenceTraits() {
   const traitWeights = new Map();
-  [...events, ...permanentEvents]
-    .filter(item => favoriteIds.has(eventKey(item)))
-    .forEach(item => eventPreferenceTraits(item).forEach(trait => {
-      const currentWeight = traitWeights.get(trait);
-      traitWeights.set(trait, currentWeight === undefined ? 0.5 : currentWeight * 1.4);
-    }));
-  Object.entries(detailInterestWeights).forEach(([trait, weight]) => {
-    traitWeights.set(trait, (traitWeights.get(trait) || 0) + weight);
+  const favoriteCounts = new Map();
+  const pinnedCounts = new Map();
+  [...events, ...permanentEvents].forEach(item => {
+    const key = eventKey(item);
+    const traits = eventPreferenceTraits(item);
+    if (favoriteIds.has(key)) traits.forEach(trait => favoriteCounts.set(trait, (favoriteCounts.get(trait) || 0) + 1));
+    if (pinnedEventKeys.has(key)) traits.forEach(trait => pinnedCounts.set(trait, (pinnedCounts.get(trait) || 0) + 1));
+  });
+  favoriteCounts.forEach((count, trait) => {
+    traitWeights.set(trait, Math.min(0.7, 0.2 * Math.sqrt(count)));
+  });
+  pinnedCounts.forEach((count, trait) => {
+    traitWeights.set(trait, (traitWeights.get(trait) || 0) + Math.min(1.8, 0.65 * Math.sqrt(count)));
+  });
+  Object.entries(detailInterestWeights).forEach(([trait, rawWeight]) => {
+    const weight = Number(rawWeight);
+    if (Number.isFinite(weight) && weight > 0) {
+      traitWeights.set(trait, (traitWeights.get(trait) || 0) + Math.min(2, 0.75 * Math.sqrt(weight)));
+    }
   });
   return traitWeights;
 }
@@ -1244,12 +1255,10 @@ function eventPreferenceScore(event, distance, favoriteTraits = new Map()) {
     matchingTimeTraits.forEach(trait => addTraitScore(trait, 1 / matchingTimeTraits.length));
   }
   if (eventSpontaneityMatches(event, profilePreferences.spontaneity)) score += 1;
-  const matchedFavoriteWeights = eventPreferenceTraits(event)
-    .map(trait => favoriteTraits.get(trait) || 0)
-    .filter(Boolean);
-
-  const combinationMultiplier = 1 + Math.max(0, matchedFavoriteWeights.length - 2) * 0.1;
-  eventPreferenceTraits(event).forEach(trait => addTraitScore(trait, (favoriteTraits.get(trait) || 0) * combinationMultiplier));
+  const key = eventKey(event);
+  if (detailedEventKeys.has(key)) score += 0.75;
+  if (pinnedEventKeys.has(key)) score += 1.25;
+  eventPreferenceTraits(event).forEach(trait => addTraitScore(trait, favoriteTraits.get(trait) || 0));
   traitScores.forEach((points, trait) => {
     score += Math.max(0, points - (refreshTraitPenalties.get(trait) || 0));
   });
@@ -1278,7 +1287,7 @@ function diversifyEqualScoreEvents(sortedEvents) {
 }
 
 function sortByDistance(list) {
-  const favoriteTraits = favoritePreferenceTraits();
+  const favoriteTraits = userPreferenceTraits();
   const sorted = list.map(event => {
     const distance = eventDistance(event);
     return { ...event, distance, preferenceScore: eventPreferenceScore(event, distance, favoriteTraits) };
@@ -1401,7 +1410,10 @@ function navigateToAppView(view, { animate = false } = {}) {
 }
 
 function closePlannerEvent() {
-  if (plannerEvent) plannerEvent.hidden = true;
+  if (plannerEvent) {
+    plannerEvent.hidden = true;
+    plannerEvent.classList.remove('toolbar-title-visible');
+  }
   if (favoritesSection) favoritesSection.hidden = currentAppView !== 'favorites';
   document.body.classList.remove('has-planner-event');
 }
@@ -1454,6 +1466,7 @@ function setPinnedPlannerEvent(key) {
       action: () => {
         pinnedEventKeys.add(key);
         savePinnedPlannerEvents();
+        rerankEventRows();
         preservePageScroll(() => renderFavorites());
         if (plannerEvent?.dataset.eventKey === key && plannerPin) {
           plannerPin.classList.add('is-pinned');
@@ -1465,6 +1478,7 @@ function setPinnedPlannerEvent(key) {
   }
   else pinnedEventKeys.add(key);
   savePinnedPlannerEvents();
+  rerankEventRows();
 }
 
 function showPlannerEvent(event) {
@@ -1595,6 +1609,7 @@ function showPlannerEvent(event) {
       }
     };
   }
+  plannerEvent._scheduleToolbarTitleUpdate?.();
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
@@ -2207,6 +2222,8 @@ function setupCarousel(carousel) {
 
   carousel.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0) return;
+    // Let the browser own touch momentum and scroll snapping on phones.
+    if (event.pointerType === 'touch') return;
     // A new deliberate press must work immediately, even while the carousel is
     // still settling from the previous swipe.
     suppressGestureClick = false;
@@ -2222,7 +2239,7 @@ function setupCarousel(carousel) {
   carousel.addEventListener('pointermove', event => {
     if (!isDragging || event.pointerId !== pointerId) return;
     // A mouse release outside the rail must never turn a later hover into a swipe.
-    if (event.buttons === 0) {
+    if (event.pointerType === 'mouse' && event.buttons === 0) {
       stopDragging({ pointerId: event.pointerId, type: 'pointercancel' });
       return;
     }
@@ -2772,6 +2789,25 @@ function preservePageScroll(callback) {
   });
 }
 
+function syncSavedEventControls() {
+  updateFavoriteButtons();
+  refreshCalendarFavoriteMarkers();
+  findAll('.planner-card-pin').forEach(button => {
+    const key = button.closest('.favorite-pair')?.dataset.eventKey;
+    const pinned = pinnedEventKeys.has(key);
+    button.classList.toggle('is-pinned', pinned);
+    button.setAttribute('aria-pressed', String(pinned));
+    button.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
+  });
+  if (plannerPin && plannerEvent?.dataset.eventKey) {
+    const pinned = pinnedEventKeys.has(plannerEvent.dataset.eventKey);
+    plannerPin.classList.toggle('is-pinned', pinned);
+    plannerPin.setAttribute('aria-pressed', String(pinned));
+    plannerPin.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
+  }
+  updateProfileSummary();
+}
+
 function toggleFavoriteForEvent(event, button, sourceCard = null) {
   const key = eventKey(event);
   const removed = favoriteIds.has(key);
@@ -2792,13 +2828,9 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
   saveFavorites();
   if (button) triggerBounce(button);
   vibrate(18);
-  preservePageScroll(() => {
-    updateFavoriteButtons();
-    refreshCalendarFavoriteMarkers();
-    rerankEventRows(sourceCard?.closest('.events-grid') || null);
-    if (currentAppView !== 'favorites') renderFavorites();
-    else updateProfileSummary();
-  });
+  // Keep the active feed and its scroll positions intact. The saved signals
+  // affect ranking the next time a view or filter rebuilds the feed.
+  syncSavedEventControls();
   showSnackbar(removed ? 'Eltávolítva a kedveltekből.' : 'Hozzáadva a kedveltekhez.', removed ? {
     actionLabel: 'Visszavonás',
     action: () => {
@@ -2811,12 +2843,7 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
       saveFavorites();
       saveFavoriteNotes();
       savePinnedPlannerEvents();
-      preservePageScroll(() => {
-        updateFavoriteButtons();
-        refreshCalendarFavoriteMarkers();
-        rerankEventRows();
-        renderFavorites();
-      });
+      syncSavedEventControls();
     }
   } : {});
 }
@@ -3899,6 +3926,28 @@ function setupStickyTopicToolbar() {
   schedule();
 }
 
+function setupPlannerToolbarTitle() {
+  const title = find('#planner-event-title', plannerEvent);
+  const header = find('.planner-event-header', plannerEvent);
+  if (!plannerEvent || !title || !header) return;
+  let frame = 0;
+  const update = () => {
+    frame = 0;
+    const showTitle = !plannerEvent.hidden
+      && title.getBoundingClientRect().top < header.getBoundingClientRect().bottom;
+    plannerEvent.classList.toggle('toolbar-title-visible', showTitle);
+  };
+  const schedule = () => {
+    if (!frame) frame = window.requestAnimationFrame(update);
+  };
+  plannerEvent._scheduleToolbarTitleUpdate = schedule;
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  new ResizeObserver(schedule).observe(title);
+  new ResizeObserver(schedule).observe(header);
+  schedule();
+}
+
 function createFilters() {
   populateTopicRail(filterBar, selectedCategory, category => {
     selectedCategory = category;
@@ -4375,6 +4424,7 @@ function init() {
   setupEventDetailsDialog();
   setupCalendar();
   setupStickyTopicToolbar();
+  setupPlannerToolbarTitle();
   setupCategoryScrolling(filterBar);
   setupCategoryScrolling(calendarFilters);
   initOutroMessage();

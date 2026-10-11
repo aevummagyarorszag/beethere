@@ -47,7 +47,7 @@ function fixture({ compact = false, reduced = false } = {}) {
   } });
   let prevented = false;
   const fire = (type, values = {}) => {
-    const event = { type, pointerId: 1, isPrimary: true, button: 0, buttons: 1, clientX: 250, clientY: 20,
+    const event = { type, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons: 1, clientX: 250, clientY: 20,
       target: target('card'), preventDefault() { prevented = true; }, stopPropagation() {}, ...values };
     listeners.get(type)?.(event); return event;
   };

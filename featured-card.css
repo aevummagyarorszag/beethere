@@ -346,49 +346,42 @@
 /* Clipping horizontal overflow must not create an extra sticky scroll container. */
 html, body { overflow-x: clip !important; }
 
+/* Align the city/date row with the planner header's safe-area top inset. */
+.quick-navigation.wrapper {
+  margin-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+}
+
 .home-topic-toolbar {
   position: sticky;
   top: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  grid-template-areas: "topics filters";
-  align-items: start;
-  gap: 12px;
+  display: block;
   margin-bottom: 0;
   padding: 8px 0;
   pointer-events: auto;
 }
 
 .topic-window {
-  position: relative;
-  grid-area: topics;
+  position: sticky;
+  top: 0;
+  z-index: 30;
   min-width: 0;
   pointer-events: auto;
 }
 
 .topic-window::after {
-  content: "";
-  position: absolute;
-  top: -16px;
-  bottom: 0;
-  right: 0;
-  z-index: 3;
-  width: 24px;
-  background: linear-gradient(to right, transparent, #f5f5f7);
-  pointer-events: none;
-}
-
-html[data-theme="dark"] .topic-window::after {
-  background: linear-gradient(to right, transparent, #0f172a);
+  content: none;
 }
 
 .home-topic-toolbar.is-stuck { background: #f5f5f7; }
 html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
 
 #esemenyek .all-events .all-events-heading {
-  position: static;
-  grid-area: filters;
+  position: absolute;
+  /* Use the existing gap below the featured card without adding a row. */
+  top: calc(var(--bt-divider-after) - 44px);
+  right: 0;
+  z-index: 31;
   width: 44px;
   height: 44px;
   margin: 0 !important;
@@ -411,7 +404,7 @@ html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
   flex: 0 0 44px !important;
 }
 
-#home-topic-toolbar .event-filter-button::before {
+#esemenyek .all-events-heading .event-filter-button::before {
   inset: 0;
   pointer-events: none;
 }
@@ -440,7 +433,8 @@ html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
 }
 .topic-rail::-webkit-scrollbar { display: none; }
 .topic-rail.is-dragging { cursor: grabbing; user-select: none; }
-#home-topic-filters { margin: -16px 0; padding: 16px 24px 16px 0; }
+#home-topic-filters { margin: -16px 0; padding: 16px 0; }
+#home-topic-toolbar #home-topic-filters { width: 100%; }
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {
   position: relative;
@@ -1870,3 +1864,38 @@ body.settings-sheet-open { overflow-y: hidden; }
   to { opacity: 1; translate: 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { #app-snackbar { animation: none; transition: none; } }
+
+/* Native touch scrolling keeps mobile momentum on the browser compositor. */
+@media (any-pointer: coarse) {
+  .events-grid[data-carousel-ready="true"],
+  .events-grid[data-carousel-ready="true"]:active {
+    scroll-snap-type: x mandatory !important;
+    scroll-behavior: auto !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .events-grid[data-carousel-ready="true"].is-dragging,
+  .events-grid[data-carousel-ready="true"].is-settling {
+    scroll-snap-type: none !important;
+  }
+  .events-grid[data-carousel-ready="true"] > .event-card,
+  .events-grid[data-carousel-ready="true"] .compact-event-page {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}
+
+/* Echo the page title in the sticky toolbar only after the original title is covered. */
+#planner-event .planner-toolbar-title {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
+}
+#planner-event.toolbar-title-visible .planner-toolbar-title {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  #planner-event .planner-toolbar-title { transition: none; }
+}
