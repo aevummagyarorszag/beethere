@@ -1,7 +1,6 @@
 /* White controls on a quiet neutral canvas. */
 :root { --bg: #F5F5F7; --surface: #FFFFFF; }
-body { background: #F5F5F7; --mode-color: #2563EB; --mode-glow: rgba(37,99,235,.32); }
-body[data-event-mode="free"] { --mode-color: #10B981; --mode-glow: rgba(16,185,129,.32); }
+body { background: #F5F5F7; }
 body::before {
   content: ""; position: absolute; z-index: 0; pointer-events: none;
   top: -72px; left: -18%; width: 136%; height: 260px;
@@ -24,13 +23,6 @@ body::before {
   50% { background-position: 42% -3%, 35% 12%, 72% 8%; transform: translate3d(2%,0,0) scaleX(.98) scaleY(1.06); }
   75% { background-position: 12% 9%, 58% -4%, 112% 12%; transform: translate3d(-1%,4px,0) scaleX(1.05) scaleY(1); }
   100% { background-position: -30% 2%, 46% -8%, 128% 5%; transform: translate3d(-1.5%,0,0) scaleX(1.02) scaleY(.98); }
-}
-.mode-sweep {
-  position: fixed; inset: 0; z-index: 990; pointer-events: none; overflow: hidden;
-}
-.mode-sweep > span {
-  position: absolute; inset: -50%; opacity: 0; pointer-events: none;
-  background: radial-gradient(ellipse at center, var(--mode-color) 0%, var(--mode-color) 46%, color-mix(in srgb, var(--mode-color) 94%, transparent) 56%, color-mix(in srgb, var(--mode-color) 58%, transparent) 68%, color-mix(in srgb, var(--mode-color) 16%, transparent) 79%, transparent 88%);
 }
 #bottom-navigation {
   transform: none;
@@ -1452,7 +1444,7 @@ html[data-theme="dark"] .event-carousel .carousel-return { background: #334155 !
 
 /* Every interactive button, including theme choices, shares the same subtle depth. */
 button {
-  box-shadow: 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05) !important;
+  box-shadow: var(--control-shadow, 0 3px 10px rgb(15 23 42 / .09), 0 1px 2px rgb(15 23 42 / .05)) !important;
 }
 
 /* Category choices need a slightly clearer edge against the canvas. */
@@ -2170,7 +2162,7 @@ html[data-theme="dark"] .search-category-buttons .filter-button:hover {
   color: #E2E8F0 !important;
   box-shadow: 0 6px 14px rgb(0 0 0 / .24) !important;
 }
-html[data-theme="dark"] #search-view .event-search-field { background: #1F2937; }
+html[data-theme="dark"] #search-view .event-search-field { background: var(--dark-control); }
 html[data-theme="dark"] .search-category-picker-title { color: #E2E8F0; }
 
 /* The selected calendar day uses the same quiet gray as the month label. */

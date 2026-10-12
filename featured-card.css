@@ -1899,3 +1899,326 @@ body.settings-sheet-open { overflow-y: hidden; }
 @media (prefers-reduced-motion: reduce) {
   #planner-event .planner-toolbar-title { transition: none; }
 }
+
+/* Light-mode filter selection uses neutral gray while retaining a clear checkmark. */
+html:not([data-theme="dark"]) #event-filter-dialog .event-filter-choice:has(input:checked) {
+  background: #E7E7E9;
+  border-color: #77777C;
+}
+html:not([data-theme="dark"]) #event-filter-dialog .event-filter-choice input:checked {
+  border-color: #606065;
+}
+html:not([data-theme="dark"]) #event-filter-dialog .event-filter-choice input[type="checkbox"]:checked {
+  background-color: #606065;
+}
+html:not([data-theme="dark"]) #event-filter-dialog .event-filter-choice input:focus-visible {
+  outline-color: #77777C;
+}
+
+/* The cancellation action is emphasized in the profile deletion confirmation. */
+.delete-profile-actions .cancel-delete-profile {
+  background: #2563EB;
+  color: #FFFFFF;
+  border-color: transparent;
+}
+.delete-profile-actions .cancel-delete-profile:hover { background: #1D4ED8; }
+.delete-profile-actions .confirm-delete-profile,
+.delete-profile-actions .confirm-delete-profile:hover {
+  background: #F5F5F7;
+  color: #1E293B;
+}
+html[data-theme="dark"] .delete-profile-actions .confirm-delete-profile,
+html[data-theme="dark"] .delete-profile-actions .confirm-delete-profile:hover {
+  background: var(--dark-control);
+  color: var(--text);
+}
+
+/* Neutral charcoal dark theme. Keep structural layout styles from each component. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1B1B1D;
+  --surface: #242426;
+  --glass: rgb(36 36 38 / .94);
+  --glass-strong: rgb(36 36 38 / .98);
+  --glass-border: #454548;
+  --glass-highlight: rgb(255 255 255 / .06);
+  --text: #F2F2F3;
+  --muted: #B8B8BA;
+  --dark-control: #303033;
+  --dark-raised: #4A4A4D;
+  --control-shadow: 0 3px 10px rgb(0 0 0 / .3), 0 1px 2px rgb(0 0 0 / .2);
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] .app-view,
+html[data-theme="dark"] .hero { background: #1B1B1D !important; color: var(--text); }
+body::before { display: none !important; content: none !important; }
+
+/* Remove the refresh action and keep the selected tab on the charcoal palette. */
+.events-refresh-wrap { display: none !important; }
+.bottom-navigation { background: #F5F5F7 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html[data-theme="dark"] .bottom-navigation { background: var(--surface) !important; border-color: #454548 !important; }
+html[data-theme="dark"] #bottom-navigation .bottom-nav-button { background: transparent !important; box-shadow: none !important; }
+html[data-theme="dark"] #bottom-navigation .bottom-nav-button.is-active { background: #3A3A3D !important; color: #F2F2F3 !important; box-shadow: var(--control-shadow) !important; }
+
+/* Category chips have no idle outline, and use their own color when selected. */
+html[data-theme="dark"] .topic-button {
+  border-color: transparent !important;
+  background: #303033 !important;
+  color: #F2F2F3 !important;
+  box-shadow: 0 3px 9px rgb(0 0 0 / .32), 0 1px 2px rgb(255 255 255 / .06) !important;
+}
+html[data-theme="dark"] .topic-button.active {
+  border-color: var(--category-color, #AFAFB3) !important;
+  background: #303033 !important;
+  box-shadow: 0 3px 9px rgb(0 0 0 / .32), 0 1px 2px rgb(255 255 255 / .06) !important;
+}
+html[data-theme="dark"] .topic-button[data-category=""].active { color: #F2F2F3 !important; border-color: #AFAFB3 !important; }
+
+/* Featured card copy sits on a translucent dark panel; hearts stay unboxed. */
+html[data-theme="dark"] .featured-grid .featured-card .event-content {
+  background: rgb(27 27 29 / .88) !important;
+  color: #F2F2F3 !important;
+}
+html[data-theme="dark"] .featured-grid .featured-card .event-title,
+html[data-theme="dark"] .featured-grid .featured-card .event-meta,
+html[data-theme="dark"] .featured-grid .featured-card .event-description { color: #F2F2F3 !important; }
+html[data-theme="dark"] .featured-grid .featured-card .event-content::before { display: none !important; content: none !important; }
+html[data-theme="dark"] .featured-grid .featured-card .favorite-button,
+html[data-theme="dark"] .featured-grid .featured-card .favorite-button:hover,
+html[data-theme="dark"] .featured-grid .featured-card .favorite-button.is-favorite,
+html[data-theme="dark"] .event-card:not(.featured-card) .favorite-button,
+html[data-theme="dark"] .event-card:not(.featured-card) .favorite-button:hover,
+html[data-theme="dark"] .event-card:not(.featured-card) .favorite-button.is-favorite {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Settings and profile sections sit directly on the app canvas. */
+html[data-theme="dark"] #profile-view .preference-group,
+html[data-theme="dark"] #account-settings-panel { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+html[data-theme="dark"] #settings-view .settings-sheet,
+html[data-theme="dark"] #settings-view .settings-subpage-header {
+  background: var(--surface) !important;
+  color: var(--text);
+}
+html[data-theme="dark"] #planner-event { background: #1B1B1D !important; color: #F2F2F3 !important; }
+html[data-theme="dark"] #planner-event .planner-event-title,
+html[data-theme="dark"] #planner-event .planner-event-description,
+html[data-theme="dark"] #planner-event #planner-event-link,
+html[data-theme="dark"] #planner-event .planner-event-meta,
+html[data-theme="dark"] #planner-event .planner-event-time,
+html[data-theme="dark"] #planner-event .planner-purchase-summary strong { color: #F2F2F3 !important; }
+html[data-theme="dark"] #planner-event .planner-purchase-bar { background: #242426 !important; }
+html[data-theme="dark"] .home-section-divider { background: #4A4A4D !important; }
+html[data-theme="dark"] #nearby-section,
+html[data-theme="dark"] #recommended-section,
+html[data-theme="dark"] #upcoming-section,
+html[data-theme="dark"] #viewed-section,
+html[data-theme="dark"] #calendar-section { border-top-color: #4A4A4D !important; }
+html[data-theme="dark"] .settings-summary button { border-bottom-color: #4A4A4D !important; }
+html[data-theme="dark"] #profile-view .preference-group,
+html[data-theme="dark"] #planner-event .planner-purchase-bar,
+html[data-theme="dark"] #planner-event .planner-event-meta > *,
+html[data-theme="dark"] #settings-view .settings-block { border-color: #4A4A4D !important; }
+html[data-theme="dark"] #quick-navigation #city-selector,
+html[data-theme="dark"] .quick-navigation #city-selector,
+html[data-theme="dark"] .quick-navigation #city-selector:hover,
+html[data-theme="dark"] .quick-navigation #city-selector:active {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Details use light text and transparent icon controls on the dark sheet. */
+html[data-theme="dark"] #event-details-dialog .event-details-window,
+html[data-theme="dark"] #event-details-dialog .event-details-header { background: #242426 !important; color: #F2F2F3 !important; }
+html[data-theme="dark"] #event-details-title,
+html[data-theme="dark"] #event-details-time,
+html[data-theme="dark"] #event-details-date { color: #F2F2F3 !important; }
+html[data-theme="dark"] #event-details-dialog .event-date.is-today #event-details-date { color: #DC2626 !important; }
+html[data-theme="dark"] #event-details-dialog .event-details-favorite-button,
+html[data-theme="dark"] #event-details-dialog .event-details-favorite-button:hover,
+html[data-theme="dark"] #event-details-dialog .event-share-button,
+html[data-theme="dark"] #event-details-dialog .event-share-button:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Reuse the same neutral control and selected surfaces in both calendar modes. */
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day) {
+  background: var(--dark-control) !important;
+  color: var(--text) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day):disabled {
+  color: var(--muted) !important;
+}
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day):not(.has-events):not(.selected) {
+  background: transparent !important;
+}
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day).selected {
+  background: var(--dark-raised) !important;
+}
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day).today {
+  border-color: var(--muted) !important;
+}
+html[data-theme="dark"] #esemenyek .all-events-heading .event-filter-button,
+html[data-theme="dark"] #search-view .event-filter-button,
+html[data-theme="dark"] #profile-view .transport-button {
+  background: var(--dark-control) !important;
+  color: var(--text) !important;
+}
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"] {
+  background: var(--dark-raised) !important;
+  border-color: var(--muted) !important;
+  box-shadow: 0 0 0 1px var(--muted) !important;
+}
+/* Remove the light-theme glow without changing the saved heart's red color. */
+html[data-theme="dark"] .favorite-button,
+html[data-theme="dark"] .favorite-button svg,
+html[data-theme="dark"] #event-details-dialog .event-details-favorite-button,
+html[data-theme="dark"] #event-details-dialog .event-details-favorite-button svg {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+
+/* Profile and planner controls share the home topic buttons' neutral surface. */
+html[data-theme="dark"] #profile-view .preference-options .filter-button,
+html[data-theme="dark"] #profile-view .profile-city-button,
+html[data-theme="dark"] #profile-view .account-settings-button,
+html[data-theme="dark"] #profile-view .transport-button,
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"],
+html[data-theme="dark"] #planner-event .planner-ticket-button,
+html[data-theme="dark"] #planner-event .planner-share,
+html[data-theme="dark"] #planner-event .planner-note-copy {
+  background: var(--dark-control) !important;
+  color: var(--text) !important;
+}
+html[data-theme="dark"] #profile-view #budget-slider::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, #2563eb 0 var(--budget-progress), var(--dark-control) var(--budget-progress) 100%);
+}
+html[data-theme="dark"] #profile-view #budget-slider::-moz-range-track { background: var(--dark-control); }
+html[data-theme="dark"] #profile-view #budget-slider::-webkit-slider-thumb { background: var(--dark-raised); border-color: var(--muted); }
+html[data-theme="dark"] #profile-view #budget-slider::-moz-range-thumb { background: var(--dark-raised); border-color: var(--muted); }
+
+html[data-theme="dark"] #event-details-dialog #event-details-date,
+html[data-theme="dark"] #event-details-dialog #event-details-location,
+html[data-theme="dark"] #event-details-dialog .event-share-button,
+html[data-theme="dark"] #planner-event #planner-event-date,
+html[data-theme="dark"] #planner-event #planner-event-location,
+html[data-theme="dark"] #planner-event .planner-back { color: var(--text) !important; }
+html[data-theme="dark"] #event-details-dialog .event-date.is-today #event-details-date,
+html[data-theme="dark"] #event-details-dialog .event-details-location.is-nearby #event-details-location,
+html[data-theme="dark"] #planner-event .event-date.is-today #planner-event-date,
+html[data-theme="dark"] #planner-event .event-location.is-nearby #planner-event-location { color: #DC2626 !important; }
+html[data-theme="dark"] #event-details-dialog .event-details-location { --location-fade-surface: var(--surface); }
+html[data-theme="dark"] #planner-event .planner-event-location.has-more-right::after {
+  background: linear-gradient(90deg, transparent, var(--bg) 88%);
+}
+html[data-theme="dark"] #planner-event .planner-note,
+html[data-theme="dark"] #planner-event #planner-note-input {
+  background: var(--dark-control);
+  color: var(--text);
+  border-color: var(--dark-raised);
+}
+html[data-theme="dark"] #planner-event #planner-note-input::placeholder { color: var(--muted); }
+
+/* Keep saved event cards on the canvas, with notes on the shared control surface. */
+html[data-theme="dark"] #favorites-view .favorite-pair .event-card {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] #planning-note-input,
+html[data-theme="dark"] #favorites-view .favorite-note-card,
+html[data-theme="dark"] #favorites-view .favorite-note-input {
+  background: var(--dark-control) !important;
+  color: var(--text);
+}
+/* Image press feedback must not expose the old white card backing. */
+html[data-theme="dark"] .featured-grid .event-card.featured-card {
+  background: var(--bg) !important;
+}
+html[data-theme="dark"] .featured-grid .featured-card:active .image-wrap {
+  transform: none !important;
+}
+html[data-theme="dark"] #profile-view .preference-options .filter-button,
+html[data-theme="dark"] #profile-view .profile-city-button,
+html[data-theme="dark"] #profile-view .account-settings-button,
+html[data-theme="dark"] #profile-view .transport-button,
+html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-day).has-events {
+  box-shadow: var(--control-shadow) !important;
+}
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"] {
+  background: var(--dark-control) !important;
+  color: #2563EB !important;
+  border: 2px solid #2563EB !important;
+  box-shadow: var(--control-shadow) !important;
+}
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="false"] { color: var(--muted) !important; }
+html #profile-view .account-settings-button {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] #profile-view .account-settings-button {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html[data-theme="dark"] #profile-view .profile-city-button,
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="false"] {
+  border: 0 !important;
+}
+html[data-theme="dark"] .featured-pagination-dot { background: var(--dark-control); }
+html[data-theme="dark"] .featured-pagination-dot.is-active { background: #FFFFFF; }
+/* Filter sheets use the same neutral palette as the other dark-mode controls. */
+html[data-theme="dark"] #event-filter-dialog {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--dark-raised);
+}
+html[data-theme="dark"] #event-filter-dialog::backdrop { background: rgb(0 0 0 / .52); }
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice,
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice:has(input:checked),
+html[data-theme="dark"] #event-filter-dialog button {
+  background: var(--dark-control) !important;
+  color: var(--text);
+  box-shadow: var(--control-shadow) !important;
+}
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice { border-color: transparent; }
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice:has(input:checked) { border-color: var(--muted); }
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice input {
+  background-color: var(--dark-control);
+  border-color: var(--muted);
+}
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice input:checked {
+  background-color: var(--dark-raised);
+  border-color: var(--text);
+}
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice input:focus-visible { outline-color: var(--muted); }
+html[data-theme="dark"] #event-filter-dialog .event-filter-choice small,
+html[data-theme="dark"] #event-filter-dialog .eyebrow { color: var(--muted); }
+html[data-theme="dark"] #search-view .event-filter-button.has-active-filters { border-color: var(--muted); }
+html[data-theme="dark"] #calendar-section .calendar-month-label {
+  color: var(--dark-control);
+}
+html[data-theme="dark"] #planner-event .planner-pin:not(.is-pinned),
+html[data-theme="dark"] #favorites-view .planner-card-pin:not(.is-pinned) {
+  background: var(--dark-control) !important;
+  color: var(--text) !important;
+  border-color: transparent !important;
+  box-shadow: var(--control-shadow) !important;
+}
+html[data-theme="dark"] #search-view .search-category-buttons .filter-button,
+html[data-theme="dark"] #search-view .search-current-category .filter-button,
+html[data-theme="dark"] #search-view .search-suggestion,
+html[data-theme="dark"] #search-view .event-filter-button {
+  background: var(--dark-control) !important;
+  color: var(--text) !important;
+  box-shadow: var(--control-shadow) !important;
+}

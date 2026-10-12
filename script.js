@@ -173,36 +173,9 @@ function setupHomeMode() {
     if (recommended) recommended.checked = !choices.some(input => input.checked);
   });
 
-  const sweep = document.createElement('div');
-  sweep.className = 'mode-sweep';
-  sweep.setAttribute('aria-hidden', 'true');
-  const sweepCloud = document.createElement('span');
-  sweep.append(sweepCloud);
-  document.body.append(sweep);
-  let sweepAnimation;
-  let contentSwapTimer;
-  const renderFilterChange = useSweep => {
-    sweepAnimation?.cancel();
-    clearTimeout(contentSwapTimer);
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (useSweep && !reduceMotion) {
-      sweepAnimation = sweepCloud.animate([
-        { transform: 'translate(-68%, -68%) scale(.72)', opacity: 0 },
-        { transform: 'translate(-48%, -48%) scale(.96)', opacity: .82, offset: .08 },
-        { transform: 'translate(-10%, -10%) scale(1.48)', opacity: 1, offset: .2 },
-        { transform: 'translate(8%, 8%) scale(1.5)', opacity: 1, offset: .58 },
-        { transform: 'translate(30%, 30%) scale(1.42)', opacity: .9, offset: .76 },
-        { transform: 'translate(72%, 72%) scale(1.08)', opacity: 0 }
-      ], { duration: 2000, easing: 'cubic-bezier(.22,.7,.2,1)' });
-      // Replace the event list behind the fully opaque part of the passing wave.
-      contentSwapTimer = setTimeout(() => {
-        renderEvents();
-        if (currentAppView === 'search' && searchInput?.value.trim()) renderSearchResults(searchInput.value, { showSuggestions: false });
-      }, 450);
-    } else {
-      renderEvents();
-      if (currentAppView === 'search' && searchInput?.value.trim()) renderSearchResults(searchInput.value, { showSuggestions: false });
-    }
+  const renderFilterChange = () => {
+    renderEvents();
+    if (currentAppView === 'search' && searchInput?.value.trim()) renderSearchResults(searchInput.value, { showSuggestions: false });
   };
 
   const openFilterDialog = event => {
@@ -274,7 +247,7 @@ function setupHomeMode() {
     calendarSelectedDate = '';
     syncButton();
     filterDialog.close('reset');
-    renderFilterChange(false);
+    renderFilterChange();
     showSnackbar('Szűrők kikapcsolva.');
   });
   clearHomeFilters?.addEventListener('click', () => {
@@ -292,13 +265,12 @@ function setupHomeMode() {
     const requestedMode = String(data.get('event-price-filter') || 'all');
     const nextMode = ['all', 'paid', 'free'].includes(requestedMode) ? requestedMode : 'all';
     const nextSort = data.getAll('event-sort-filter').filter(value => ['distance', 'date', 'price'].includes(value));
-    const modeChanged = nextMode !== homeEventMode;
     homeEventMode = nextMode;
     homeEventSort = nextSort;
     calendarSelectedDate = '';
     syncButton();
     filterDialog.close('apply');
-    renderFilterChange(modeChanged);
+    renderFilterChange();
   });
   syncButton();
   const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -829,7 +801,7 @@ function updateQuickDate() {
 
 function initOutroMessage() {
   if (!outroMessage) return;
-  const message = 'A Bee there segít, hogy jól érezd magad bármikor, bárkivel.';
+  const message = 'A QuackAround segít, hogy jól érezd magad bármikor, bárkivel.';
   outroMessage.replaceChildren();
   let letterIndex = 0;
   const parts = message.split(/(\s+)/);
@@ -1631,6 +1603,53 @@ function normalizeSearchText(value) {
     .trim();
 }
 
+function parseSearchDate(query) {
+  const value = String(query || '').trim();
+  let year;
+  let month;
+  let day;
+  let match = value.match(/^(\d{4})[.\-/\s]+(\d{1,2})[.\-/\s]+(\d{1,2})\.?$/);
+  if (match) {
+    [, year, month, day] = match;
+  } else {
+    match = value.match(/^(\d{1,2})[.\-/\s]+(\d{1,2})(?:[.\-/\s]+(\d{4}))?\.?$/);
+    if (!match) return '';
+    [, day, month] = match;
+    year = match[3] || String(new Date().getFullYear());
+  }
+  const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  const isSameDate = date.getUTCFullYear() === Number(year)
+    && date.getUTCMonth() === Number(month) - 1
+    && date.getUTCDate() === Number(day);
+  return isSameDate ? key : '';
+}
+
+function isLikelyPlaceQuery(query) {
+  const value = String(query || '').trim();
+  const normalized = normalizeSearchText(value);
+  if (!normalized || parseSearchDate(value)) return false;
+  if (CITIES.some(city => normalizeSearchText(city.name) === normalized)) return true;
+  if (CATEGORIES.some(category => normalizeSearchText(category) === normalized)) return false;
+  return /^[\p{Lu}][\p{L}\p{M}'’.-]*(?:\s+[\p{Lu}][\p{L}\p{M}'’.-]*)*$/u.test(value)
+    || /(?:varos|falu|kozseg|falva|szent|szentmihaly)$/u.test(normalized);
+}
+
+function placeNoResultsMessage(query) {
+  const city = CITIES.find(item => normalizeSearchText(item.name) === normalizeSearchText(query));
+  if (city) {
+    const forms = {
+      budapest: 'Budapesten',
+      debrecen: 'Debrecenben',
+      gyor: 'Győrben',
+      pecs: 'Pécsen',
+      szekesfehervar: 'Székesfehérváron',
+    };
+    return `Nincs ${normalizeSearchText(city.name) in forms ? forms[normalizeSearchText(city.name)] : `${city.name} településen`} esemény.`;
+  }
+  return `Nincs esemény ezen a településen: ${String(query || '').trim()}.`;
+}
+
 function levenshteinDistance(first, second) {
   const source = String(first || '');
   const target = String(second || '');
@@ -1662,48 +1681,61 @@ function queryRelevance(event, normalizedQuery, queryWords) {
   const titleWords = title.split(' ').filter(Boolean);
   const categoryTerms = eventCategories(event).map(normalizeSearchText);
   const categoryAliases = {
-    party: ['buli', 'bulizas', 'tanc', 'zene', 'koncert'],
+    party: ['buli', 'bulizas', 'parti', 'tanc', 'zene', 'koncert'],
     kultura: ['kulturalis', 'szinhaz', 'kiallitas', 'muzeum', 'film', 'mozi'],
     sport: ['edzes', 'futball', 'meccs', 'mozgas', 'tura'],
     csaladi: ['gyerek', 'gyerekek', 'csalad', 'baba'],
     gasztro: ['etel', 'ital', 'bor', 'kave', 'vacsora', 'food'],
     romantika: ['par', 'randi', 'szerelmes'],
   };
+  const location = normalizeSearchText(event.Location);
   const searchableDetails = normalizeSearchText([
     event.Description,
     event['Long description'],
-    event.Location,
     event.Price,
     event['Age Requirement'],
-    categoryTerms.join(' '),
-    categoryTerms.flatMap(category => categoryAliases[category] || []).join(' '),
     isFree(event) ? 'ingyenes free' : 'fizetos jegy vasarlas',
     eventStartTimeText(event),
     eventDateOnly(event)
   ].join(' '));
-  const detailWords = searchableDetails.split(/\s+/).filter(Boolean);
-  const categoryIntentBonus = queryWords.reduce((score, queryWord) => {
-    return score + categoryTerms.reduce((categoryScore, category) => {
+  let score = 0;
+  if (title === normalizedQuery) score += 10000;
+  else if (title.startsWith(normalizedQuery)) score += 8500;
+  else if (title.includes(normalizedQuery)) score += 7600;
+
+  queryWords.forEach(word => {
+    if (!word) return;
+    const titleMatch = titleWords.some(titleWord => titleWord === word || titleWord.startsWith(word));
+    if (titleMatch) score += 1800;
+    const categoryMatch = categoryTerms.some(category => {
       const candidates = [category, ...(categoryAliases[category] || [])];
-      const closest = candidates.reduce((best, candidate) => Math.min(best, levenshteinDistance(queryWord, candidate)), Infinity);
-      const likeness = Math.max(0, 1 - closest / Math.max(queryWord.length, ...candidates.map(candidate => candidate.length), 1));
-      return categoryScore + (likeness >= 0.68 ? likeness * 140 : 0);
-    }, 0);
-  }, 0);
-  const wordScore = queryWords.reduce((score, queryWord) => {
-    const nearestTitle = titleWords.reduce((closest, word) => Math.min(closest, levenshteinDistance(queryWord, word)), Infinity);
-    const nearestDetail = detailWords.reduce((closest, word) => Math.min(closest, levenshteinDistance(queryWord, word)), Infinity);
-    const titleLikeness = Math.max(0, 1 - nearestTitle / Math.max(queryWord.length, 1));
-    const detailLikeness = Math.max(0, 1 - nearestDetail / Math.max(queryWord.length, 1));
-    const directDetailMatch = detailWords.some(word => word.includes(queryWord) || queryWord.includes(word));
-    return score + titleLikeness * 1.5 + detailLikeness + (directDetailMatch ? 2.4 : 0);
-  }, 0);
-  const wholeTitleScore = normalizedQuery
-    ? Math.max(0, 1 - levenshteinDistance(normalizedQuery, title) / Math.max(normalizedQuery.length, title.length, 1))
-    : 0;
-  const exactTitleBonus = title === normalizedQuery ? 500 : title.includes(normalizedQuery) ? 250 : 0;
-  const detailMatches = queryWords.filter(word => searchableDetails.includes(word)).length;
-  return exactTitleBonus + wordScore * 28 + wholeTitleScore * 12 + detailMatches * 30 + categoryIntentBonus;
+      return candidates.some(candidate => candidate === word || candidate.startsWith(word) || word.length > 2 && candidate.includes(word));
+    });
+    if (categoryMatch) score += 1100;
+    if (location.includes(word)) score += 650;
+    if (searchableDetails.includes(word)) score += 100;
+
+    if (word.length >= 4 && !categoryMatch) {
+      const nearestCategory = categoryTerms.flatMap(category => [category, ...(categoryAliases[category] || [])])
+        .reduce((closest, candidate) => Math.min(closest, levenshteinDistance(word, candidate)), Infinity);
+      const categoryLikeness = 1 - nearestCategory / Math.max(word.length, 1);
+      if (categoryLikeness >= 0.75) score += categoryLikeness * 850;
+    }
+
+    if (word.length >= 4 && !location.includes(word)) {
+      const nearestLocation = location.split(/\s+/).filter(Boolean)
+        .reduce((closest, locationWord) => Math.min(closest, levenshteinDistance(word, locationWord)), Infinity);
+      const locationLikeness = 1 - nearestLocation / Math.max(word.length, 1);
+      if (locationLikeness >= 0.8) score += locationLikeness * 450;
+    }
+
+    if (word.length >= 4 && !titleMatch && !categoryMatch && !location.includes(word)) {
+      const nearestTitle = titleWords.reduce((closest, titleWord) => Math.min(closest, levenshteinDistance(word, titleWord)), Infinity);
+      const likeness = 1 - nearestTitle / Math.max(word.length, 1);
+      if (likeness >= 0.75) score += likeness * 900;
+    }
+  });
+  return score;
 }
 
 function eventRelatedness(event, anchor) {
@@ -1723,15 +1755,15 @@ function eventRelatedness(event, anchor) {
 function rankedSearchEvents(query) {
   const normalizedQuery = normalizeSearchText(query);
   const queryWords = normalizedQuery.split(' ').filter(Boolean);
+  const targetDate = parseSearchDate(query);
   const uniqueEvents = [...events, ...permanentEvents]
     .filter(event => !isPastEvent(event) || normalizeSearchText(event.Title).includes(normalizedQuery))
     .filter((event, index, list) => list.findIndex(candidate => eventKey(candidate) === eventKey(event)) === index);
+  if (targetDate) return uniqueEvents.filter(event => dateKey(eventDateValue(event)) === targetDate);
   const scored = uniqueEvents.map((event, index) => ({ event, index, queryScore: queryRelevance(event, normalizedQuery, queryWords) }));
-  scored.sort((first, second) => second.queryScore - first.queryScore || first.index - second.index);
-  const anchor = scored[0]?.event;
   return scored
-    .map(item => ({ ...item, finalScore: item.queryScore * 5 + eventRelatedness(item.event, anchor) }))
-    .sort((first, second) => second.finalScore - first.finalScore || first.index - second.index)
+    .filter(item => item.queryScore > 0)
+    .sort((first, second) => second.queryScore - first.queryScore || first.index - second.index)
     .map(item => item.event);
 }
 
@@ -1758,11 +1790,7 @@ function scheduleSearchSuggestions() {
   const clearButton = find('#search-clear');
   if (clearButton) clearButton.hidden = !query;
   if (!query.trim()) { renderSearchResults(''); return; }
-  const version = searchDebounceVersion;
-  searchDebounceTimer = window.setTimeout(() => {
-    if (version !== searchDebounceVersion || currentAppView !== 'search' || searchInput?.value !== query) return;
-    renderSearchResults(query, { showSuggestions: true });
-  }, 300);
+  renderSearchResults(query, { showSuggestions: true });
 }
 
 function renderSearchResults(query, { showSuggestions = true } = {}) {
@@ -1836,18 +1864,35 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     return;
   }
   const categoryQuery = CATEGORIES.find(category => normalizeSearchText(category) === term);
-  const rankedBase = categoryQuery
-    ? [...events, ...permanentEvents].filter(event => !isPastEvent(event) && eventCategories(event).includes(categoryQuery))
-    : rankedSearchEvents(query);
+  const targetDate = parseSearchDate(query);
+  const rankedBase = rankedSearchEvents(query);
   const filtered = rankedBase.filter(matchesHomeMode);
   let ranked = homeEventSort.length ? sortHomeFeedEvents(filtered) : filtered;
   const outsideFilters = !ranked.length;
   if (outsideFilters) ranked = rankedSearchEvents(query);
   if (!ranked.length) {
-    searchResults.innerHTML = `<div class="compact-empty-state search-category-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span class="compact-empty-message">${categoryQuery ? 'Ebben a kategóriában jelenleg nincs esemény.' : 'A jelenlegi szűrőkkel nincs találat. Próbálj más keresést, vagy kapcsold ki a szűrőket.'}</span></div>`;
+    const empty = document.createElement('div');
+    empty.className = 'compact-empty-state search-category-empty';
+    const icon = document.createElement('img');
+    icon.className = 'empty-error-icon';
+    icon.src = 'assets/icons/error.svg';
+    icon.alt = '';
+    icon.setAttribute('aria-hidden', 'true');
+    const message = document.createElement('span');
+    message.className = 'compact-empty-message';
+    message.textContent = targetDate
+      ? `Nincs esemény ${String(query).trim()} dátumán.`
+      : categoryQuery
+        ? `Nincs ${categoryLabel(categoryQuery)} témájú esemény.`
+        : isLikelyPlaceQuery(query)
+          ? placeNoResultsMessage(query)
+          : `A „${String(query).trim()}” keresésre nem találtunk eseményt. Írd be máshogy!`;
+    empty.append(icon, message);
+    searchResults.replaceChildren(empty);
     return;
   }
   const directMatches = ranked.filter(event => normalizeSearchText(event.Title).includes(term));
+  const hasLocationMatch = ranked.some(event => normalizeSearchText(event.Location).includes(term));
   searchResults.replaceChildren();
   const rail = document.createElement('div');
   rail.className = 'events-grid event-carousel search-related-events';
@@ -1855,7 +1900,7 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
   rail.setAttribute('aria-label', showSuggestions ? 'Keresési eredmények' : 'Keresési eredmények');
   searchResults.append(rail);
   renderCardsIncrementally(rail, ranked.slice(0, 12));
-  if (outsideFilters || (showSuggestions && !directMatches.length)) {
+  if (outsideFilters || (showSuggestions && !directMatches.length && !targetDate && !categoryQuery && !hasLocationMatch)) {
     const recommendedCategory = ranked.flatMap(eventCategories).find(Boolean) || 'gasztro';
     const empty = document.createElement('div');
     empty.className = 'compact-empty-state search-empty-message';
@@ -1886,7 +1931,17 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
     section.setAttribute('aria-label', 'Eseményjavaslatok');
     const heading = document.createElement('p');
     heading.className = 'search-suggestions-title';
-    heading.textContent = outsideFilters ? 'További eseményjavaslatok:' : directMatches.length ? 'Legjobb találatok:' : 'Lehet, hogy ezekre gondoltál:';
+    heading.textContent = targetDate
+      ? 'Események ezen a napon:'
+      : categoryQuery
+        ? `Találatok a(z) ${categoryLabel(categoryQuery)} témában:`
+        : hasLocationMatch
+          ? 'Események ezen a helyszínen:'
+          : outsideFilters
+            ? 'További eseményjavaslatok:'
+            : directMatches.length
+              ? 'Legjobb találatok:'
+              : 'Lehet, hogy ezekre gondoltál:';
     const list = document.createElement('div');
     list.className = 'search-suggestions-list';
     ranked.slice(0, Math.min(5, ranked.length)).forEach(event => {
@@ -2384,8 +2439,13 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   if (!eventDetailsDialog) return;
   const detailsWindow = find('.event-details-window', eventDetailsDialog);
   if (!detailsWindow) return;
+  if (!document.body.classList.contains('has-open-dialog')) {
+    document.body.dataset.detailsScrollY = String(window.scrollY);
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${window.scrollY}px`;
+    document.body.style.width = '100%';
+  }
   recordDetailInterest(event);
-  rerankEventRows(triggerButton?.closest('.events-grid') || null);
   const isPast = isPastEvent(event);
   detailsWindow.classList.toggle('is-past-event', isPast);
   if (eventDetailsExpired) eventDetailsExpired.hidden = !isPast;
@@ -2449,12 +2509,6 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   }
   if (eventDetailsShare) eventDetailsShare.onclick = () => shareEvent(event);
   if (updateUrl) history.replaceState({}, '', eventShareUrl(event));
-  if (!document.body.classList.contains('has-open-dialog')) {
-    document.body.dataset.detailsScrollY = String(window.scrollY);
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${window.scrollY}px`;
-    document.body.style.width = '100%';
-  }
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
   positionSnackbar();
@@ -3598,7 +3652,7 @@ function createCalendarFilters() {
 }
 async function shareEvent(event) {
   const url = eventShareUrl(event);
-  const data = { title: event.Title || 'Bee there esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
+  const data = { title: event.Title || 'QuackAround esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
   try {
     if (navigator.share) {
       await navigator.share(data);
