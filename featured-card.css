@@ -2191,6 +2191,28 @@ html[data-theme="dark"] #event-filter-dialog button {
   box-shadow: var(--control-shadow) !important;
 }
 html[data-theme="dark"] #event-filter-dialog .event-filter-choice { border-color: transparent; }
+
+/* Keep discovery section titles bright and use the app's category blue for actions. */
+html[data-theme="dark"] .discovery-feed-section .discovery-heading h3,
+html[data-theme="dark"] .discovery-feed-section .section-heading h3 {
+  color: #F2F2F3 !important;
+}
+html[data-theme="dark"] .ticket-button:not(.is-free) {
+  border-color: #2563EB !important;
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] #planner-event .planner-ticket-button:not(.is-free):not(:disabled) {
+  border-color: #2563EB !important;
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"] {
+  border: 2px solid #2563EB !important;
+  background: var(--dark-control) !important;
+  color: #2563EB !important;
+  box-shadow: var(--control-shadow) !important;
+}
 html[data-theme="dark"] #event-filter-dialog .event-filter-choice:has(input:checked) { border-color: var(--muted); }
 html[data-theme="dark"] #event-filter-dialog .event-filter-choice input {
   background-color: var(--dark-control);
@@ -2221,4 +2243,33 @@ html[data-theme="dark"] #search-view .event-filter-button {
   background: var(--dark-control) !important;
   color: var(--text) !important;
   box-shadow: var(--control-shadow) !important;
+}
+
+/* Match the brighter homepage dividers in the planner's dark-mode details. */
+html[data-theme="dark"] .home-section-divider { background: #606065 !important; }
+html[data-theme="dark"] #planner-event .planner-purchase-bar,
+html[data-theme="dark"] #planner-event .planner-event-meta > *,
+html[data-theme="dark"] #planner-event #planner-note-input {
+  border-color: #606065 !important;
+}
+html[data-theme="dark"] #event-filter-dialog .event-filter-apply,
+html[data-theme="dark"] #event-filter-dialog .event-filter-apply:hover {
+  border-color: #2563EB !important;
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] .topic-button,
+html[data-theme="dark"] .shared-category-filters .filter-button,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button,
+html[data-theme="dark"] #calendar-filters .filter-button {
+  background: #303033 !important;
+}
+html[data-theme="dark"] .shared-category-filters .filter-button.active,
+html[data-theme="dark"] #events-grid .event-group-filters .filter-button.active,
+html[data-theme="dark"] #calendar-filters .filter-button.active {
+  background: #303033 !important;
+  color: #F2F2F3 !important;
+}
+html[data-theme="dark"] #planner-event .planner-event-time {
+  color: #2563EB !important;
 }

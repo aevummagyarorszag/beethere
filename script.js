@@ -694,40 +694,103 @@ function eventCompactPriceLabel(event) {
 }
 function eventKey(event) { return [event.Title, eventDateValue(event), event.Location, event['Ticket Link']].map(value => String(value || '').trim()).join('|'); }
 function eventDateValue(event) { return event.Date || event['Date and Time'] || ''; }
+function eventDateRange(event) {
+  const value = String(eventDateValue(event) || '');
+  const pattern = /\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}/g;
+  const matches = [...value.matchAll(pattern)];
+  const parseKey = match => {
+    if (!match) return '';
+    const parts = match[0].split(/[.\-/]/).map(Number);
+    const [year, month, day] = parts;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+  const start = parseKey(matches[0]);
+  if (!start) return null;
+  const separator = matches[1] ? value.slice(matches[0].index + matches[0][0].length, matches[1].index) : '';
+  const isRange = /(?:-|–|—|\btol\b.*\big\b)/i.test(separator);
+  const possibleEnd = isRange ? parseKey(matches[1]) : '';
+  const end = possibleEnd && possibleEnd >= start ? possibleEnd : start;
+  return { start, end };
+}
+function eventDateKeys(event) {
+  const range = eventDateRange(event);
+  if (!range) return [];
+  const keys = [];
+  const date = new Date(`${range.start}T00:00:00Z`);
+  const last = new Date(`${range.end}T00:00:00Z`);
+  while (date <= last && keys.length < 3660) {
+    keys.push(date.toISOString().slice(0, 10));
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+  return keys;
+}
+function eventOccursOnDate(event, key) {
+  if (event.Permanent) return false;
+  const range = eventDateRange(event);
+  return range ? key >= range.start && key <= range.end : dateKey(eventDateValue(event)) === key;
+}
+function formatEventDateKey(key) { return key.replace(/-/g, '.'); }
 function relativeEventDateLabel(event) {
   if (event.Permanent) return '';
   if (isToday(event)) return 'Ma';
   if (isTomorrow(event)) return 'Holnap';
   return '';
 }
-function eventDateOnly(event) { if (event.Permanent) return 'Állandó program'; const relative = relativeEventDateLabel(event); if (relative) return relative; const value = eventDateValue(event).trim(); return value.split(/[T ]/)[0] || 'Dátum hamarosan'; }
+function eventDateOnly(event) {
+  if (event.Permanent) return 'Állandó program';
+  const range = eventDateRange(event);
+  if (range && range.start !== range.end) return `${formatEventDateKey(range.start)}–${formatEventDateKey(range.end)}`;
+  const relative = relativeEventDateLabel(event);
+  if (relative) return relative;
+  return range ? formatEventDateKey(range.start) : 'Dátum hamarosan';
+}
 function eventLongDateLabel(event) {
   if (event.Permanent) return String(event.Date || 'Állandó program').trim();
   const relative = relativeEventDateLabel(event);
   if (relative) return relative;
-  const key = dateKey(eventDateValue(event));
+  const key = eventDateRange(event)?.start || dateKey(eventDateValue(event));
   if (!key) return 'Dátum hamarosan';
   const date = new Date(`${key}T00:00:00`);
   const weekday = new Intl.DateTimeFormat('hu-HU', { weekday: 'long' }).format(date);
   return `${weekday.charAt(0).toLocaleUpperCase('hu-HU')}${weekday.slice(1)} • ${eventDateOnly(event)}`;
 }
 function dateKey(value) { const match = String(value || '').match(/(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : ''; }
-function isWithinNextDays(event, days = 3) { const key = dateKey(eventDateValue(event)); if (!key) return false; const today = new Date(); today.setHours(0, 0, 0, 0); const target = new Date(`${key}T00:00:00`); const difference = Math.round((target - today) / 86400000); return difference >= 0 && difference <= days; }
-function isPastEvent(event) { const key = dateKey(eventDateValue(event)); return Boolean(key && key < todayKey()); }
+function isWithinNextDays(event, days = 3) {
+  const range = eventDateRange(event);
+  if (!range) return false;
+  const today = new Date(`${todayKey()}T00:00:00Z`);
+  const last = new Date(today);
+  last.setUTCDate(last.getUTCDate() + days);
+  return range.start <= last.toISOString().slice(0, 10) && range.end >= today.toISOString().slice(0, 10);
+}
+function isPastEvent(event) { const end = eventDateRange(event)?.end || dateKey(eventDateValue(event)); return Boolean(end && end < todayKey()); }
 function eventSlug(event) { return `${dateKey(eventDateValue(event)) || 'esemeny'}-${String(event.Title || 'esemeny').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 96)}`; }
 function eventShareUrl(event) { const url = new URL(window.location.href); url.searchParams.set('event', eventSlug(event)); return url.toString(); }
 function tomorrowKey() { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`; }
 function todayKey() { const today = new Date(); return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`; }
-function isToday(event) { return dateKey(eventDateValue(event)) === todayKey(); }
+function isToday(event) { return eventOccursOnDate(event, todayKey()); }
 function isEventNearby(event, maxKm = 5) {
   const latitude = Number(event?.Latitude);
   const longitude = Number(event?.Longitude);
   if (!position || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
   return haversineKm(position.latitude, position.longitude, latitude, longitude) <= maxKm;
 }
-function isTomorrow(event) { return dateKey(eventDateValue(event)) === tomorrowKey(); }
+function isTomorrow(event) { return eventOccursOnDate(event, tomorrowKey()); }
 function eventCardDateLabel(event) {
   if (event.Permanent) return String(event.Date || 'Minden nap').trim();
+  const range = eventDateRange(event);
+  if (range && range.start !== range.end) {
+    const start = new Date(`${range.start}T00:00:00`);
+    const end = new Date(`${range.end}T00:00:00`);
+    const months = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec'];
+    const startLabel = `${months[start.getMonth()]} ${start.getDate()}`;
+    const endLabel = start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()
+      ? String(end.getDate())
+      : `${months[end.getMonth()]} ${end.getDate()}`;
+    return `${startLabel}–${endLabel}`;
+  }
   const relative = relativeEventDateLabel(event);
   if (relative) return relative;
   const key = dateKey(eventDateValue(event));
@@ -744,7 +807,27 @@ function permanentEventMatchesWeekday(event, dayIndex) {
   if (schedule.includes('hetkoznap')) return dayIndex >= 0 && dayIndex <= 4;
   if (schedule.includes('hetvege')) return dayIndex >= 5;
   const weekdayNames = ['hetfo', 'kedd', 'szerda', 'csutortok', 'pentek', 'szombat', 'vasarnap'];
-  return schedule.includes(weekdayNames[dayIndex]);
+  const weekdayPattern = /hetfo(?:tol|ig|on|en|an|n)?|kedd(?:tol|ig|en|on|en|n)?|szerda(?:tol|ig|n)?|csutortok(?:tol|ig|on|en|n)?|pentek(?:tol|ig|en|on|n)?|szombat(?:tol|ig|on|en|n)?|vasarnap(?:tol|ig|on|en|n)?/g;
+  const matches = [...schedule.matchAll(weekdayPattern)];
+  const selectedDays = new Set();
+  matches.forEach((match, index) => {
+    const name = match[0].replace(/(?:tol|ig|on|en|an|n)$/, '');
+    const startDay = weekdayNames.indexOf(name);
+    if (startDay < 0) return;
+    selectedDays.add(startDay);
+    const nextMatch = matches[index + 1];
+    if (!nextMatch) return;
+    const between = schedule.slice(match.index + match[0].length, nextMatch.index);
+    if (!/(?:-|–|—)/.test(between) && !(match[0].endsWith('tol') && nextMatch[0].endsWith('ig'))) return;
+    const endName = nextMatch[0].replace(/(?:tol|ig|on|en|an|n)$/, '');
+    const endDay = weekdayNames.indexOf(endName);
+    if (endDay < 0) return;
+    for (let currentDay = startDay; ; currentDay = (currentDay + 1) % 7) {
+      selectedDays.add(currentDay);
+      if (currentDay === endDay) break;
+    }
+  });
+  return selectedDays.has(dayIndex);
 }
 function setText(selector, value, scope) { const element = find(selector, scope); if (element) element.textContent = value; return element; }
 function vibrate(milliseconds = 16) { if ('vibrate' in navigator) navigator.vibrate(milliseconds); }
@@ -1759,7 +1842,7 @@ function rankedSearchEvents(query) {
   const uniqueEvents = [...events, ...permanentEvents]
     .filter(event => !isPastEvent(event) || normalizeSearchText(event.Title).includes(normalizedQuery))
     .filter((event, index, list) => list.findIndex(candidate => eventKey(candidate) === eventKey(event)) === index);
-  if (targetDate) return uniqueEvents.filter(event => dateKey(eventDateValue(event)) === targetDate);
+  if (targetDate) return uniqueEvents.filter(event => eventOccursOnDate(event, targetDate));
   const scored = uniqueEvents.map((event, index) => ({ event, index, queryScore: queryRelevance(event, normalizedQuery, queryWords) }));
   return scored
     .filter(item => item.queryScore > 0)
@@ -2936,7 +3019,7 @@ function rerankEventRows(excludedCarousel = null) {
   rerender(freeTarget, upcomingEvents.filter(isFree).filter(event => !freeCategory || eventCategories(event).includes(freeCategory)), { compact: true });
   rerender(paidTarget, upcomingEvents.filter(event => !isFree(event)).filter(event => !paidCategory || eventCategories(event).includes(paidCategory)), { compact: true });
   const quickTarget = quickCalendarTarget();
-  rerender(todayGrid, upcomingEvents.filter(event => dateKey(eventDateValue(event)) === quickTarget.key), { compact: true });
+  rerender(todayGrid, upcomingEvents.filter(event => eventOccursOnDate(event, quickTarget.key)), { compact: true });
   rerender(permanentGrid, sortByDistance(permanentEvents.filter(event => !isPastEvent(event) && (!selectedCategory || eventCategories(event).includes(selectedCategory)))));
 
   const calendarRail = calendarEvents?.querySelector('.events-grid');
@@ -3432,7 +3515,7 @@ function setupQuickNavigation() {
     tomorrowShortcut.addEventListener('click', () => {
       applyAppView('home', { scroll: false });
       const shortcutTarget = quickCalendarTarget();
-      const hasTargetEvents = events.some(event => dateKey(eventDateValue(event)) === shortcutTarget.key);
+      const hasTargetEvents = events.some(event => eventOccursOnDate(event, shortcutTarget.key));
       if (hasTargetEvents) {
         renderToday();
         window.setTimeout(() => todaySection?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
@@ -3467,7 +3550,7 @@ function renderToday() {
   }
   const target = quickCalendarTarget();
   const matching = position
-    ? sortByDistance(events.filter(event => !isPastEvent(event) && dateKey(eventDateValue(event)) === target.key))
+    ? sortByDistance(events.filter(event => !isPastEvent(event) && eventOccursOnDate(event, target.key)))
     : [];
   if (todayEyebrow) todayEyebrow.textContent = target.label === 'mai' ? 'MAI TERV' : 'HOLNAPI TERV';
   if (todayTitle) todayTitle.textContent = target.label === 'mai' ? 'Mai események' : 'Holnapi események';
@@ -3481,7 +3564,7 @@ function calendarEventsForSelection() {
   return events
     .filter(event => !isPastEvent(event))
     .filter(event => (!calendarCategory || eventCategories(event).includes(calendarCategory)))
-    .filter(event => !calendarSelectedDate || dateKey(eventDateValue(event)) === calendarSelectedDate);
+    .filter(event => !calendarSelectedDate || eventOccursOnDate(event, calendarSelectedDate));
 }
 
 function renderCalendarEvents() {
@@ -3524,8 +3607,7 @@ function renderPermanentCalendarEvents(dayIndex) {
 function refreshCalendarFavoriteMarkers() {
   const favoriteDates = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
-    .map(event => dateKey(eventDateValue(event)))
-    .filter(Boolean));
+    .flatMap(eventDateKeys));
   findAll('.calendar-day[data-date-key]', calendarGrid).forEach(button => {
     const hasFavorite = favoriteDates.has(button.dataset.dateKey);
     button.classList.toggle('has-favorite', hasFavorite);
@@ -3589,11 +3671,10 @@ function renderCalendar() {
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const categoryEvents = events.filter(event => !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
-  const datesWithEvents = new Set(categoryEvents.map(event => dateKey(eventDateValue(event))).filter(Boolean));
+  const datesWithEvents = new Set(categoryEvents.flatMap(eventDateKeys));
   const datesWithFavorites = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
-    .map(event => dateKey(eventDateValue(event)))
-    .filter(Boolean));
+    .flatMap(eventDateKeys));
   const today = todayKey();
   const currentMonthIsVisible = year === new Date().getFullYear() && month === new Date().getMonth();
   if (!calendarSelectedDate && currentMonthIsVisible && datesWithEvents.has(today)) calendarSelectedDate = today;
