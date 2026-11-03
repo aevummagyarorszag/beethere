@@ -884,7 +884,7 @@ function updateQuickDate() {
 
 function initOutroMessage() {
   if (!outroMessage) return;
-  const message = 'A QuackAround segít, hogy jól érezd magad bármikor, bárkivel.';
+  const message = 'A Bee There segít, hogy jól érezd magad bármikor, bárkivel.';
   outroMessage.replaceChildren();
   let letterIndex = 0;
   const parts = message.split(/(\s+)/);
@@ -3733,7 +3733,7 @@ function createCalendarFilters() {
 }
 async function shareEvent(event) {
   const url = eventShareUrl(event);
-  const data = { title: event.Title || 'QuackAround esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
+  const data = { title: event.Title || 'Bee There esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
   try {
     if (navigator.share) {
       await navigator.share(data);

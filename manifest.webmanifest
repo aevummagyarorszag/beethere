@@ -1,24 +1,24 @@
 {
   "id": "./",
-  "name": "QuackAround",
-  "short_name": "QuackAround",
+  "name": "Bee There",
+  "short_name": "Bee There",
   "description": "Események, amelyekért érdemes elindulni.",
   "lang": "hu",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "prefer_related_applications": false,
-  "background_color": "#fffaf2",
-  "theme_color": "#fffaf2",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
   "icons": [
     {
-      "src": "assets/icons/quackaround-192.png",
+      "src": "assets/icons/bee-there-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icons/quackaround-512.png",
+      "src": "assets/icons/bee-there-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

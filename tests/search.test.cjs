@@ -34,6 +34,7 @@ function searchContext(programs = []) {
     eventDateOnly: item => item.Date,
   };
   vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function eventDateRange('), source.indexOf('function formatEventDateKey(')), context);
   vm.runInContext(source.slice(searchStart, searchEnd), context);
   return context;
 }
@@ -89,6 +90,7 @@ test('search suggestions update immediately from the input event without waiting
     renderSearchResults(query, options) { calls.push([query, options]); },
   };
   vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function eventDateRange('), source.indexOf('function formatEventDateKey(')), context);
   const start = source.indexOf('let searchDebounceTimer = 0;');
   const end = source.indexOf('\nfunction renderSearchResults(', start);
   vm.runInContext(source.slice(start, end), context);

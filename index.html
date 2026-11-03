@@ -9,12 +9,12 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; media-src 'self'; connect-src 'self' https://api.open-meteo.com https://archive-api.open-meteo.com; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), payment=(), usb=()">
-  <title>QuackAround — Események</title>
+  <title>Bee There — Események</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#fffaf2">
+  <meta name="theme-color" content="#f5f5f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="QuackAround">
-  <link rel="apple-touch-icon" href="assets/icons/quackaround-180.png">
+  <meta name="apple-mobile-web-app-title" content="Bee There">
+  <link rel="apple-touch-icon" href="assets/icons/bee-there-180.png">
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,17 +25,38 @@
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261013-05">
+  <link rel="stylesheet" href="install.css">
+  <script defer src="install.js"></script>
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
     <div class="hero-content wrapper">
-      <h1 class="sr-only">QuackAround – Események</h1>
+      <h1 class="sr-only">Bee There – Események</h1>
     </div>
   </header>
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
     <button id="city-selector" class="city-selector" type="button" aria-haspopup="dialog" aria-controls="city-dialog"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span id="city-selector-label">Válassz várost</span></button>
     <time id="quick-date" class="quick-date" aria-label="Mai dátum"></time>
   </section>
+  <div class="wrapper install-row" data-home-content>
+    <button class="install-action" id="install-app" type="button" hidden><img src="assets/icons/bee-there-180.png" alt="">Bee There telepítése</button>
+  </div>
+  <dialog id="install-guide" aria-labelledby="install-title">
+    <img class="install-mark" src="assets/icons/bee-there-180.png" alt="">
+    <h2 id="install-title">Bee There telepítése</h2>
+    <p id="install-position"></p>
+    <div class="install-preview" aria-hidden="true">
+      <small>BEMUTATÓ</small>
+      <div class="install-screen"><span id="install-context"></span><strong id="install-target"></strong></div>
+    </div>
+    <ol id="install-steps"></ol>
+    <div class="install-controls">
+      <button type="button" id="install-prev" aria-label="Előző lépés">←</button>
+      <button type="button" id="install-play">Szünet</button>
+      <button type="button" id="install-next" aria-label="Következő lépés">→</button>
+    </div>
+    <form method="dialog"><button class="install-action" autofocus>Bezárás</button></form>
+  </dialog>
   <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 
   <main class="wrapper events-section" id="esemenyek" data-home-content>
@@ -125,7 +146,7 @@
       <article class="event-card">
         <div class="image-wrap">
           <img class="event-image" alt="" loading="lazy">
-          <div class="image-placeholder"><span>QuackAround / esemény</span><strong class="placeholder-title"></strong></div>
+          <div class="image-placeholder"><span>Bee There / esemény</span><strong class="placeholder-title"></strong></div>
           <span class="distance-pill" aria-label="Távolság"><span class="distance-value">---</span></span>
           <button class="favorite-button" type="button" aria-label="Esemény kedvelése" aria-pressed="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>

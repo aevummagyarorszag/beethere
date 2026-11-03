@@ -1,0 +1,39 @@
+.install-row { position: relative; }
+.install-action {
+  display: inline-flex; align-items: center; gap: .5rem; min-height: 44px;
+  background: #efebfb; color: #41315d; border: 1px solid #d8cdea;
+  border-radius: 24px; padding: .45rem 1rem; font: 700 .9rem/1.4 var(--font-sans); cursor: pointer;
+}
+.install-action[hidden] { display: none; }
+.install-action img { width: 28px; height: 28px; border-radius: 8px; }
+#install-guide {
+  width: min(25rem, calc(100% - 2rem)); max-height: 85vh; overflow: auto;
+  margin: auto; padding: 1.5rem; border: 0; border-radius: 24px;
+  background: var(--surface, white); color: #30283c; box-shadow: 0 16px 64px #241b3833;
+}
+#install-guide::backdrop { background: rgb(28 21 42 / .48); }
+.install-mark { width: 56px; height: 56px; border-radius: 16px; }
+#install-title { margin: .75rem 0; font-size: 1.4rem; }
+#install-steps { padding-inline-start: 1.5rem; line-height: 1.5; }
+#install-steps li { margin-block: .65rem; padding-inline-start: .25rem; }
+#install-steps li::marker { color: #614780; font-weight: 700; }
+.install-preview { border-radius: 18px; padding: 12px; background: #eee9f8; color: #493962; }
+.install-preview small { font: 700 .65rem var(--font-sans); letter-spacing: .12em; }
+.install-screen { display: flex; flex-direction: column; gap: 12px; margin: 6px auto; padding: 12px 15px 20px; border: 2px solid #d6cde3; border-radius: 17px; background: white; }
+#install-context { font-size: .8rem; color: #655972; }
+#install-target { position: relative; align-self: flex-end; padding: .4rem .75rem; border-radius: 10px; background: #efe9fc; color: #4d3477; }
+#install-target::after { content: ''; position: absolute; right: 5px; bottom: -6px; width: 15px; height: 15px; border-radius: 50%; background: #8059b0; border: 2px solid white; }
+.playing #install-target::after { animation: install-tap 1.5s infinite; }
+@keyframes install-tap { 50% { box-shadow: 0 0 0 7px #905cba40; transform: scale(.85); } }
+.install-preview[data-layout="menu"] #install-target, .install-preview[data-layout="toggle"] #install-target { align-self: stretch; }
+.install-preview[data-layout="toggle"] #install-target::before { content: '✓'; float: right; background: #267453; border-radius: 12px; padding: 0 6px; color: white; }
+.install-preview[data-layout="share"] #install-target::before,
+.install-preview[data-layout="chrome"] #install-target::before {
+  content: ''; display: inline-block; vertical-align: -.15em; width: 1.1em; height: 1.1em; margin-right: .35em;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234d3477' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9H5v12h14V9h-3M12 15V2m-4 4 4-4 4 4'/%3E%3C/svg%3E");
+}
+#install-steps li[aria-current="step"] { font-weight: 700; color: #573784; }
+.install-controls { display: flex; gap: .4rem; margin-bottom: .75rem; }
+.install-controls button { min-width: 44px; min-height: 44px; border: 1px solid #d8cdea; border-radius: 12px; padding-inline: .8rem; color: #41315d; background: white; font: inherit; cursor: pointer; }
+#install-guide { background: white; }
+@media (prefers-reduced-motion: reduce) { .playing #install-target::after { animation: none; } }
