@@ -13,6 +13,12 @@
   window.addEventListener('appinstalled', () => { installed = true; update(); });
   displayMode.addEventListener('change', update);
   window.addEventListener('pageshow', update);
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .catch(error => console.warn('[Bee There] Service worker regisztráció sikertelen:', error));
+    }, { once: true });
+  }
   button.addEventListener('click', async () => {
     if (button.hidden || button.disabled) return;
     button.disabled = true;
