@@ -380,6 +380,13 @@ html, body { overflow-x: clip !important; }
 .home-topic-toolbar.is-stuck { background: #f5f5f7; }
 html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
 
+/* Keep the install component above later body children; its dialog uses a
+   high z-index inside the web component's own stacking context. */
+body > pwa-install {
+  position: relative;
+  z-index: 2147483002;
+}
+
 #esemenyek .all-events .all-events-heading {
   position: absolute;
   /* Use the existing gap below the featured card without adding a row. */
