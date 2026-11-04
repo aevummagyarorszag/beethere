@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
-    <link rel="stylesheet" href="featured-card.css?v=20261013-05">
+    <link rel="stylesheet" href="featured-card.css?v=20261104-01">
   <link rel="stylesheet" href="install.css">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js"></script>
   <script defer src="install.js"></script>
@@ -56,10 +56,10 @@
     </section>
 
     <section class="all-events" aria-label="Események">
-      <div class="section-heading all-events-heading">
+      <div id="home-topic-toolbar" class="home-topic-toolbar topic-window">
         <button id="event-filter-button" class="event-filter-button" type="button" aria-haspopup="dialog" aria-controls="event-filter-dialog" aria-expanded="false" aria-label="Eseményszűrők megnyitása"><img src="assets/icons/tune.svg" alt="" aria-hidden="true"><span class="event-filter-active-dot" hidden></span></button>
+        <div id="home-topic-filters" class="topic-rail" aria-label="Kategóriaszűrők"></div>
       </div>
-      <div id="home-topic-toolbar" class="home-topic-toolbar topic-window"><div id="home-topic-filters" class="topic-rail" aria-label="Kategóriaszűrők"></div></div>
       <div id="events-grid" class="events-grid recommendation-grid all-event-grid" tabindex="0" aria-live="polite" aria-label="Összes esemény"></div>
       <section id="nearby-section" class="discovery-feed-section" aria-labelledby="nearby-title">
         <div class="section-heading discovery-heading"><h3 id="nearby-title">Közeledben</h3></div>

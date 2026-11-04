@@ -2522,6 +2522,16 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   if (!eventDetailsDialog) return;
   const detailsWindow = find('.event-details-window', eventDetailsDialog);
   if (!detailsWindow) return;
+  const sourceCard = triggerButton?.matches?.('.event-card')
+    ? triggerButton
+    : triggerButton?.closest?.('.event-card');
+  const sourceImage = sourceCard?.querySelector('.event-image');
+  const canTransitionImage = Boolean(
+    sourceImage && eventDetailsImage && sourceImage.getAttribute('src')
+      && document.startViewTransition
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  const showDetails = () => {
   if (!document.body.classList.contains('has-open-dialog')) {
     document.body.dataset.detailsScrollY = String(window.scrollY);
     document.body.style.position = 'fixed';
@@ -2598,6 +2608,25 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   if (!event.Permanent) fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
     if (eventDetailsWeather) eventDetailsWeather.textContent = `Várható időjárás: ${value}`;
   });
+  };
+
+  if (canTransitionImage) {
+    const transitionName = 'event-image-transfer';
+    sourceImage.style.viewTransitionName = transitionName;
+    eventDetailsImage.style.viewTransitionName = transitionName;
+    try {
+      const transition = document.startViewTransition(showDetails);
+      transition.finished.catch(() => {}).finally(() => {
+        sourceImage.style.removeProperty('view-transition-name');
+        eventDetailsImage.style.removeProperty('view-transition-name');
+      });
+      return;
+    } catch {
+      sourceImage.style.removeProperty('view-transition-name');
+      eventDetailsImage.style.removeProperty('view-transition-name');
+    }
+  }
+  showDetails();
 }
 
 function setupEventDetailsDialog() {
@@ -2812,7 +2841,7 @@ function renderCard(event, target, { compact = false } = {}) {
       openTimer = window.setTimeout(() => {
         openTimer = 0;
         card.dataset.interacted = 'true';
-        openEventDetails(event, null);
+        openEventDetails(event, card);
       }, 160);
     };
     card.addEventListener('click', input => {
@@ -2825,7 +2854,7 @@ function renderCard(event, target, { compact = false } = {}) {
       if (openTimer) clearTimeout(openTimer);
       openTimer = 0;
       card.dataset.interacted = 'true';
-      openEventDetails(event, null);
+      openEventDetails(event, card);
     });
     card.addEventListener('pointerdown', input => {
       pointerStart = { x: input.clientX, y: input.clientY };

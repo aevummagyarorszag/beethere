@@ -355,7 +355,9 @@ html, body { overflow-x: clip !important; }
   position: sticky;
   top: 0;
   z-index: 30;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 0;
   padding: 8px 0;
   pointer-events: auto;
@@ -409,6 +411,24 @@ html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
   pointer-events: none;
 }
 
+/* Keep the filter control stationary while only the category chips scroll. */
+#home-topic-toolbar > #event-filter-button {
+  position: relative;
+  z-index: 2;
+  top: auto;
+  right: auto;
+  flex: 0 0 44px;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  transform: none;
+}
+
 /* Isolated native topic rail: legacy filter/grid/animation rules cannot apply. */
 .topic-rail {
   position: relative;
@@ -434,7 +454,7 @@ html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
 .topic-rail::-webkit-scrollbar { display: none; }
 .topic-rail.is-dragging { cursor: grabbing; user-select: none; }
 #home-topic-filters { margin: -16px 0; padding: 16px 0; }
-#home-topic-toolbar #home-topic-filters { width: 100%; }
+#home-topic-toolbar #home-topic-filters { flex: 1 1 0; width: auto; }
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {
   position: relative;
@@ -1407,6 +1427,18 @@ html[data-navigation-direction="forward"]::view-transition-new(root) { animation
 html[data-navigation-direction="backward"]::view-transition-old(root) { animation-name: app-page-out-right; }
 html[data-navigation-direction="backward"]::view-transition-new(root) { animation-name: app-page-in-left; }
 
+::view-transition-group(event-image-transfer) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+::view-transition-image-pair(event-image-transfer) { overflow: hidden; }
+::view-transition-old(event-image-transfer),
+::view-transition-new(event-image-transfer) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 @keyframes app-page-out-left { to { transform: translateX(-100%); } }
 @keyframes app-page-in-right { from { transform: translateX(100%); } }
 @keyframes app-page-out-right { to { transform: translateX(100%); } }
@@ -2066,6 +2098,7 @@ html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-da
   border-color: var(--muted) !important;
 }
 html[data-theme="dark"] #esemenyek .all-events-heading .event-filter-button,
+html[data-theme="dark"] #home-topic-toolbar > #event-filter-button,
 html[data-theme="dark"] #search-view .event-filter-button,
 html[data-theme="dark"] #profile-view .transport-button {
   background: var(--dark-control) !important;
