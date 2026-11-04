@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261013-05">
   <link rel="stylesheet" href="install.css">
+  <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js"></script>
   <script defer src="install.js"></script>
 </head>
 <body>
@@ -41,22 +42,7 @@
   <div class="wrapper install-row" data-home-content>
     <button class="install-action" id="install-app" type="button" hidden><img src="assets/icons/bee-there-180.png" alt="">Bee There telepítése</button>
   </div>
-  <dialog id="install-guide" aria-labelledby="install-title">
-    <img class="install-mark" src="assets/icons/bee-there-180.png" alt="">
-    <h2 id="install-title">Bee There telepítése</h2>
-    <p id="install-position"></p>
-    <div class="install-preview" aria-hidden="true">
-      <small>BEMUTATÓ</small>
-      <div class="install-screen"><span id="install-context"></span><strong id="install-target"></strong></div>
-    </div>
-    <ol id="install-steps"></ol>
-    <div class="install-controls">
-      <button type="button" id="install-prev" aria-label="Előző lépés">←</button>
-      <button type="button" id="install-play">Szünet</button>
-      <button type="button" id="install-next" aria-label="Következő lépés">→</button>
-    </div>
-    <form method="dialog"><button class="install-action" autofocus>Bezárás</button></form>
-  </dialog>
+  <pwa-install manual-apple manual-chrome manifest-url="./manifest.webmanifest"></pwa-install>
   <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 
   <main class="wrapper events-section" id="esemenyek" data-home-content>
