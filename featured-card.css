@@ -355,11 +355,13 @@ html, body { overflow-x: clip !important; }
   position: sticky;
   top: 0;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  row-gap: 2px;
   margin-bottom: 0;
   padding: 8px 0;
+  border: 0;
+  box-shadow: none;
   pointer-events: auto;
 }
 
@@ -455,6 +457,13 @@ html[data-theme="dark"] .home-topic-toolbar.is-stuck { background: #0f172a; }
 .topic-rail.is-dragging { cursor: grabbing; user-select: none; }
 #home-topic-filters { margin: -16px 0; padding: 16px 0; }
 #home-topic-toolbar #home-topic-filters { flex: 1 1 0; width: auto; }
+#home-topic-toolbar #home-topic-filters {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {
   position: relative;
