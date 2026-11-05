@@ -474,6 +474,24 @@ body > pwa-install {
   -webkit-mask-image: radial-gradient(ellipse 4.5px 22px at left center, transparent 0 3.5px, #000 4.5px);
   mask-image: radial-gradient(ellipse 4.5px 22px at left center, transparent 0 3.5px, #000 4.5px);
 }
+
+/* Only the disappearing edge beside the pinned filter gets the glass blur. */
+#home-topic-toolbar::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 46px;
+  top: 50%;
+  width: 18px;
+  height: 44px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to right, #000, transparent);
+  mask-image: linear-gradient(to right, #000, transparent);
+}
+
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {
   position: relative;
