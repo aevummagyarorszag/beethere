@@ -471,8 +471,8 @@ body > pwa-install {
   width: auto;
   min-width: 0;
   box-shadow: none;
-  -webkit-mask-image: radial-gradient(ellipse 22px 22px at left center, transparent 0 20px, #000 22px);
-  mask-image: radial-gradient(ellipse 22px 22px at left center, transparent 0 20px, #000 22px);
+  -webkit-mask-image: radial-gradient(ellipse 9px 22px at left center, transparent 0 7px, #000 9px);
+  mask-image: radial-gradient(ellipse 9px 22px at left center, transparent 0 7px, #000 9px);
 }
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {

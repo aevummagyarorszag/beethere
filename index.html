@@ -24,10 +24,10 @@
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
-    <link rel="stylesheet" href="featured-card.css?v=20261104-06">
+    <link rel="stylesheet" href="featured-card.css?v=20261105-01">
   <link rel="stylesheet" href="install.css">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js"></script>
-  <script defer src="install.js?v=20261104-02"></script>
+  <script defer src="install.js?v=20261105-01"></script>
 </head>
 <body>
   <header class="hero" id="top" data-home-content>
@@ -42,6 +42,7 @@
   <div class="wrapper install-row" data-home-content>
     <button class="install-action" id="install-app" type="button" hidden><img src="assets/icons/bee-there-180.png" alt="">Bee There telepítése</button>
   </div>
+  <div id="pwa-install-backdrop" hidden aria-hidden="true"></div>
   <pwa-install manual-apple manual-chrome manifest-url="./manifest.webmanifest"></pwa-install>
   <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 

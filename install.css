@@ -2,3 +2,13 @@
 .install-action { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; background: #efebfb; color: #41315d; border: 1px solid #d8cdea; border-radius: 24px; padding: .45rem 1rem; font: 700 .9rem/1.4 var(--font-sans); cursor: pointer; }
 .install-action[hidden] { display: none; }
 .install-action img { width: 28px; height: 28px; border-radius: 8px; }
+#pwa-install-backdrop[hidden] { display: none; }
+#pwa-install-backdrop:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  background: rgb(20 22 29 / 24%);
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+  touch-action: manipulation;
+}

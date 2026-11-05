@@ -23,5 +23,28 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/events-nearby.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Események felfedezése"
+    },
+    {
+      "src": "assets/screenshots/favorites.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Kedvenc programok mentése"
+    },
+    {
+      "src": "assets/screenshots/planning.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Programok megtervezése"
+    }
   ]
 }
