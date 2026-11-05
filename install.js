@@ -2,14 +2,6 @@
   const button = document.getElementById('install-app');
   const installer = document.querySelector('pwa-install');
   const modal = document.getElementById('pwa-install-modal');
-  const galleryButton = document.createElement('button');
-  galleryButton.id = 'install-gallery-preview';
-  galleryButton.type = 'button';
-  galleryButton.className = 'install-gallery-action';
-  galleryButton.textContent = 'Képek';
-  galleryButton.setAttribute('aria-label', 'Bee There képgaléria megnyitása');
-  galleryButton.hidden = true;
-  button.after(galleryButton);
   const displayMode = matchMedia('(display-mode: standalone)');
   let installed = false;
   let observedRoot;
@@ -28,6 +20,7 @@
 
   function syncModal() {
     const visible = !installer.isDialogHidden && !!installer.shadowRoot?.querySelector('.install-dialog.available');
+    installer.toggleAttribute('data-android-fallback', installer.isAndroidFallback === true);
     syncViewport();
     if (visible && !modal.open) {
       modal.showModal();
@@ -46,7 +39,7 @@
     // External CSS respects the app's self-only style CSP inside Shadow DOM.
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = new URL('./install-component.css?v=20261105-04', document.baseURI).href;
+    style.href = new URL('./install-component.css?v=20261105-05', document.baseURI).href;
     root.append(style);
     new MutationObserver(syncModal).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     syncModal();
@@ -55,7 +48,6 @@
   function update() {
     const runningInstalled = installed || displayMode.matches || navigator.standalone === true;
     button.hidden = runningInstalled;
-    galleryButton.hidden = runningInstalled || !installer.isAndroid;
     if (runningInstalled) closeGuide();
     connectDialog();
     syncModal();
@@ -88,25 +80,11 @@
         .catch(error => console.warn('[Bee There] Service worker regisztráció sikertelen:', error));
     }, { once: true });
   }
-  galleryButton.addEventListener('click', async () => {
-    installer.showDialog(true);
-    await installer.updateComplete;
-    connectDialog();
-    syncModal();
-    const toggle = installer.shadowRoot?.querySelector('.bee-gallery-toggle');
-    if (toggle?.getAttribute('aria-expanded') !== 'true') toggle?.click();
-  });
   button.addEventListener('click', async () => {
     if (button.hidden || button.disabled) return;
     button.disabled = true;
     try {
-      if (installer.isAppleMobilePlatform || installer.isAppleDesktopPlatform) {
-        installer.showDialog(true);
-      } else if (typeof installer.install === 'function') {
-        await installer.install();
-      } else {
-        installer.showDialog(true);
-      }
+      installer.showDialog(true);
       await installer.updateComplete;
       connectDialog();
       syncModal();

@@ -21,10 +21,3 @@
   backdrop-filter: blur(1px);
 }
 body.install-guide-open { overflow: hidden; }
-
-.install-gallery-action {
-  min-height: 44px; margin-inline-start: 6px; padding: 8px 12px;
-  border: 0; border-radius: 22px; background: transparent;
-  color: var(--text, #41315d); font: inherit; cursor: pointer;
-}
-.install-gallery-action[hidden] { display: none; }

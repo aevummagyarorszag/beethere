@@ -80,7 +80,6 @@ var PWAInstallComponent;(()=>{"use strict";const e={d:(t,a)=>{for(var i in a)e.o
                 </div>
             </div>
             <div class="install-dialog chrome mobile ${Ea(v())}">
-                ${w?$e`<button type="button" class="bee-gallery-toggle material-button secondary" @click=${p} aria-expanded=${b}>${b?"Képek bezárása":"Képek megtekintése"}</button>`:""}
                 <pwa-bottom-sheet .props=${{name:e,icon:l,description:t}} .disableClose=${o} .install=${d} .hideDialog=${c} .toggleHowTo=${h} .howToRequested=${f} .fallback=${g} .inAppBrowser=${u}>
                     ${w&&r?$e`<pwa-gallery .screenshots=${n.screenshots} .rtl="${m}"></pwa-gallery>`:""}
                 </pwa-bottom-sheet>
