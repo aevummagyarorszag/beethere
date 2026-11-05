@@ -2,13 +2,29 @@
 .install-action { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; background: #efebfb; color: #41315d; border: 1px solid #d8cdea; border-radius: 24px; padding: .45rem 1rem; font: 700 .9rem/1.4 var(--font-sans); cursor: pointer; }
 .install-action[hidden] { display: none; }
 .install-action img { width: 28px; height: 28px; border-radius: 8px; }
-#pwa-install-backdrop[hidden] { display: none; }
-#pwa-install-backdrop:not([hidden]) {
+#pwa-install-modal {
   position: fixed;
   inset: 0;
-  z-index: 2147483001;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+#pwa-install-modal::backdrop {
   background: rgb(20 22 29 / 24%);
   -webkit-backdrop-filter: blur(1px);
   backdrop-filter: blur(1px);
-  touch-action: manipulation;
 }
+body.install-guide-open { overflow: hidden; }
+
+.install-gallery-action {
+  min-height: 44px; margin-inline-start: 6px; padding: 8px 12px;
+  border: 0; border-radius: 22px; background: transparent;
+  color: var(--text, #41315d); font: inherit; cursor: pointer;
+}
+.install-gallery-action[hidden] { display: none; }

@@ -24,7 +24,7 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [
+  "x-bee-there-screenshots": [
     {
       "src": "assets/screenshots/events-nearby.svg",
       "sizes": "390x844",
