@@ -1,16 +1,10 @@
-# Bee There integration patch (pwa-install 0.7.0)
+# Bee There integration (pwa-install 0.7.0)
 
-The upstream MIT-licensed component remains responsible for platform detection,
-native installation, instructions and gallery controls.
+The bundle uses the original upstream implementation. The earlier custom screenshot
+manifest mapping has been removed; there are no Bee There patches in the bundle.
 
-One focused bundle patch maps the manifest extension `x-bee-there-screenshots`
-to the component's screenshot gallery inside `fetchAndProcessManifest`. The raw
-linked manifest has no standard `screenshots` property, so Android's browser-owned
-confirmation remains compact. The app identity remains tied to the linked manifest.
-Reapply this mapping when upgrading the bundle.
-
-`install-component.css` displays the upstream desktop-style More / Install card
-at phone widths too. Pictures remain hidden until More is selected. Browsers
-without a native install API retain the upstream mobile instructions.
-`install.js` and `install.css` provide the native modal wrapper and visual-viewport
-sizing. Apple continues to use the library's original gallery interface.
+The component has `disable-screenshots` on every entry page and the manifest has no
+screenshot entries. Android invokes the upstream install method directly from the
+Bee There button. Apple devices display the upstream instructions without a gallery.
+The native modal wrapper and viewport sizing are maintained separately in
+`install.js`, `install.css` and `install-component.css`.

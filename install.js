@@ -20,7 +20,6 @@
 
   function syncModal() {
     const visible = !installer.isDialogHidden && !!installer.shadowRoot?.querySelector('.install-dialog.available');
-    installer.toggleAttribute('data-android-fallback', installer.isAndroidFallback === true);
     syncViewport();
     if (visible && !modal.open) {
       modal.showModal();
@@ -39,7 +38,7 @@
     // External CSS respects the app's self-only style CSP inside Shadow DOM.
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = new URL('./install-component.css?v=20261105-05', document.baseURI).href;
+    style.href = new URL('./install-component.css?v=20261105-06', document.baseURI).href;
     root.append(style);
     new MutationObserver(syncModal).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     syncModal();
@@ -84,7 +83,11 @@
     if (button.hidden || button.disabled) return;
     button.disabled = true;
     try {
-      installer.showDialog(true);
+      if (installer.isAppleMobilePlatform || installer.isAppleDesktopPlatform) {
+        installer.showDialog(true);
+      } else {
+        await installer.install();
+      }
       await installer.updateComplete;
       connectDialog();
       syncModal();

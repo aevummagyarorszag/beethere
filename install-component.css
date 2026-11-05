@@ -5,28 +5,8 @@
   overscroll-behavior: contain;
   box-sizing: border-box;
 }
-/* Use the library's compact More / Install card on Android, including phones. */
-:host(:not([data-android-fallback])) #pwa-install-element .install-dialog.chrome.mobile {
-  display: none !important;
-}
-:host(:not([data-android-fallback])) #pwa-install-element .install-dialog.chrome:not(.mobile).available {
-  display: block !important;
-  top: auto !important;
-  bottom: calc(var(--bee-install-bottom, 0px) + 12px) !important;
-  right: 12px;
-  left: 12px;
-  width: calc(100% - 24px);
-  max-width: 380px;
-  max-height: calc(var(--bee-install-height, 100dvh) - 24px);
-  box-sizing: border-box;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-#pwa-install-element .install-dialog.chrome:not(.gallery) pwa-gallery {
-  display: none !important;
-}
 /* Browsers without a native install API retain the upstream manual guide. */
-:host([data-android-fallback]) #pwa-install-element .install-dialog.chrome.mobile.available {
+#pwa-install-element .install-dialog.chrome.mobile.available {
   top: auto !important;
   bottom: calc(var(--bee-install-bottom, 0px) + 12px) !important;
   transform: none !important;
