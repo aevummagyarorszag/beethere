@@ -79,15 +79,23 @@ test('place empty state uses a Hungarian city inflection or neutral settlement w
   assert.equal(context.placeNoResultsMessage('Kiskunmajsa'), 'Nincs esemény ezen a településen: Kiskunmajsa.');
 });
 
-test('search suggestions update immediately from the input event without waiting for blur', () => {
+test('search suggestions wait 300ms and cancel the previous pending query', () => {
   const calls = [];
+  const timeouts = new Map();
+  const canceled = [];
+  const indicator = { hidden: true };
+  const searchResults = { attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, removeAttribute(key) { delete this.attributes[key]; } };
   const clearButton = { hidden: true };
+  let nextTimeout = 0;
   const context = {
     searchInput: { value: 'a' },
-    window: { clearTimeout() {} },
-    currentAppView: 'search',
-    find: () => clearButton,
-    renderSearchResults(query, options) { calls.push([query, options]); },
+    searchResults,
+    window: {
+      clearTimeout(id) { if (!id) return; canceled.push(id); timeouts.delete(id); },
+      setTimeout(callback, delay) { assert.equal(delay, 300); const id = ++nextTimeout; timeouts.set(id, callback); return id; },
+    },
+    find(selector) { return selector === '#search-loading' ? indicator : clearButton; },
+    renderSearchResults(query, options) { calls.push([query, options]); indicator.hidden = true; searchResults.removeAttribute('aria-busy'); },
   };
   vm.createContext(context);
   vm.runInContext(source.slice(source.indexOf('function eventDateRange('), source.indexOf('function formatEventDateKey(')), context);
@@ -95,8 +103,19 @@ test('search suggestions update immediately from the input event without waiting
   const end = source.indexOf('\nfunction renderSearchResults(', start);
   vm.runInContext(source.slice(start, end), context);
   context.scheduleSearchSuggestions();
+  assert.equal(calls.length, 0);
+  assert.equal(indicator.hidden, false);
+  assert.equal(searchResults.attributes['aria-busy'], 'true');
+  const firstTimeout = nextTimeout;
+  context.searchInput.value = 'ab';
+  context.scheduleSearchSuggestions();
+  assert.deepEqual(canceled, [firstTimeout]);
+  assert.equal(calls.length, 0);
+  const latestTimeout = nextTimeout;
+  timeouts.get(latestTimeout)();
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], 'a');
+  assert.equal(calls[0][0], 'ab');
   assert.equal(calls[0][1].showSuggestions, true);
+  assert.equal(indicator.hidden, true);
   assert.equal(clearButton.hidden, false);
 });

@@ -938,6 +938,28 @@ body.has-planner-event #favorites-view {
   outline: none;
   box-shadow: inset 0 -2px 0 rgb(37 99 235 / .45);
 }
+#search-loading[hidden] { display: none; }
+#search-loading {
+  display: inline-flex;
+  flex: 0 0 18px;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #64748b;
+}
+.search-loading-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgb(100 116 139 / 22%);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: search-spinner-turn .7s linear infinite;
+}
+@keyframes search-spinner-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .search-loading-spinner { animation-duration: 1.8s; }
+}
 #profile-view .personalization-settings { padding-bottom: 0; }
 
 #favorites-view .planning-overview-heading + .planning-section {

@@ -1867,17 +1867,33 @@ function cancelPendingSearch() {
   searchDebounceVersion += 1;
 }
 
+function setSearchLoading(isLoading) {
+  const indicator = find('#search-loading');
+  if (indicator) indicator.hidden = !isLoading;
+  if (searchResults) {
+    if (isLoading) searchResults.setAttribute('aria-busy', 'true');
+    else searchResults.removeAttribute('aria-busy');
+  }
+}
+
 function scheduleSearchSuggestions() {
   cancelPendingSearch();
   const query = searchInput?.value || '';
   const clearButton = find('#search-clear');
   if (clearButton) clearButton.hidden = !query;
   if (!query.trim()) { renderSearchResults(''); return; }
-  renderSearchResults(query, { showSuggestions: true });
+  const version = searchDebounceVersion;
+  setSearchLoading(true);
+  searchDebounceTimer = window.setTimeout(() => {
+    if (version !== searchDebounceVersion || (searchInput?.value || '') !== query) return;
+    searchDebounceTimer = 0;
+    renderSearchResults(query, { showSuggestions: true });
+  }, 300);
 }
 
 function renderSearchResults(query, { showSuggestions = true } = {}) {
   cancelPendingSearch();
+  setSearchLoading(false);
   if (!showSuggestions) rememberSearch(query);
   const clearButton = find('#search-clear');
   if (clearButton) clearButton.hidden = !searchInput?.value;
@@ -2076,7 +2092,8 @@ function setupAppNavigation() {
     });
     searchInput.addEventListener('blur', () => rememberSearch(searchInput.value));
     searchInput.addEventListener('input', event => {
-      if (event.isComposing) { cancelPendingSearch(); return; }
+      // Mobile keyboards can keep composition active until they close. Debounce
+      // every input value so suggestions do not depend on dismissing the IME.
       scheduleSearchSuggestions();
     });
     searchInput.addEventListener('compositionend', scheduleSearchSuggestions);
