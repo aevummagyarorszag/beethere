@@ -430,6 +430,7 @@ const calendarSection = find('#calendar-section');
 const calendarFilters = find('#calendar-topic-filters');
 const calendarGrid = find('#calendar-grid');
 const calendarMonthLabel = find('#calendar-month-label');
+const calendarTodayButton = find('#calendar-today');
 const calendarEvents = find('#calendar-events');
 const eventsRefreshButton = find('#events-refresh');
 const favoritesView = find('#favorites-view');
@@ -3672,7 +3673,19 @@ function refreshCalendarFavoriteMarkers() {
   });
 }
 
+function updateCalendarTodayButton() {
+  if (!calendarTodayButton) return;
+  const today = new Date();
+  const label = new Intl.DateTimeFormat('hu-HU', { dateStyle: 'long' }).format(today);
+  const number = find('#calendar-today-number', calendarTodayButton);
+  if (number) number.textContent = String(today.getDate());
+  calendarTodayButton.setAttribute('aria-label', `Ugrás a mai napra: ${label}`);
+  calendarTodayButton.title = label;
+  calendarTodayButton.hidden = currentAppView === 'permanent';
+}
+
 function renderCalendar() {
+  updateCalendarTodayButton();
   if (!calendarGrid || !calendarMonthLabel) return;
   const isWeeklyRecurringView = currentAppView === 'permanent';
   const calendarWeekdays = calendarGrid.closest('.calendar-section')?.querySelector('.calendar-weekdays');
@@ -3806,6 +3819,36 @@ async function shareEvent(event) {
 
 function setupCalendar() {
   createCalendarFilters();
+  calendarTodayButton?.addEventListener('click', () => {
+    const today = new Date();
+    calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    calendarSelectedDate = todayKey();
+    preservePageScroll(() => renderCalendar());
+    const day = find('.calendar-day.today', calendarGrid);
+    if (day && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      day.animate([{ opacity: 1 }, { opacity: .25 }, { opacity: 1 }], {
+        duration: 650, easing: 'ease-in-out', iterations: 1
+      });
+    }
+    vibrate(10);
+  });
+  // Refresh the date at local midnight and after a sleeping tab resumes.
+  let lastToday = todayKey();
+  let midnightTimer;
+  const refreshToday = () => {
+    window.clearTimeout(midnightTimer);
+    const nextToday = todayKey();
+    if (nextToday !== lastToday) {
+      lastToday = nextToday;
+      preservePageScroll(() => renderCalendar());
+    } else updateCalendarTodayButton();
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    midnightTimer = window.setTimeout(refreshToday, midnight.getTime() - now.getTime() + 100);
+  };
+  window.addEventListener('pageshow', refreshToday);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
+  refreshToday();
   const calendarShell = calendarGrid?.closest('.calendar-shell');
   const changeCalendarMonth = (offset, direction = '') => {
     calendarMonth.setMonth(calendarMonth.getMonth() + offset);

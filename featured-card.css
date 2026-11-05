@@ -471,26 +471,16 @@ body > pwa-install {
   width: auto;
   min-width: 0;
   box-shadow: none;
-  -webkit-mask-image: radial-gradient(ellipse 4.5px 22px at left center, transparent 0 3.5px, #000 4.5px);
-  mask-image: radial-gradient(ellipse 4.5px 22px at left center, transparent 0 3.5px, #000 4.5px);
+  /* Begin the rail under the circular filter; fade along its round edge. */
+  box-sizing: border-box;
+  margin-left: -24px;
+  padding-left: 24px;
+  -webkit-mask-image: radial-gradient(circle at left center, transparent 22px, rgb(0 0 0 / .25) 26px, #000 42px);
+  mask-image: radial-gradient(circle at left center, transparent 22px, rgb(0 0 0 / .25) 26px, #000 42px);
 }
 
-/* Only the disappearing edge beside the pinned filter gets the glass blur. */
-#home-topic-toolbar::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  left: 46px;
-  top: 50%;
-  width: 18px;
-  height: 44px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  -webkit-mask-image: linear-gradient(to right, #000, transparent);
-  mask-image: linear-gradient(to right, #000, transparent);
-}
+/* A mask fades the actual chip pixels; no rectangular blur layer is needed. */
+#home-topic-toolbar::after { content: none; }
 
 #calendar-topic-filters { margin: 0 0 14px; padding: 8px 4px 8px 0; }
 .topic-button {
@@ -2364,4 +2354,38 @@ html[data-theme="dark"] #calendar-filters .filter-button.active {
 }
 html[data-theme="dark"] #planner-event .planner-event-time {
   color: #2563EB !important;
+}
+
+/* Today's date shortcut beside the displayed calendar month. */
+.calendar-heading > div { align-items: center; gap: 8px; }
+#calendar-today {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  box-shadow: none;
+  cursor: pointer;
+}
+#calendar-today[hidden] { display: none; }
+#calendar-today-number {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-radius: 7px;
+  font: 600 16px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 360px) {
+  #calendar-section .calendar-month-label { font-size: 18px; white-space: nowrap; }
 }
