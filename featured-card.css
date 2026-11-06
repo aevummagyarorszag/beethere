@@ -2390,3 +2390,19 @@ html[data-theme="dark"] #planner-event .planner-event-time {
 @media (max-width: 360px) {
   #calendar-section .calendar-month-label { font-size: 18px; white-space: nowrap; }
 }
+
+/* Keep the today shortcut as a plain date-colored icon in all control states. */
+#calendar-section #calendar-today,
+#calendar-section #calendar-today:hover,
+#calendar-section #calendar-today:active,
+#calendar-section #calendar-today:focus-visible {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: rgb(30 41 59 / .48);
+}
+#calendar-section #calendar-today::before,
+#calendar-section #calendar-today::after { content: none; }
+html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-control); }

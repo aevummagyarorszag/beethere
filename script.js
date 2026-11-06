@@ -3761,17 +3761,34 @@ async function shareEvent(event) {
 
 function setupCalendar() {
   createCalendarFilters();
+  const calendarShell = calendarGrid?.closest('.calendar-shell');
+  let calendarAnimationTimer;
+  const animateCalendarMonth = direction => {
+    if (!calendarShell) return;
+    window.clearTimeout(calendarAnimationTimer);
+    calendarShell.classList.remove('is-swiping-previous', 'is-swiping-next');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    void calendarShell.offsetWidth;
+    calendarShell.classList.add(direction === 'previous' ? 'is-swiping-previous' : 'is-swiping-next');
+    calendarAnimationTimer = window.setTimeout(() => calendarShell.classList.remove('is-swiping-previous', 'is-swiping-next'), 260);
+  };
   calendarTodayButton?.addEventListener('click', () => {
     const today = new Date();
+    const monthOffset = (today.getFullYear() - calendarMonth.getFullYear()) * 12 + today.getMonth() - calendarMonth.getMonth();
     calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     calendarSelectedDate = todayKey();
     preservePageScroll(() => renderCalendar());
+    if (monthOffset) animateCalendarMonth(monthOffset < 0 ? 'previous' : 'next');
     const day = find('.calendar-day.today', calendarGrid);
-    if (day && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      day.animate([{ opacity: 1 }, { opacity: .25 }, { opacity: 1 }], {
-        duration: 650, easing: 'ease-in-out', iterations: 1
-      });
-    }
+    const flashToday = () => {
+      if (day?.isConnected && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        day.animate([{ opacity: 1 }, { opacity: .25 }, { opacity: 1 }], {
+          duration: 650, easing: 'ease-in-out', iterations: 1
+        });
+      }
+    };
+    if (monthOffset) window.setTimeout(flashToday, 260);
+    else flashToday();
     vibrate(10);
   });
   // Refresh the date at local midnight and after a sleeping tab resumes.
@@ -3791,16 +3808,10 @@ function setupCalendar() {
   window.addEventListener('pageshow', refreshToday);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
   refreshToday();
-  const calendarShell = calendarGrid?.closest('.calendar-shell');
   const changeCalendarMonth = (offset, direction = '') => {
     calendarMonth.setMonth(calendarMonth.getMonth() + offset);
     calendarSelectedDate = '';
-    if (calendarShell && direction) {
-      calendarShell.classList.remove('is-swiping-previous', 'is-swiping-next');
-      void calendarShell.offsetWidth;
-      calendarShell.classList.add(direction === 'previous' ? 'is-swiping-previous' : 'is-swiping-next');
-      window.setTimeout(() => calendarShell.classList.remove('is-swiping-previous', 'is-swiping-next'), 260);
-    }
+    if (direction) animateCalendarMonth(direction);
     renderCalendar();
   };
   if (calendarShell) {
