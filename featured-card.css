@@ -2406,3 +2406,7 @@ html[data-theme="dark"] #planner-event .planner-event-time {
 #calendar-section #calendar-today::before,
 #calendar-section #calendar-today::after { content: none; }
 html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-control); }
+
+#event-filter-dialog .event-filter-dialog-heading { align-items: center; }
+#event-filter-dialog #event-filter-title { margin: 0; }
+#event-filter-dialog .event-filter-dialog-heading + .event-filter-fieldset { margin-top: 6px; }

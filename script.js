@@ -187,48 +187,60 @@ function setupHomeMode() {
   };
   filterButtons.forEach(button => button.addEventListener('click', openFilterDialog));
   let filterDrag = null;
+  let filterDragTimer;
   const resetFilterDrag = () => {
+    window.clearTimeout(filterDragTimer);
     filterDialog.classList.remove('is-dragging');
     filterDialog.style.removeProperty('transition');
     filterDialog.style.removeProperty('transform');
     filterDrag = null;
   };
-  filterDialog.addEventListener('pointerdown', event => {
-    if (event.pointerType !== 'touch' || !event.isPrimary || filterDialog.scrollTop > 0) return;
-    filterDrag = { id: event.pointerId, startY: event.clientY, startX: event.clientX, startedAt: performance.now(), distance: 0 };
-  });
-  filterDialog.addEventListener('pointermove', event => {
-    if (!filterDrag || event.pointerId !== filterDrag.id) return;
-    const distance = Math.max(0, event.clientY - filterDrag.startY);
-    const horizontal = Math.abs(event.clientX - filterDrag.startX);
-    if (horizontal > distance || (!distance && filterDialog.scrollTop > 0)) return;
+  const dismissFilterDialog = () => {
+    resetFilterDrag();
+    if (filterDialog.open) filterDialog.close('cancel');
+  };
+  filterDialog.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1 || filterDialog.scrollTop > 0
+      || event.target.closest('button, input, select, textarea')) return;
+    resetFilterDrag();
+    const touch = event.touches[0];
+    filterDrag = { id: touch.identifier, startY: touch.clientY, startX: touch.clientX, startedAt: performance.now(), distance: 0 };
+  }, { passive: true });
+  filterDialog.addEventListener('touchmove', event => {
+    if (!filterDrag) return;
+    if (event.touches.length !== 1) { resetFilterDrag(); return; }
+    const touch = event.touches[0];
+    if (touch.identifier !== filterDrag.id) return;
+    const distance = touch.clientY - filterDrag.startY;
+    const horizontal = Math.abs(touch.clientX - filterDrag.startX);
+    if (distance < -6 || (horizontal > 6 && horizontal > Math.abs(distance))) {
+      resetFilterDrag();
+      return;
+    }
+    if (distance <= 0 || horizontal > distance || filterDialog.scrollTop > 0) return;
+    // Cancel native vertical panning before it can take ownership of the gesture.
+    if (event.cancelable) event.preventDefault();
     filterDrag.distance = distance;
     if (distance < 6) return;
-    event.preventDefault();
+    filterDialog.getAnimations().forEach(animation => animation.cancel());
     filterDialog.classList.add('is-dragging');
     filterDialog.style.transition = 'none';
     filterDialog.style.transform = `translateY(${distance}px)`;
   }, { passive: false });
-  const finishFilterDrag = event => {
-    if (!filterDrag || event.pointerId !== filterDrag.id) return;
+  filterDialog.addEventListener('touchend', () => {
+    if (!filterDrag) return;
     const elapsed = Math.max(1, performance.now() - filterDrag.startedAt);
-    const shouldClose = filterDrag.distance > 96 || filterDrag.distance / elapsed > 0.55;
-    if (shouldClose) {
-      filterDialog.style.transition = 'transform 180ms ease';
-      filterDialog.style.transform = 'translateY(100%)';
-      window.setTimeout(() => {
-        if (filterDialog.open) filterDialog.close('swipe');
-        resetFilterDrag();
-      }, 180);
-    } else {
-      filterDialog.style.transition = 'transform 180ms ease';
-      filterDialog.style.transform = 'translateY(0)';
-      window.setTimeout(resetFilterDrag, 180);
-    }
-  };
-  filterDialog.addEventListener('pointerup', finishFilterDrag);
-  filterDialog.addEventListener('pointercancel', finishFilterDrag);
-  filterClose?.addEventListener('click', () => filterDialog.close('cancel'));
+    const shouldClose = filterDrag.distance >= 96 || (filterDrag.distance >= 32 && filterDrag.distance / elapsed > .55);
+    if (filterDrag.distance < 6) { resetFilterDrag(); return; }
+    const duration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180;
+    filterDialog.style.transition = `transform ${duration}ms ease`;
+    filterDialog.style.transform = shouldClose ? 'translateY(100%)' : 'translateY(0)';
+    filterDrag = null;
+    filterDragTimer = window.setTimeout(shouldClose ? dismissFilterDialog : resetFilterDrag, duration);
+  }, { passive: true });
+  // Interrupted gestures snap back; they never dismiss the sheet accidentally.
+  filterDialog.addEventListener('touchcancel', resetFilterDrag, { passive: true });
+  filterClose?.addEventListener('click', dismissFilterDialog);
   filterDialog.addEventListener('click', event => {
     if (event.target === filterDialog) filterDialog.close('cancel');
   });
