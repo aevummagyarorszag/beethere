@@ -432,7 +432,6 @@ const calendarGrid = find('#calendar-grid');
 const calendarMonthLabel = find('#calendar-month-label');
 const calendarTodayButton = find('#calendar-today');
 const calendarEvents = find('#calendar-events');
-const eventsRefreshButton = find('#events-refresh');
 const favoritesView = find('#favorites-view');
 const searchView = find('#search-view');
 const permanentView = find('#permanent-view');
@@ -3075,63 +3074,6 @@ function rerankEventRows(excludedCarousel = null) {
   }
 }
 
-function setupEventsRefresh() {
-  if (!eventsRefreshButton) return;
-  let isRefreshing = false;
-  const refreshEvents = () => {
-    if (isRefreshing) return;
-    isRefreshing = true;
-    const allPrograms = [...events, ...permanentEvents];
-    applyRefreshPenalties();
-    refreshSeenEventKeys = new Set(viewedEventKeys);
-    refreshShuffleBoosts.clear();
-    allPrograms.forEach(event => refreshShuffleBoosts.set(eventKey(event), Math.random() * 0.12));
-    eventsRefreshButton.classList.remove('is-refreshed');
-    triggerBounce(eventsRefreshButton);
-    vibrate(16);
-    renderEvents();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    eventsRefreshButton.classList.add('is-refreshed');
-    window.setTimeout(() => {
-      eventsRefreshButton.classList.remove('is-refreshed');
-      isRefreshing = false;
-    }, 1100);
-  };
-  eventsRefreshButton.addEventListener('click', refreshEvents);
-
-  let pullStartY = null;
-  let pullDistance = 0;
-  const atDocumentEnd = () => window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 3;
-  document.addEventListener('touchstart', event => {
-    if (atDocumentEnd() && event.touches.length === 1) {
-      pullStartY = event.touches[0].clientY;
-      pullDistance = 0;
-    }
-  }, { passive: true });
-  document.addEventListener('touchmove', event => {
-    if (pullStartY === null || event.touches.length !== 1) return;
-    pullDistance = Math.max(0, pullStartY - event.touches[0].clientY);
-    const progress = Math.min(1, pullDistance / 96);
-    eventsRefreshButton.style.setProperty('--refresh-pull-progress', String(progress));
-    eventsRefreshButton.style.setProperty('--refresh-opacity', String(1 - progress * 0.42));
-    eventsRefreshButton.style.setProperty('--refresh-scale', String(1 - progress * 0.22));
-    eventsRefreshButton.style.setProperty('--refresh-rotation', `${Math.round(progress * 320)}deg`);
-    eventsRefreshButton.classList.toggle('is-pulling', progress > 0);
-  }, { passive: true });
-  document.addEventListener('touchend', () => {
-    if (pullStartY === null) return;
-    const shouldRefresh = pullDistance >= 96;
-    pullStartY = null;
-    pullDistance = 0;
-    eventsRefreshButton.style.removeProperty('--refresh-pull-progress');
-    eventsRefreshButton.style.removeProperty('--refresh-opacity');
-    eventsRefreshButton.style.removeProperty('--refresh-scale');
-    eventsRefreshButton.style.removeProperty('--refresh-rotation');
-    eventsRefreshButton.classList.remove('is-pulling');
-    if (shouldRefresh) window.setTimeout(refreshEvents, 160);
-  }, { passive: true });
-}
-
 const progressiveRenderTokens = new WeakMap();
 
 function renderCardsIncrementally(target, items, options = {}) {
@@ -4641,7 +4583,6 @@ function init() {
   setupQuickNavigation();
   setupFavoritesToTop();
   setupHomeMode();
-  setupEventsRefresh();
   setupCityChooser();
   setupProfileSettings();
   setupAccountSettings();
