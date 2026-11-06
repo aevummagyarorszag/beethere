@@ -1709,13 +1709,10 @@ function parseSearchDate(query) {
 }
 
 function isLikelyPlaceQuery(query) {
-  const value = String(query || '').trim();
-  const normalized = normalizeSearchText(value);
-  if (!normalized || parseSearchDate(value)) return false;
-  if (CITIES.some(city => normalizeSearchText(city.name) === normalized)) return true;
-  if (CATEGORIES.some(category => normalizeSearchText(category) === normalized)) return false;
-  return /^[\p{Lu}][\p{L}\p{M}'’.-]*(?:\s+[\p{Lu}][\p{L}\p{M}'’.-]*)*$/u.test(value)
-    || /(?:varos|falu|kozseg|falva|szent|szentmihaly)$/u.test(normalized);
+  const normalized = normalizeSearchText(query);
+  if (!normalized || parseSearchDate(query)) return false;
+  // Capitalization and word endings alone do not identify a settlement.
+  return CITIES.some(city => normalizeSearchText(city.name) === normalized);
 }
 
 function placeNoResultsMessage(query) {
@@ -3783,7 +3780,7 @@ function setupCalendar() {
     const flashToday = () => {
       if (day?.isConnected && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         day.animate([{ opacity: 1 }, { opacity: .25 }, { opacity: 1 }], {
-          duration: 650, easing: 'ease-in-out', iterations: 1
+          duration: 650, easing: 'ease-in-out', iterations: 2, fill: 'none'
         });
       }
     };

@@ -73,6 +73,16 @@ test('a numeric date query returns only events on that date', () => {
   assert.deepEqual(Array.from(context.rankedSearchEvents('14.08.2026'), item => item.Title), ['Első esemény']);
 });
 
+test('city detection requires a known settlement and ignores capitalization', () => {
+  const context = searchContext();
+  for (const query of ['Koncert', 'KONCERT', 'Party Nights', 'Sportfalu', 'Ismeretlenváros']) {
+    assert.equal(context.isLikelyPlaceQuery(query), false, query);
+  }
+  for (const query of ['Győr', 'győr', 'GYŐR', '  Budapest  ']) {
+    assert.equal(context.isLikelyPlaceQuery(query), true, query);
+  }
+});
+
 test('place empty state uses a Hungarian city inflection or neutral settlement wording', () => {
   const context = searchContext();
   assert.equal(context.placeNoResultsMessage('Győr'), 'Nincs Győrben esemény.');
