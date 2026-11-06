@@ -3772,6 +3772,13 @@ function setupCalendar() {
   createCalendarFilters();
   const calendarShell = calendarGrid?.closest('.calendar-shell');
   let calendarAnimationTimer;
+  let todayFlashTimer;
+  let todayFlashAnimation;
+  const cancelTodayFlash = () => {
+    window.clearTimeout(todayFlashTimer);
+    todayFlashAnimation?.cancel();
+    todayFlashAnimation = null;
+  };
   const animateCalendarMonth = direction => {
     if (!calendarShell) return;
     window.clearTimeout(calendarAnimationTimer);
@@ -3782,21 +3789,31 @@ function setupCalendar() {
     calendarAnimationTimer = window.setTimeout(() => calendarShell.classList.remove('is-swiping-previous', 'is-swiping-next'), 260);
   };
   calendarTodayButton?.addEventListener('click', () => {
+    cancelTodayFlash();
     const today = new Date();
     const monthOffset = (today.getFullYear() - calendarMonth.getFullYear()) * 12 + today.getMonth() - calendarMonth.getMonth();
     calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    calendarSelectedDate = todayKey();
+    const todayDate = todayKey();
+    const hasTodayEvents = events.some(event => !isPastEvent(event)
+      && (!calendarCategory || eventCategories(event).includes(calendarCategory))
+      && eventOccursOnDate(event, todayDate));
+    calendarSelectedDate = hasTodayEvents ? todayDate : '';
     preservePageScroll(() => renderCalendar());
     if (monthOffset) animateCalendarMonth(monthOffset < 0 ? 'previous' : 'next');
     const day = find('.calendar-day.today', calendarGrid);
     const flashToday = () => {
       if (day?.isConnected && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        day.animate([{ opacity: 1 }, { opacity: .25 }, { opacity: 1 }], {
+        const normalOpacity = Number(getComputedStyle(day).opacity);
+        const animation = day.animate([{ opacity: normalOpacity }, { opacity: normalOpacity * .25 }, { opacity: normalOpacity }], {
           duration: 650, easing: 'ease-in-out', iterations: 2, fill: 'none'
         });
+        todayFlashAnimation = animation;
+        animation.finished.then(() => {
+          if (todayFlashAnimation === animation) todayFlashAnimation = null;
+        }).catch(() => {});
       }
     };
-    if (monthOffset) window.setTimeout(flashToday, 260);
+    if (monthOffset) todayFlashTimer = window.setTimeout(flashToday, 260);
     else flashToday();
     vibrate(10);
   });
@@ -3818,6 +3835,7 @@ function setupCalendar() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshToday(); });
   refreshToday();
   const changeCalendarMonth = (offset, direction = '') => {
+    cancelTodayFlash();
     calendarMonth.setMonth(calendarMonth.getMonth() + offset);
     calendarSelectedDate = '';
     if (direction) animateCalendarMonth(direction);
