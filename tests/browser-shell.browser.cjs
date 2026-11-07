@@ -14,6 +14,11 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
  await page.waitForFunction(()=>{const row=document.querySelector('#home-topic-filters .topic-button').getBoundingClientRect(),menu=document.querySelector('#browser-menu-toggle').getBoundingClientRect();return Math.abs(row.top+row.height/2-menu.top-menu.height/2)<2;});
+ const originalMenuTop=(await page.locator('#browser-menu-toggle').boundingBox()).y;
+ await page.evaluate(()=>scrollTo(0,80));
+ await page.waitForFunction(top=>Math.abs(document.querySelector('#browser-menu-toggle').getBoundingClientRect().top-(top-80))<1,originalMenuTop);
+ await page.evaluate(()=>scrollTo(0,0));
+ await page.waitForFunction(top=>Math.abs(document.querySelector('#browser-menu-toggle').getBoundingClientRect().top-top)<1,originalMenuTop);
  const logoBounds=await page.locator('.browser-logo').boundingBox(),dateBounds=await page.locator('#browser-event-date').boundingBox();
  assert(dateBounds.height<logoBounds.height,'date badge is smaller than logo');assert(Math.abs(dateBounds.y+dateBounds.height/2-logoBounds.y-logoBounds.height/2)<2,'logo and date share a row');
  assert.equal(await page.locator('.topic-button[data-category=""].active').first().evaluate(el=>getComputedStyle(el).color),'rgb(240, 100, 75)');
@@ -22,8 +27,13 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.waitForFunction(first=>document.querySelector('#browser-header-motion').toDataURL()!==first,firstFrame);
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.screenshot({path:'outputs/browser-atmo-home.png'});
- await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=160);await page.locator('#browser-menu-toggle').click();
+ await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=144);
+ const menuBounds=await page.locator('#browser-menu').boundingBox(),firstLink=await page.locator('#browser-menu-links button').first().boundingBox();assert(firstLink.y-menuBounds.y<3,'first menu link starts at top');await page.locator('#browser-menu-toggle').click();
  await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const promoFrame=await page.locator('#browser-promo-motion').evaluate(el=>el.toDataURL());
+ await page.waitForFunction(first=>document.querySelector('#browser-promo-motion').toDataURL()!==first,promoFrame);
+ await page.emulateMedia({reducedMotion:'reduce'});
  const promoBounds=await page.locator('.browser-promo-placeholder').first().boundingBox();
  assert(Math.abs(promoBounds.width/promoBounds.height-9/16)<.01,'portrait promo ratio matches store screenshots');
  const icon=await page.locator('.browser-download-icon').boundingBox();assert(icon.height<22,'download arrow stays smaller than text size');
@@ -34,6 +44,8 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#browser-floating-install').screenshot({path:'outputs/browser-atmo-floating.png'});
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
+ assert(await page.locator('.browser-tagline').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length===1&&el.scrollWidth<=el.clientWidth;}),'tagline fits one line on narrow phones');
+ assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','date badge leaves moving background visible');
  await page.setViewportSize({width:390,height:844});
 
  await page.evaluate(()=>{events=[];updateBrowserHeader();});assert(await page.locator('#browser-event-date').isDisabled());

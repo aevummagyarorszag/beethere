@@ -8,27 +8,40 @@
   const dateRow = document.querySelector('.quick-navigation');
   const topicToolbar = document.getElementById('home-topic-toolbar');
   let menuFrame = 0;
-  function positionMenu() {
-    menuFrame = 0;
+  let menuAnchorY = 12;
+  let menuRowInset = 48;
+  let menuCeiling = 12;
+  function measureMenu() {
     const row = topicToolbar.getBoundingClientRect();
     const chip = topicToolbar.querySelector('.topic-button')?.getBoundingClientRect();
     const download = document.getElementById('browser-floating-install').getBoundingClientRect();
-    const menuHeight = menu.classList.contains('is-open') ? 264 : 44;
-    const maxTop = Math.max(12, Math.min(innerHeight - menuHeight - 12, download.height ? download.top - menuHeight - 12 : Infinity));
-    // Match the category row; the menu remains accessible after that row scrolls away.
-    menu.style.setProperty('--browser-menu-top', `${Math.min(maxTop, Math.max(12, chip?.height ? chip.top : 12))}px`);
+    // Measure the original row position only when layout changes, never during scrolling.
+    const section = topicToolbar.parentElement;
+    const sectionTop = section.getBoundingClientRect().top;
+    if (chip?.height && row.top > 12) menuRowInset = chip.top - sectionTop;
+    menuAnchorY = chip?.height ? sectionTop + scrollY + menuRowInset : 12;
+    const menuHeight = menu.classList.contains('is-open') ? 206 : 44;
+    menuCeiling = Math.max(12, Math.min(innerHeight - menuHeight - 12, download.height ? download.top - menuHeight - 12 : Infinity));
     menu.style.setProperty('--browser-menu-right', `${Math.max(12, row.width ? innerWidth - row.right : 12)}px`);
+    positionMenu();
+  }
+  function positionMenu() {
+    menuFrame = 0;
+    const top = Math.min(menuCeiling, Math.max(12, menuAnchorY - scrollY));
+    menu.style.transform = `translate3d(0,${top - 12}px,0)`;
   }
   function scheduleMenuPosition() {
     if (!menuFrame) menuFrame = requestAnimationFrame(positionMenu);
   }
   window.addEventListener('scroll', scheduleMenuPosition, { passive: true });
-  window.addEventListener('resize', scheduleMenuPosition);
-  new ResizeObserver(scheduleMenuPosition).observe(document.getElementById('top'));
-  new ResizeObserver(scheduleMenuPosition).observe(document.getElementById('featured-section'));
-  new MutationObserver(scheduleMenuPosition).observe(dateRow, { attributes: true, attributeFilter: ['hidden'] });
+  window.addEventListener('resize', measureMenu);
+  const menuLayoutObserver = new ResizeObserver(measureMenu);
+  menuLayoutObserver.observe(document.getElementById('top'));
+  menuLayoutObserver.observe(document.getElementById('featured-section'));
+  menuLayoutObserver.observe(topicToolbar);
+  new MutationObserver(measureMenu).observe(dateRow, { attributes: true, attributeFilter: ['hidden'] });
   let targetKey = '';
-  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; scheduleMenuPosition(); }
+  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; measureMenu(); }
   window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
   function syncMode() {
     if (mode.matches || navigator.standalone === true) {
@@ -38,7 +51,7 @@
     document.body.classList.toggle('browser-landing', window.isBeeBrowserLanding());
     closeMenu();
     renderEvents();
-    scheduleMenuPosition();
+    measureMenu();
   }
   window.updateBrowserHeader = () => {
     const dates = [...new Set(events.filter(event => !isPastEvent(event)).flatMap(eventDateKeys))].filter(key => key >= todayKey()).sort();
@@ -54,7 +67,7 @@
   toggle.addEventListener('click', () => {
     const open = !menu.classList.contains('is-open');
     menu.classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', String(open)); links.inert = !open;
-    scheduleMenuPosition();
+    measureMenu();
   });
   links.querySelectorAll('[data-browser-view]').forEach(button => button.addEventListener('click', () => { closeMenu(); navigateToAppView(button.dataset.browserView, { animate: true }); }));
   document.addEventListener('click', event => { if (!menu.contains(event.target)) closeMenu(); });
@@ -82,5 +95,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshHeaderDate(); });
   refreshHeaderDate();
   syncMode();
-  positionMenu();
+  measureMenu();
 })();
