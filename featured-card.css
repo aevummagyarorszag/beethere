@@ -2410,3 +2410,11 @@ html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-co
 #event-filter-dialog .event-filter-dialog-heading { align-items: center; }
 #event-filter-dialog #event-filter-title { margin: 0; }
 #event-filter-dialog .event-filter-dialog-heading + .event-filter-fieldset { margin-top: 6px; }
+
+/* A full final compact column needs the same 22px clearance as the preview peek.
+   The 12px flex gap plus this 10px tail let its left edge reach the viewport. */
+.vertical-event-list::after {
+  content: "";
+  flex: 0 0 10px;
+  pointer-events: none;
+}
