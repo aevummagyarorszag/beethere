@@ -2453,3 +2453,9 @@ html[data-theme="dark"] .planner-calendar .calendar-day.has-attendance {
 }
 html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-today-button) { color: var(--dark-control); }
 @media(max-width:360px) { .planner-calendar .calendar-month-label {font-size:18px;white-space:nowrap;} }
+
+/* Bee There brand coral for the selected All chip, including calendar filters. */
+.topic-button[data-category=""].active { border-color: #FF6B5E !important; }
+.favorite-button:disabled,
+.planner-card-pin:disabled,
+#planner-pin:disabled { opacity: .4; cursor: not-allowed; }

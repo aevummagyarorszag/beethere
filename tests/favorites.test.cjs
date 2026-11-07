@@ -34,6 +34,7 @@ function fixture(view = 'home') {
   const forbidden = () => assert.fail('A favorite interaction rebuilt content or changed the scroll position');
   const context = {
     favoriteIds: new Set(), favoriteNotes: {}, pinnedEventKeys: new Set(), negativeFeedback: {},
+    events: [{ id: 'concert' }], permanentEvents: [], isPastEvent: event => Boolean(event.past),
     currentAppView: view, plannerPin: pin, plannerEvent: { dataset: { eventKey: 'concert' } },
     window: {
       scrollY: 640, scrollTo: forbidden,
@@ -107,4 +108,32 @@ test('a favorite in an open detail dialog does not unlock or scroll the backgrou
   assert.equal(f.context.document.body.style.position, 'fixed');
   assert.equal(f.context.document.body.style.top, '-640px');
   assert.equal(f.frames.length, 0);
+});
+
+test('expired events cannot receive a new favorite or attendance mark', () => {
+  const f = fixture();
+  f.event.past = true;
+  f.context.events = [f.event];
+  f.context.toggleFavoriteForEvent(f.event, f.heart);
+  assert.equal(f.context.favoriteIds.has('concert'), false);
+  f.context.syncFavoriteButton(f.heart, false);
+  f.context.syncPlannerPinButton(f.pin, 'concert');
+  assert.equal(f.heart.disabled, true);
+  assert.equal(f.pin.disabled, true);
+});
+
+test('existing expired favorites and attendance marks can still be removed', () => {
+  const f = fixture();
+  f.event.past = true;
+  f.context.events = [f.event];
+  f.context.favoriteIds.add('concert');
+  f.context.pinnedEventKeys.add('concert');
+  f.context.syncFavoriteButton(f.heart, true);
+  f.context.syncPlannerPinButton(f.pin, 'concert');
+  assert.equal(f.heart.disabled, false);
+  assert.equal(f.pin.disabled, false);
+  f.context.toggleFavoriteForEvent(f.event, f.heart);
+  assert.equal(f.context.favoriteIds.has('concert'), false);
+  assert.equal(f.context.pinnedEventKeys.has('concert'), false);
+  assert.equal(f.heart.disabled, true);
 });

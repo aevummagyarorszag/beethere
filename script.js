@@ -1526,11 +1526,14 @@ function savePinnedPlannerEvents() {
 }
 
 function setPinnedPlannerEvent(key) {
+  const event = savedEventForKey(key);
+  if (!pinnedEventKeys.has(key) && event && isPastEvent(event)) return false;
   if (pinnedEventKeys.has(key)) {
     pinnedEventKeys.delete(key);
-    showSnackbar('Esemény eltávolítva.', {
+    showSnackbar('Esemény eltávolítva.', event && isPastEvent(event) ? {} : {
       actionLabel: 'Mégis megyek rá',
       action: () => {
+        if (event && isPastEvent(event)) return;
         pinnedEventKeys.add(key);
         savePinnedPlannerEvents();
         rerankEventRows();
@@ -1546,12 +1549,13 @@ function setPinnedPlannerEvent(key) {
   else pinnedEventKeys.add(key);
   savePinnedPlannerEvents();
   rerankEventRows();
+  return true;
 }
 
 function showPlannerEvent(event) {
   if (!plannerEvent || !favoritesView) return;
   const key = eventKey(event);
-  if (!favoriteIds.has(key)) {
+  if (!favoriteIds.has(key) && !isPastEvent(event)) {
     favoriteIds.add(key);
     saveFavorites();
     updateFavoriteButtons();
@@ -1565,13 +1569,7 @@ function showPlannerEvent(event) {
   plannerEvent.dataset.eventKey = key;
   document.body.classList.add('has-planner-event');
 
-  const syncPin = () => {
-    if (!plannerPin) return;
-    const pinned = pinnedEventKeys.has(key);
-    plannerPin.classList.toggle('is-pinned', pinned);
-    plannerPin.setAttribute('aria-pressed', String(pinned));
-    plannerPin.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
-  };
+  const syncPin = () => syncPlannerPinButton(plannerPin, key);
   syncPin();
   if (plannerPin) plannerPin.onclick = () => {
     setPinnedPlannerEvent(key);
@@ -2985,23 +2983,30 @@ function syncSavedEventControls() {
   updateFavoriteButtons();
   refreshCalendarFavoriteMarkers();
   findAll('.planner-card-pin').forEach(button => {
-    const key = button.closest('.favorite-pair')?.dataset.eventKey;
-    const pinned = pinnedEventKeys.has(key);
-    button.classList.toggle('is-pinned', pinned);
-    button.setAttribute('aria-pressed', String(pinned));
-    button.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
+    syncPlannerPinButton(button, button.closest('.favorite-pair')?.dataset.eventKey);
   });
-  if (plannerPin && plannerEvent?.dataset.eventKey) {
-    const pinned = pinnedEventKeys.has(plannerEvent.dataset.eventKey);
-    plannerPin.classList.toggle('is-pinned', pinned);
-    plannerPin.setAttribute('aria-pressed', String(pinned));
-    plannerPin.setAttribute('aria-label', pinned ? 'Mégsem megyek rá' : 'Megyek rá');
-  }
+  if (plannerPin && plannerEvent?.dataset.eventKey) syncPlannerPinButton(plannerPin, plannerEvent.dataset.eventKey);
   updateProfileSummary();
+}
+
+function savedEventForKey(key) {
+  return [...events, ...permanentEvents].find(event => eventKey(event) === key);
+}
+
+function syncPlannerPinButton(button, key) {
+  if (!button) return;
+  const pinned = pinnedEventKeys.has(key);
+  const event = savedEventForKey(key);
+  const blocked = Boolean(event && isPastEvent(event) && !pinned);
+  button.disabled = blocked;
+  button.classList.toggle('is-pinned', pinned);
+  button.setAttribute('aria-pressed', String(pinned));
+  button.setAttribute('aria-label', blocked ? 'Elmúlt eseményre már nem jelölhető részvétel' : pinned ? 'Mégsem megyek rá' : 'Megyek rá');
 }
 
 function toggleFavoriteForEvent(event, button, sourceCard = null) {
   const key = eventKey(event);
+  if (isPastEvent(event) && !favoriteIds.has(key)) return;
   const removed = favoriteIds.has(key);
   const oldNote = favoriteNotes[key];
   const wasPinned = pinnedEventKeys.has(key);
@@ -3023,9 +3028,10 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
   // Keep the active feed and its scroll positions intact. The saved signals
   // affect ranking the next time a view or filter rebuilds the feed.
   syncSavedEventControls();
-  showSnackbar(removed ? 'Eltávolítva a kedveltekből.' : 'Hozzáadva a kedveltekhez.', removed ? {
+  showSnackbar(removed ? 'Eltávolítva a kedveltekből.' : 'Hozzáadva a kedveltekhez.', removed && !isPastEvent(event) ? {
     actionLabel: 'Visszavonás',
     action: () => {
+      if (isPastEvent(event)) return;
       favoriteIds.add(key);
       if (wasPinned) pinnedEventKeys.add(key);
       if (oldNote !== undefined) favoriteNotes[key] = oldNote;
@@ -3041,11 +3047,14 @@ function toggleFavoriteForEvent(event, button, sourceCard = null) {
 }
 
 function syncFavoriteButton(button, isFavorite) {
+  const event = savedEventForKey(button.dataset.eventKey);
+  const blocked = Boolean(event && isPastEvent(event) && !isFavorite);
+  button.disabled = blocked;
   const newlyLiked = isFavorite && button.getAttribute('aria-pressed') !== 'true' && button.isConnected;
   window.clearTimeout(button._heartFeedbackTimer);
   button.classList.toggle('is-favorite', isFavorite);
   button.setAttribute('aria-pressed', String(isFavorite));
-  button.setAttribute('aria-label', isFavorite ? 'Kedvelés törlése' : 'Esemény kedvelése');
+  button.setAttribute('aria-label', blocked ? 'Elmúlt esemény már nem kedvelhető' : isFavorite ? 'Kedvelés törlése' : 'Esemény kedvelése');
   if (!isFavorite) button.classList.remove('is-heart-feedback');
   if (newlyLiked) {
     button.classList.remove('is-heart-feedback');
@@ -3302,7 +3311,7 @@ function promoteFavorite(event, pair) {
 }
 
 async function animatePinnedPlannerEvent(key, pair, button) {
-  setPinnedPlannerEvent(key);
+  if (setPinnedPlannerEvent(key) === false) { syncPlannerPinButton(button, key); return; }
   const pinned = pinnedEventKeys.has(key);
   button.classList.toggle('is-pinned', pinned);
   button.setAttribute('aria-pressed', String(pinned));
@@ -3380,6 +3389,7 @@ function renderFavoritePair(event, index, target = favoritesGrid, { compact = fa
     pinButton.setAttribute('aria-pressed', String(pinnedEventKeys.has(key)));
     pinButton.setAttribute('aria-label', pinnedEventKeys.has(key) ? 'Mégsem megyek rá' : 'Megyek rá');
     pinButton.textContent = 'Megyek rá';
+    syncPlannerPinButton(pinButton, key);
     pinButton.addEventListener('click', input => {
       input.preventDefault();
       input.stopImmediatePropagation();
@@ -3410,7 +3420,7 @@ function renderFavorites() {
   const pinnedOrder = new Map([...pinnedEventKeys].map((key, index) => [key, index]));
   const favorites = [...events, ...permanentEvents]
     .filter(event => favoriteIds.has(eventKey(event)))
-    .sort((first, second) => Number(pinnedEventKeys.has(eventKey(second))) - Number(pinnedEventKeys.has(eventKey(first)))
+    .sort((first, second) => Number(pinnedEventKeys.has(eventKey(first))) - Number(pinnedEventKeys.has(eventKey(second)))
       || ((pinnedOrder.get(eventKey(second)) ?? -1) - (pinnedOrder.get(eventKey(first)) ?? -1))
       || Number(isPastEvent(first)) - Number(isPastEvent(second))
       || (favoriteOrder.get(eventKey(first)) ?? Infinity) - (favoriteOrder.get(eventKey(second)) ?? Infinity));
