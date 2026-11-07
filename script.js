@@ -3962,6 +3962,7 @@ function renderAllEventRows(items) {
 }
 
 function renderEvents({ refreshFeatured = true } = {}) {
+  window.updateBrowserHeader?.();
   if (!grid || !allSection) return;
   awardPastFavoritePoints();
   const isPermanentView = currentAppView === 'permanent';
@@ -3989,7 +3990,7 @@ function renderEvents({ refreshFeatured = true } = {}) {
   const clearHomeFilters = document.querySelector('#clear-home-filters');
   if (clearHomeFilters) clearHomeFilters.hidden = !hasActiveFeedFilter;
 
-  if (!position) {
+  if (!position && !window.isBeeBrowserLanding?.()) {
     grid.innerHTML = '<p class="location-empty"><img class="empty-error-icon" src="assets/icons/error.svg" alt="" aria-hidden="true"><span><strong>Hiba:</strong> <button class="location-empty-city-link" type="button">Válassz várost</button> az események megtekintéséhez.</span></p>';
     find('.location-empty-city-link', grid)?.addEventListener('click', () => {
       citySelector?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4666,10 +4667,7 @@ function init() {
     if (locationText) locationText.textContent = 'A helymeghatározás ki van kapcsolva — válassz várost';
     return;
   }
-  window.setTimeout(() => {
-    if (position) return;
-    requestGeolocation();
-  }, 7000);
+  // Location is requested only by an explicit user action.
 }
 
 init();

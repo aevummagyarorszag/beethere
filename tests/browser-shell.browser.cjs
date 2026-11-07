@@ -1,0 +1,43 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const {createServer}=require('node:http');const {readFileSync,mkdirSync}=require('node:fs');const path=require('node:path');
+(async()=>{
+ const root=path.resolve(__dirname,'..');mkdirSync(path.join(root,'outputs/planner-calendar'),{recursive:true});const server=createServer((req,res)=>{const file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep))return res.writeHead(403).end();try{res.setHeader('Content-Type',({'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream');res.end(readFileSync(file));}catch{res.writeHead(404).end();}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'msedge'});
+ try{
+ const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/events.json*',route=>route.fulfill({contentType:'application/json',body:JSON.stringify([{Title:'Tesztprogram',Date:'2026.11.07',Time:'23:00',Type:'egyszeri',Category:'party',Location:'Győr'}])}));
+ await page.addInitScript(()=>{window.geoCalls=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition(){window.geoCalls++;}}});});
+ await page.clock.setFixedTime(new Date('2026-11-07T12:00:00+01:00'));
+ await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.waitForFunction(()=>events.length>0);
+ assert(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')));
+ assert(await page.locator('.browser-brand').isVisible());assert.equal(await page.locator('#bottom-navigation').isVisible(),false);
+ assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
+ assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
+ await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
+ await page.screenshot({path:'outputs/browser-atmo-home.png'});
+ await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});
+ await page.setViewportSize({width:320,height:780});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
+ await page.setViewportSize({width:390,height:844});
+
+ await page.evaluate(()=>{events=[];updateBrowserHeader();});assert(await page.locator('#browser-event-date').isDisabled());
+ await page.evaluate(()=>{events=[{Title:'Proba',Date:'2026.11.07',Type:'egyszeri',Category:'party',Location:'Győr'}];updateBrowserHeader();});
+ assert.equal(await page.locator('#browser-date-caption').textContent(),'Mai események!');
+ await page.evaluate(()=>{events[0].Date='2026.11.08';updateBrowserHeader();});
+ assert.equal(await page.locator('#browser-date-caption').textContent(),'Holnapi események!');assert.equal(await page.locator('#browser-event-date span').textContent(),'8');
+ await page.evaluate(()=>{events[0].Date='2026.11.12';updateBrowserHeader();});assert.equal(await page.locator('#browser-date-caption').textContent(),'Következő események!');
+ await page.locator('#browser-event-date').click();assert.equal(await page.evaluate(()=>calendarSelectedDate),'2026-11-12');
+ await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="search"]').click();assert(await page.locator('#search-view').isVisible());assert.equal(await page.locator('.browser-brand').isVisible(),false);
+ await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="home"]').click();
+ await page.waitForTimeout(7100);assert.equal(await page.evaluate(()=>window.geoCalls),0,'no automatic geolocation');
+ await page.locator('#city-selector').click();await page.locator('#city-use-location').click();assert.equal(await page.evaluate(()=>window.geoCalls),1,'location is explicit');
+ await page.screenshot({path:'outputs/browser-landing.png'});
+ await page.locator('#browser-floating-install').click();
+ await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')),false);assert(await page.locator('#bottom-navigation').isVisible());
+ await page.reload();assert.equal(await page.locator('.browser-brand').isVisible(),false,'installed preference survives reload');
+ const standalone=await browser.newPage({viewport:{width:390,height:844}});
+ await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
+ await standalone.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+ assert.equal(await standalone.locator('.browser-brand').isVisible(),false,'iOS standalone keeps app layout');assert(await standalone.locator('#bottom-navigation').isVisible());await standalone.close();
+ assert.deepEqual(errors,[]);console.log('PASS browser landing: public feed, date fallbacks, menu views, five promo placeholders, explicit geolocation, install action and installed app navigation');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+})().catch(e=>{console.error(e);process.exitCode=1});

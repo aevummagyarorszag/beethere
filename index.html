@@ -25,12 +25,21 @@
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261107-03">
+  <link rel="stylesheet" href="browser-shell.css?v=20261107-02">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
   <script defer src="install.js?v=20261105-06"></script>
 </head>
 <body>
+  <div class="browser-menu" id="browser-menu"><button id="browser-menu-toggle" type="button" aria-label="Menü" aria-expanded="false" aria-controls="browser-menu-links"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><nav id="browser-menu-links" aria-label="Weboldal navigáció" inert><button data-browser-view="home">Főoldal</button><button data-browser-view="permanent">Állandó</button><button data-browser-view="favorites">Tervezés</button><button data-browser-view="search">Keresés</button><button data-browser-view="profile">Profil</button></nav></div>
+  <button id="browser-floating-install" class="browser-install-float" type="button" aria-label="Bee There telepítése"><img src="assets/brand/atmo-mascot-download.svg" alt=""></button>
+
   <header class="hero" id="top" data-home-content>
+    <div class="browser-brand wrapper">
+      <div class="browser-brand-row"><img class="browser-logo" src="assets/brand/atmo-logo.svg" alt="Atmo"><div class="browser-date-wrap"><svg class="browser-date-caption" viewBox="0 0 200 110" aria-hidden="true"><defs><path id="browser-caption-curve" d="M8 86 Q18 30 92 24 Q156 15 178 64"/></defs><text><textPath href="#browser-caption-curve" id="browser-date-caption">Mai események!</textPath></text><path class="browser-caption-arrow" d="M177 60q14 14 0 29m-5-12 5 12 10-7"/></svg><button id="browser-event-date" type="button" aria-label="Mai események"><span></span></button></div></div>
+      <p class="browser-tagline">Események egy helyen, neked rendezve!</p>
+    </div>
+
     <div class="hero-content wrapper">
       <h1 class="sr-only">Bee There – Események</h1>
     </div>
@@ -132,6 +141,8 @@
       </div>
       <div id="calendar-events" class="calendar-events" aria-live="polite"><p class="calendar-empty">Válassz egy napot a programok megtekintéséhez.</p></div>
     </section>
+
+    <section class="browser-promo" aria-labelledby="browser-promo-title"><div class="browser-promo-action"><img src="assets/brand/atmo-mascot.svg" alt="" class="browser-promo-mascot"><button id="browser-promo-install" type="button">Letöltés <img class="browser-download-icon" src="assets/brand/download.svg" alt=""></button></div><h2 id="browser-promo-title">Ennek a weboldalnak appfunkciója is van.</h2><p>Töltsd le! Kövesd az utasításokat!</p><div class="browser-promo-rail" aria-label="Alkalmazás-előnézetek helye"><div class="browser-promo-placeholder" role="img" aria-label="1. promóciós kép helye"></div><div class="browser-promo-placeholder" role="img" aria-label="2. promóciós kép helye"></div><div class="browser-promo-placeholder" role="img" aria-label="3. promóciós kép helye"></div><div class="browser-promo-placeholder" role="img" aria-label="4. promóciós kép helye"></div><div class="browser-promo-placeholder" role="img" aria-label="5. promóciós kép helye"></div></div></section>
 
     <template id="event-template">
       <article class="event-card">
@@ -307,6 +318,7 @@
     <div class="city-dialog-content">
       <div class="city-dialog-heading"><div><p class="eyebrow">HELYSZÍN</p><h2 id="city-dialog-title">Melyik városban keresel?</h2></div><button id="city-dialog-close" class="dialog-close" type="button" aria-label="Bezárás">×</button></div>
       <p class="city-dialog-copy">Válassz egy várost, és a programokat ehhez a ponthoz rendezzük távolság szerint.</p>
+      <button id="city-use-location" class="city-option" type="button">Saját helyzetem használata</button>
       <div id="city-options" class="city-options" aria-label="Városok">
         <button class="city-option" type="button" data-city="Budapest">Budapest</button>
         <button class="city-option" type="button" data-city="Debrecen">Debrecen</button>
@@ -391,7 +403,8 @@
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261107-03"></script>
+  <script src="script.js?v=20261107-04"></script>
+  <script src="browser-shell.js?v=20261107-02"></script>
   <script src="planner-calendar.js?v=20261107-02"></script>
     <script src="featured-carousel.js?v=20261010-6"></script>
 </body>
