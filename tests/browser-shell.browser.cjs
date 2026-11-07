@@ -13,7 +13,16 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
+ await page.waitForFunction(()=>{const row=document.querySelector('.quick-navigation').getBoundingClientRect(),menu=document.querySelector('#browser-menu-toggle').getBoundingClientRect();return Math.abs(row.top+row.height/2-menu.top-menu.height/2)<2;});
+ const logoBounds=await page.locator('.browser-logo').boundingBox(),dateBounds=await page.locator('#browser-event-date').boundingBox();
+ assert(dateBounds.height<logoBounds.height,'date badge is smaller than logo');assert(Math.abs(dateBounds.y+dateBounds.height/2-logoBounds.y-logoBounds.height/2)<2,'logo and date share a row');
+ assert.equal(await page.locator('.topic-button[data-category=""].active').first().evaluate(el=>getComputedStyle(el).color),'rgb(240, 100, 75)');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const firstFrame=await page.locator('#browser-header-motion').evaluate(el=>el.toDataURL());
+ await page.waitForFunction(first=>document.querySelector('#browser-header-motion').toDataURL()!==first,firstFrame);
+ await page.emulateMedia({reducedMotion:'reduce'});
  await page.screenshot({path:'outputs/browser-atmo-home.png'});
+ await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=160);await page.locator('#browser-menu-toggle').click();
  await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
@@ -26,6 +35,8 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('#browser-date-caption').textContent(),'Holnapi események!');assert.equal(await page.locator('#browser-event-date span').textContent(),'8');
  await page.evaluate(()=>{events[0].Date='2026.11.12';updateBrowserHeader();});assert.equal(await page.locator('#browser-date-caption').textContent(),'Következő események!');
  await page.locator('#browser-event-date').click();assert.equal(await page.evaluate(()=>calendarSelectedDate),'2026-11-12');
+ await page.waitForFunction(()=>scrollY>0&&document.querySelector('#browser-menu-toggle').getBoundingClientRect().top<=13);
+ assert((await page.locator('#calendar-section').boundingBox()).y<422,'date button scrolls to calendar');
  await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="search"]').click();assert(await page.locator('#search-view').isVisible());assert.equal(await page.locator('.browser-brand').isVisible(),false);
  await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="home"]').click();
  await page.waitForTimeout(7100);assert.equal(await page.evaluate(()=>window.geoCalls),0,'no automatic geolocation');

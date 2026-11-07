@@ -5,6 +5,21 @@
   const menu = document.getElementById('browser-menu');
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
+  const dateRow = document.querySelector('.quick-navigation');
+  let menuFrame = 0;
+  function positionMenu() {
+    menuFrame = 0;
+    const row = dateRow.getBoundingClientRect();
+    // Follow the date row until it reaches the safe-area inset, then stay pinned.
+    menu.style.setProperty('--browser-menu-top', `${Math.max(12, row.height ? row.top + (row.height - 44) / 2 : 12)}px`);
+  }
+  function scheduleMenuPosition() {
+    if (!menuFrame) menuFrame = requestAnimationFrame(positionMenu);
+  }
+  window.addEventListener('scroll', scheduleMenuPosition, { passive: true });
+  window.addEventListener('resize', scheduleMenuPosition);
+  new ResizeObserver(scheduleMenuPosition).observe(document.getElementById('top'));
+  new MutationObserver(scheduleMenuPosition).observe(dateRow, { attributes: true, attributeFilter: ['hidden'] });
   let targetKey = '';
   function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; }
   window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
@@ -16,6 +31,7 @@
     document.body.classList.toggle('browser-landing', window.isBeeBrowserLanding());
     closeMenu();
     renderEvents();
+    scheduleMenuPosition();
   }
   window.updateBrowserHeader = () => {
     const dates = [...new Set(events.filter(event => !isPastEvent(event)).flatMap(eventDateKeys))].filter(key => key >= todayKey()).sort();
@@ -38,7 +54,7 @@
   for (const id of ['browser-floating-install', 'browser-promo-install']) document.getElementById(id).addEventListener('click', () => document.getElementById('install-app').click());
   document.getElementById('browser-event-date').addEventListener('click', () => {
     if (!targetKey) return;
-    navigateToAppView('home');
+    if (currentAppView !== 'home') navigateToAppView('home');
     const [year, month] = targetKey.split('-').map(Number);
     calendarMonth = new Date(year, month - 1, 1); calendarSelectedDate = targetKey; calendarCategory = ''; syncTopicSelection(calendarFilters, ''); renderCalendar();
     calendarSection.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
@@ -58,4 +74,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshHeaderDate(); });
   refreshHeaderDate();
   syncMode();
+  positionMenu();
 })();
