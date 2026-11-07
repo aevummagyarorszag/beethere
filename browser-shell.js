@@ -6,12 +6,18 @@
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
   const dateRow = document.querySelector('.quick-navigation');
+  const topicToolbar = document.getElementById('home-topic-toolbar');
   let menuFrame = 0;
   function positionMenu() {
     menuFrame = 0;
-    const row = dateRow.getBoundingClientRect();
-    // Follow the date row until it reaches the safe-area inset, then stay pinned.
-    menu.style.setProperty('--browser-menu-top', `${Math.max(12, row.height ? row.top + (row.height - 44) / 2 : 12)}px`);
+    const row = topicToolbar.getBoundingClientRect();
+    const chip = topicToolbar.querySelector('.topic-button')?.getBoundingClientRect();
+    const download = document.getElementById('browser-floating-install').getBoundingClientRect();
+    const menuHeight = menu.classList.contains('is-open') ? 264 : 44;
+    const maxTop = Math.max(12, Math.min(innerHeight - menuHeight - 12, download.height ? download.top - menuHeight - 12 : Infinity));
+    // Match the category row; the menu remains accessible after that row scrolls away.
+    menu.style.setProperty('--browser-menu-top', `${Math.min(maxTop, Math.max(12, chip?.height ? chip.top : 12))}px`);
+    menu.style.setProperty('--browser-menu-right', `${Math.max(12, row.width ? innerWidth - row.right : 12)}px`);
   }
   function scheduleMenuPosition() {
     if (!menuFrame) menuFrame = requestAnimationFrame(positionMenu);
@@ -19,9 +25,10 @@
   window.addEventListener('scroll', scheduleMenuPosition, { passive: true });
   window.addEventListener('resize', scheduleMenuPosition);
   new ResizeObserver(scheduleMenuPosition).observe(document.getElementById('top'));
+  new ResizeObserver(scheduleMenuPosition).observe(document.getElementById('featured-section'));
   new MutationObserver(scheduleMenuPosition).observe(dateRow, { attributes: true, attributeFilter: ['hidden'] });
   let targetKey = '';
-  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; }
+  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; scheduleMenuPosition(); }
   window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
   function syncMode() {
     if (mode.matches || navigator.standalone === true) {
@@ -47,6 +54,7 @@
   toggle.addEventListener('click', () => {
     const open = !menu.classList.contains('is-open');
     menu.classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', String(open)); links.inert = !open;
+    scheduleMenuPosition();
   });
   links.querySelectorAll('[data-browser-view]').forEach(button => button.addEventListener('click', () => { closeMenu(); navigateToAppView(button.dataset.browserView, { animate: true }); }));
   document.addEventListener('click', event => { if (!menu.contains(event.target)) closeMenu(); });

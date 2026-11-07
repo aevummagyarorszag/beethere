@@ -13,7 +13,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
- await page.waitForFunction(()=>{const row=document.querySelector('.quick-navigation').getBoundingClientRect(),menu=document.querySelector('#browser-menu-toggle').getBoundingClientRect();return Math.abs(row.top+row.height/2-menu.top-menu.height/2)<2;});
+ await page.waitForFunction(()=>{const row=document.querySelector('#home-topic-filters .topic-button').getBoundingClientRect(),menu=document.querySelector('#browser-menu-toggle').getBoundingClientRect();return Math.abs(row.top+row.height/2-menu.top-menu.height/2)<2;});
  const logoBounds=await page.locator('.browser-logo').boundingBox(),dateBounds=await page.locator('#browser-event-date').boundingBox();
  assert(dateBounds.height<logoBounds.height,'date badge is smaller than logo');assert(Math.abs(dateBounds.y+dateBounds.height/2-logoBounds.y-logoBounds.height/2)<2,'logo and date share a row');
  assert.equal(await page.locator('.topic-button[data-category=""].active').first().evaluate(el=>getComputedStyle(el).color),'rgb(240, 100, 75)');
@@ -24,6 +24,14 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.screenshot({path:'outputs/browser-atmo-home.png'});
  await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=160);await page.locator('#browser-menu-toggle').click();
  await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});
+ const promoBounds=await page.locator('.browser-promo-placeholder').first().boundingBox();
+ assert(Math.abs(promoBounds.width/promoBounds.height-9/16)<.01,'portrait promo ratio matches store screenshots');
+ const icon=await page.locator('.browser-download-icon').boundingBox();assert(icon.height<22,'download arrow stays smaller than text size');
+ assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','reduced motion disables shine');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ for(const id of ['browser-promo-install','browser-floating-install']) assert.equal(await page.locator('#'+id).evaluate(el=>getComputedStyle(el,'::before').animationName),'browser-install-shine');
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.locator('#browser-floating-install').screenshot({path:'outputs/browser-atmo-floating.png'});
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
  await page.setViewportSize({width:390,height:844});
