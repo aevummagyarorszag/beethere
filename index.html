@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="ui-refinements.css?v=20260930-30">
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
-    <link rel="stylesheet" href="featured-card.css?v=20261107-01">
+    <link rel="stylesheet" href="featured-card.css?v=20261107-02">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
   <script defer src="install.js?v=20261105-06"></script>
@@ -92,6 +92,15 @@
         <h3 id="pinned-events-title">Következő eseményeid</h3>
         <div id="pinned-events-grid" class="events-grid event-carousel vertical-event-list" tabindex="0" aria-label="Kitűzött események"></div>
         <p id="pinned-events-empty" class="app-view-empty">Tűzz ki egy kedvelt eseményt, hogy itt megjelenjen.</p>
+      </section>
+      <section id="planner-calendar-section" class="planning-section calendar-section planner-calendar" aria-labelledby="planner-calendar-title">
+        <div class="section-heading calendar-heading"><div><h3 id="planner-calendar-title">Naptár</h3><span id="planner-calendar-month" class="calendar-month-label" aria-live="polite"></span><button id="planner-calendar-today" class="calendar-today-button" type="button" aria-label="Ugrás a mai napra"><span id="planner-calendar-today-number" aria-hidden="true"></span></button></div></div>
+        <div id="planner-calendar-filters" class="topic-rail" aria-label="Tervezett programok kategóriái"></div>
+        <div class="calendar-shell">
+          <div class="calendar-weekdays" aria-hidden="true"><span>H</span><span>K</span><span>Sze</span><span>Cs</span><span>P</span><span>Szo</span><span>V</span></div>
+          <div id="planner-calendar-grid" class="calendar-grid" role="grid" aria-label="Megyek rá események naptára"></div>
+        </div>
+        <div id="planner-calendar-events" class="calendar-events" aria-live="polite"></div>
       </section>
       <section class="planning-section planning-note" aria-labelledby="planning-note-title">
         <h3 id="planning-note-title">Jegyzet</h3>
@@ -382,7 +391,8 @@
     <button class="bottom-nav-button" type="button" data-app-view="search" aria-label="Keresés" title="Keresés"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.4 15.4 4.5 4.5"/></svg><span class="bottom-nav-label">Keresés</span></button>
     <button class="bottom-nav-button" type="button" data-app-view="profile" aria-label="Profil" title="Profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="9" r="2.8"/><path d="M6.8 18.1a5.6 5.6 0 0 1 10.4 0"/></svg><span class="bottom-nav-label">Profil</span></button>
   </nav>
-  <script src="script.js?v=20261106-05"></script>
+  <script src="script.js?v=20261107-02"></script>
+  <script src="planner-calendar.js?v=20261107-02"></script>
     <script src="featured-carousel.js?v=20261010-6"></script>
 </body>
 </html>

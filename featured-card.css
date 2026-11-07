@@ -2418,3 +2418,38 @@ html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-co
   flex: 0 0 10px;
   pointer-events: none;
 }
+
+.planner-calendar .calendar-heading h3 { margin: 0; }
+.planner-calendar .calendar-shell { max-width: none; }
+#planner-calendar-filters { margin: -8px 0 6px; padding: 16px 4px 16px 0; }
+.planner-calendar .calendar-today-button {
+  display: inline-grid; place-items: center; flex: 0 0 44px;
+  width: 44px; height: 44px; min-width: 44px; padding: 0;
+  border: 0 !important; background: transparent !important; box-shadow: none !important;
+  color: rgb(30 41 59 / .48); cursor: pointer;
+}
+.planner-calendar .calendar-today-button::before,
+.planner-calendar .calendar-today-button::after { content: none; }
+#planner-calendar-today-number {
+  display: grid; place-items: center; width: 25px; height: 25px;
+  box-sizing: border-box; border: 2px solid currentColor; border-radius: 7px;
+  font: 600 16px/1 var(--font-sans); font-variant-numeric: tabular-nums;
+}
+.planner-calendar .calendar-day.has-attendance,
+.planner-calendar .calendar-day.has-attendance.selected {
+  background: #fee2e2 !important; border-color: #fecaca !important;
+  color: #7f1d1d !important; animation: none !important;
+}
+.planner-calendar .calendar-day.has-favorite .calendar-favorite-heart {
+  top: 4px; right: 4px; left: auto; width: 11px; height: 11px;
+  transform: none; opacity: 1 !important; color: #dc2626 !important;
+}
+.planner-calendar .calendar-day.has-favorite .calendar-favorite-heart .ui-icon {
+  width: 11px !important; height: 11px !important;
+  opacity: 1 !important; filter: none !important;
+}
+html[data-theme="dark"] .planner-calendar .calendar-day.has-attendance {
+  background: #492c32 !important; border-color: #80505a !important; color: #fecdd3 !important;
+}
+html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-today-button) { color: var(--dark-control); }
+@media(max-width:360px) { .planner-calendar .calendar-month-label {font-size:18px;white-space:nowrap;} }

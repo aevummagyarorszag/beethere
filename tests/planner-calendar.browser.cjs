@@ -1,0 +1,52 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const {createServer}=require('node:http');const {readFileSync,mkdirSync}=require('node:fs');const path=require('node:path');
+(async()=>{
+ const root=path.resolve(__dirname,'..');mkdirSync(path.join(root,'outputs/planner-calendar'),{recursive:true});const server=createServer((req,res)=>{const file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep))return res.writeHead(403).end();try{res.setHeader('Content-Type',({'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'})[path.extname(file)]||'application/octet-stream');res.end(readFileSync(file));}catch{res.writeHead(404).end();}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'msedge'});
+ try{
+ const page=await browser.newPage({viewport:{width:390,height:844},timezoneId:'Europe/Budapest',reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.clock.setFixedTime(new Date('2026-11-07T12:00:00+01:00'));
+ await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.waitForFunction(()=>events.length>0 && typeof window.renderPlannerCalendar==='function');
+ await page.evaluate(()=>{
+  events=[{Title:'Mai party',Date:'2026.11.07',Category:'party'},{Title:'Holnapi kultúra',Date:'2026.11.08',Category:'kultúra'},{Title:'Csak kedvelt',Date:'2026.11.09',Category:'party'},{Title:'Többnapos program',Date:'2026.11.28-2026.12.02',Category:'party'}].map(e=>({...e,Type:'egyszeri',Time:'18:00',Location:'Győr',Description:'Naptárteszt'}));
+  permanentEvents=[];favoriteIds=new Set([eventKey(events[0]),eventKey(events[2]),eventKey(events[3])]);pinnedEventKeys.clear();[events[0],events[1],events[3]].forEach(e=>pinnedEventKeys.add(eventKey(e)));position={latitude:47.6875,longitude:17.6504};renderEvents();
+ });
+ await page.locator('.bottom-nav-button[data-app-view="favorites"]').click();
+ const section=page.locator('#planner-calendar-section'),grid=page.locator('#planner-calendar-grid'),results=page.locator('#planner-calendar-events');
+ await section.scrollIntoViewIfNeeded();assert(await section.isVisible());
+ const order=await page.evaluate(()=>{const calendar=document.querySelector('#planner-calendar-section'),note=document.querySelector('.planning-note');return Boolean(calendar.compareDocumentPosition(note)&Node.DOCUMENT_POSITION_FOLLOWING);});assert(order,'calendar precedes note');
+ assert.match(await page.locator('#planner-calendar-month').textContent(),/2026.*november/);
+ assert.equal(await page.locator('#planner-calendar-today-number').textContent(),'7');
+ const day=n=>grid.locator(`[data-date-key="2026-11-${String(n).padStart(2,'0')}"]`);
+ assert(await day(7).evaluate(el=>el.classList.contains('has-attendance')));assert.equal(await day(7).locator('.calendar-favorite-heart').count(),1);
+ assert.equal(await day(7).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(254, 226, 226)');
+ assert.equal(await day(7).locator('.calendar-favorite-heart').evaluate(el=>getComputedStyle(el).opacity),'1');
+ assert.equal(await day(8).locator('.calendar-favorite-heart').count(),0);
+ assert.equal(await day(9).evaluate(el=>el.classList.contains('has-attendance')),false,'liked-only events are excluded');
+ assert.equal(await day(9).locator('.calendar-favorite-heart').count(),0);
+ await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Mai party'));
+ await day(8).click();await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Holnapi kultúra'));
+ await page.locator('#planner-calendar-filters [data-category="party"]').click();
+ await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Mai party'));
+ assert(!(await results.textContent()).includes('Holnapi kultúra'));
+ await page.waitForTimeout(100);const scrollState=await results.evaluate(el=>({actual:scrollY,expected:Math.min(Math.max(0,scrollY+el.getBoundingClientRect().top-12),document.documentElement.scrollHeight-innerHeight)}));assert(Math.abs(scrollState.actual-scrollState.expected)<3,JSON.stringify(scrollState));
+ await section.screenshot({path:path.join(root,'outputs/planner-calendar/mobile.png')});
+ await page.locator('#planner-calendar-section .calendar-shell').scrollIntoViewIfNeeded();const shell=await page.locator('#planner-calendar-section .calendar-shell').boundingBox();await page.mouse.move(shell.x+shell.width*.8,shell.y+70);await page.mouse.down();await page.mouse.move(shell.x+shell.width*.2,shell.y+70,{steps:8});await page.mouse.up();
+ assert.match(await page.locator('#planner-calendar-month').textContent(),/december/);
+ assert(await grid.locator('[data-date-key="2026-12-01"]').evaluate(el=>el.classList.contains('has-attendance')),'multi-day event spans months');
+ await page.locator('#planner-calendar-today').click();assert.match(await page.locator('#planner-calendar-month').textContent(),/november/);
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('#planner-calendar-today').click();
+ const todayCell=grid.locator('.today');assert(await todayCell.evaluate(el=>el.getAnimations().some(a=>a.effect.getTiming().iterations===2)));
+ await todayCell.evaluate(el=>Promise.all(el.getAnimations().map(a=>a.finished)));assert.equal(await todayCell.evaluate(el=>el.getAnimations().length),0);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.evaluate(()=>{pinnedEventKeys.clear();renderFavorites();});assert.equal(await grid.locator('.has-attendance').count(),0);assert((await results.textContent()).includes('„Megyek rá”'));
+ await page.evaluate(()=>{const recurring={Title:'Heti edzés',Date:'Minden hétfőn',Permanent:true,Type:'allando',Category:'sport',Location:'Győr',Description:'Heti program'};permanentEvents=[recurring];pinnedEventKeys.add(eventKey(recurring));favoriteIds.add(eventKey(recurring));renderFavorites();});
+ await page.locator('#planner-calendar-filters [data-category="sport"]').click();
+ assert(await day(9).evaluate(el=>el.classList.contains('has-attendance')),'recurring Monday appears on Monday');
+ assert.equal(await day(8).evaluate(el=>el.classList.contains('has-attendance')),false);
+ await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Heti edzés'));
+ await page.locator('.bottom-nav-button[data-app-view="home"]').click();await page.locator('#home-topic-filters [data-category="party"]').click();await page.waitForTimeout(100);
+ const home=await page.evaluate(()=>({top:document.querySelector('#events-grid').getBoundingClientRect().top,offset:document.querySelector('#home-topic-toolbar').offsetHeight+12}));assert(Math.abs(home.top-home.offset)<3,JSON.stringify(home));
+ const weekdays=await page.evaluate(()=>['Hétfőn','Kedden','Szerdán','Csütörtökön','Pénteken','Szombaton','Vasárnap'].map((Date,index)=>Array.from({length:7},(_,day)=>permanentEventMatchesWeekday({Date},day))));
+ weekdays.forEach((row,index)=>row.forEach((value,day)=>assert.equal(value,index===day)));
+ assert.deepEqual(errors,[]);console.log('PASS planner calendar: position, pinned-only events, red days, conditional hearts, category reset, multi-day/month navigation, Today, empty state and home category reset');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+})().catch(e=>{console.error(e);process.exitCode=1});

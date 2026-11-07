@@ -823,7 +823,7 @@ function permanentEventMatchesWeekday(event, dayIndex) {
   const matches = [...schedule.matchAll(weekdayPattern)];
   const selectedDays = new Set();
   matches.forEach((match, index) => {
-    const name = match[0].replace(/(?:tol|ig|on|en|an|n)$/, '');
+    const name = weekdayNames.find(day => match[0].startsWith(day));
     const startDay = weekdayNames.indexOf(name);
     if (startDay < 0) return;
     selectedDays.add(startDay);
@@ -831,7 +831,7 @@ function permanentEventMatchesWeekday(event, dayIndex) {
     if (!nextMatch) return;
     const between = schedule.slice(match.index + match[0].length, nextMatch.index);
     if (!/(?:-|–|—)/.test(between) && !(match[0].endsWith('tol') && nextMatch[0].endsWith('ig'))) return;
-    const endName = nextMatch[0].replace(/(?:tol|ig|on|en|an|n)$/, '');
+    const endName = weekdayNames.find(day => nextMatch[0].startsWith(day));
     const endDay = weekdayNames.indexOf(endName);
     if (endDay < 0) return;
     for (let currentDay = startDay; ; currentDay = (currentDay + 1) % 7) {
@@ -3440,6 +3440,7 @@ function renderFavorites() {
   setupCarousel(favoritesGrid);
   syncCarouselControls(favoritesGrid);
   updateProfileSummary();
+  window.renderPlannerCalendar?.();
 }
 
 function updateFavoritesToTopButton() {
@@ -3622,6 +3623,7 @@ function refreshCalendarFavoriteMarkers() {
     else if (hasFavorite) button.setAttribute('aria-label', `${day}. nap, kedvelt eseménnyel`);
     else button.removeAttribute('aria-label');
   });
+  window.renderPlannerCalendar?.();
 }
 
 function updateCalendarTodayButton() {
@@ -4152,10 +4154,20 @@ function setupPlannerToolbarTitle() {
   schedule();
 }
 
+function scrollToEventsStart(target, offset = 0) {
+  if (!target) return;
+  target.querySelectorAll('.event-carousel').forEach(rail => rail.scrollTo({ left: 0, behavior: 'instant' }));
+  window.scrollTo({
+    top: Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset),
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  });
+}
+
 function createFilters() {
   populateTopicRail(filterBar, selectedCategory, category => {
     selectedCategory = category;
-    preservePageScroll(() => renderEvents({ refreshFeatured: false }));
+    renderEvents({ refreshFeatured: false });
+    window.requestAnimationFrame(() => scrollToEventsStart(grid, (filterBar?.closest('.home-topic-toolbar')?.offsetHeight || 0) + 12));
     vibrate(10);
   });
 }
