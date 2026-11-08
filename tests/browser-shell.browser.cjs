@@ -35,6 +35,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  }),'no dots are drawn behind tagline');
  assert.equal(await page.locator('.browser-tagline').evaluate(el=>getComputedStyle(el,'::before').content),'none','no decorative white shape behind tagline');
  await page.screenshot({path:'outputs/browser-atmo-home.png'});
+ await page.locator('#browser-menu-toggle').click();await page.locator('.browser-tagline').click();assert.equal(await page.locator('#browser-menu-toggle').getAttribute('aria-expanded'),'false','outside tap closes menu');
  await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=144);
  const menuBounds=await page.locator('#browser-menu').boundingBox(),firstLink=await page.locator('#browser-menu-links button').first().boundingBox();assert(firstLink.y-menuBounds.y<3,'first menu link starts at top');await page.locator('#browser-menu-toggle').click();
  await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});

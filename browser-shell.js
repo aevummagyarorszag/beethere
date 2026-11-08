@@ -33,7 +33,7 @@
     menu.classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', String(open)); links.inert = !open;
   });
   links.querySelectorAll('[data-browser-view]').forEach(button => button.addEventListener('click', () => { closeMenu(); navigateToAppView(button.dataset.browserView, { animate: true }); }));
-  document.addEventListener('click', event => { if (!menu.contains(event.target)) closeMenu(); });
+  document.addEventListener('pointerdown', event => { if (!menu.contains(event.target)) closeMenu(); }, { capture: true });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && menu.classList.contains('is-open')) { closeMenu(); toggle.focus({ preventScroll: true }); } });
   for (const id of ['browser-floating-install', 'browser-promo-install']) document.getElementById(id).addEventListener('click', () => document.getElementById('install-app').click());
   document.getElementById('browser-event-date').addEventListener('click', () => {
