@@ -43,16 +43,11 @@
     const selectedItems = items.filter(event => matchesDate(event, selected));
     if (!selectedItems.length) return;
     const rail = document.createElement('div');
-    rail.className = 'events-grid event-carousel vertical-event-list';
+    rail.className = 'events-grid event-carousel';
     rail.tabIndex = 0;
     rail.setAttribute('aria-label', 'A kiválasztott napra tervezett eseményeid');
     results.append(rail);
-    for (let index = 0; index < selectedItems.length; index += 3) {
-      const page = document.createElement('div');
-      page.className = 'compact-event-page';
-      rail.append(page);
-      selectedItems.slice(index, index + 3).forEach((event, offset) => renderFavoritePair(event, index + offset, page, { compact: true }));
-    }
+    renderCardsIncrementally(rail, selectedItems, { compact: true });
     setupCarousel(rail);
     syncCarouselControls(rail);
   }

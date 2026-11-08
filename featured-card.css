@@ -2435,11 +2435,12 @@ html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-co
   box-sizing: border-box; border: 2px solid currentColor; border-radius: 7px;
   font: 600 16px/1 var(--font-sans); font-variant-numeric: tabular-nums;
 }
-.planner-calendar .calendar-day.has-attendance,
-.planner-calendar .calendar-day.has-attendance.selected,
-html[data-theme="dark"] .planner-calendar .calendar-day.has-attendance {
-  background: #F0644B !important; border-color: #F0644B !important;
-  color: #fff !important; animation: none !important;
+.planner-calendar .calendar-day.has-attendance {
+  background: rgb(240 100 75 / 18%) !important; border-color: rgb(240 100 75 / 40%) !important;
+  color: var(--text) !important; animation: none !important;
+}
+.planner-calendar .calendar-day.has-attendance.selected {
+  background: #F0644B !important; border-color: #F0644B !important; color: #fff !important;
 }
 html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-today-button) { color: var(--dark-control); }
 @media(max-width:360px) { .planner-calendar .calendar-month-label {font-size:18px;white-space:nowrap;} }

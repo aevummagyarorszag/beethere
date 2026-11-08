@@ -4,7 +4,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'msedge'});
  try{
  const page=await browser.newPage({viewport:{width:390,height:844},timezoneId:'Europe/Budapest',reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.clock.setFixedTime(new Date('2026-11-07T12:00:00+01:00'));
- await page.addInitScript(()=>localStorage.setItem('bee-there-installed','true'));
+ await page.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
  await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.waitForFunction(()=>events.length>0 && typeof window.renderPlannerCalendar==='function');
  await page.evaluate(()=>{
   events=[{Title:'Mai party',Date:'2026.11.07',Category:'party'},{Title:'Holnapi kultúra',Date:'2026.11.08',Category:'kultúra'},{Title:'Csak kedvelt',Date:'2026.11.09',Category:'party'},{Title:'Többnapos program',Date:'2026.11.28-2026.12.02',Category:'party'}].map(e=>({...e,Type:'egyszeri',Time:'18:00',Location:'Győr',Description:'Naptárteszt'}));
@@ -20,11 +20,11 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert(await day(7).evaluate(el=>el.classList.contains('has-attendance')));assert.equal(await day(7).locator('.calendar-favorite-heart').count(),1);
  assert.equal(await day(7).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 100, 75)');
  assert.equal(await day(7).locator('.calendar-favorite-heart').evaluate(el=>getComputedStyle(el).opacity),'0.24');
- assert.equal(await day(8).locator('.calendar-favorite-heart').count(),0);
+ assert.equal(await day(8).locator('.calendar-favorite-heart').count(),0);assert.equal(await day(8).evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(240, 100, 75, 0.18)');
  assert.equal(await day(9).evaluate(el=>el.classList.contains('has-attendance')),false,'liked-only events have no attendance background');
  assert.equal(await day(9).locator('.calendar-favorite-heart').count(),1);
  await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Mai party'));
- await day(8).click();await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Holnapi kultúra'));
+ await day(8).click();assert.equal(await day(8).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 100, 75)');assert.equal(await results.locator('.vertical-event-list').count(),0);await results.locator('.event-card').first().waitFor({state:'visible'});await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Holnapi kultúra'));
  await page.locator('#planner-calendar-filters [data-category="party"]').click();
  await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Mai party'));
  assert(!(await results.textContent()).includes('Holnapi kultúra'));
