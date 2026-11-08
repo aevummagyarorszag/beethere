@@ -13,12 +13,12 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
- await page.waitForFunction(()=>{const row=document.querySelector('#home-topic-filters .topic-button').getBoundingClientRect(),menu=document.querySelector('#browser-menu-toggle').getBoundingClientRect();return Math.abs(row.top+row.height/2-menu.top-menu.height/2)<2;});
  const originalMenuTop=(await page.locator('#browser-menu-toggle').boundingBox()).y;
+ assert.equal(originalMenuTop,12,'menu starts at fixed top-right position');
  await page.evaluate(()=>scrollTo(0,80));
- await page.waitForFunction(top=>Math.abs(document.querySelector('#browser-menu-toggle').getBoundingClientRect().top-(top-80))<1,originalMenuTop);
+ await page.waitForTimeout(100);
+ assert.equal((await page.locator('#browser-menu-toggle').boundingBox()).y,originalMenuTop,'scrolling never moves menu');
  await page.evaluate(()=>scrollTo(0,0));
- await page.waitForFunction(top=>Math.abs(document.querySelector('#browser-menu-toggle').getBoundingClientRect().top-top)<1,originalMenuTop);
  const logoBounds=await page.locator('.browser-logo').boundingBox(),dateBounds=await page.locator('#browser-event-date').boundingBox();
  assert(dateBounds.height<logoBounds.height,'date badge is smaller than logo');assert(Math.abs(dateBounds.y+dateBounds.height/2-logoBounds.y-logoBounds.height/2)<2,'logo and date share a row');
  assert.equal(await page.locator('.topic-button[data-category=""].active').first().evaluate(el=>getComputedStyle(el).color),'rgb(240, 100, 75)');
@@ -26,6 +26,14 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const firstFrame=await page.locator('#browser-header-motion').evaluate(el=>el.toDataURL());
  await page.waitForFunction(first=>document.querySelector('#browser-header-motion').toDataURL()!==first,firstFrame);
  await page.emulateMedia({reducedMotion:'reduce'});
+ assert(await page.evaluate(()=>{
+   const canvas=document.querySelector('#browser-header-motion'),bounds=canvas.getBoundingClientRect();
+   const range=document.createRange();range.selectNodeContents(document.querySelector('.browser-tagline'));const text=range.getBoundingClientRect();
+   const scale=canvas.width/bounds.width;
+   const pixels=canvas.getContext('2d').getImageData(Math.ceil((text.left-bounds.left)*scale),Math.ceil((text.top-bounds.top)*scale),Math.floor(text.width*scale),Math.floor(text.height*scale)).data;
+   return pixels.every((value,index)=>index%4!==3||value===0);
+ }),'no dots are drawn behind tagline');
+ assert.equal(await page.locator('.browser-tagline').evaluate(el=>getComputedStyle(el,'::before').content),'none','no decorative white shape behind tagline');
  await page.screenshot({path:'outputs/browser-atmo-home.png'});
  await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=144);
  const menuBounds=await page.locator('#browser-menu').boundingBox(),firstLink=await page.locator('#browser-menu-links button').first().boundingBox();assert(firstLink.y-menuBounds.y<3,'first menu link starts at top');await page.locator('#browser-menu-toggle').click();

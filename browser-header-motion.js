@@ -25,6 +25,15 @@
     }
     const bounds = state.canvas.getBoundingClientRect();
     state.width = bounds.width; state.height = bounds.height;
+    state.quietArea = null;
+    if (state.canvas.id === 'browser-header-motion') {
+      const text = state.area.querySelector('.browser-tagline');
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      const label = range.getBoundingClientRect();
+      state.quietArea = { left: label.left - bounds.left - 8, right: label.right - bounds.left + 8,
+        top: label.top - bounds.top - 5, bottom: label.bottom - bounds.top + 5 };
+    }
     const scale = Math.min(devicePixelRatio || 1, 2);
     state.canvas.width = Math.round(state.width * scale);
     state.canvas.height = Math.round(state.height * scale);
@@ -40,6 +49,8 @@
     const spacing = width < 760 ? 5 : 6;
     for (let y = 3; y < height; y += spacing) {
       for (let x = 3; x < width; x += spacing) {
+        const quiet = state.quietArea;
+        if (quiet && x >= quiet.left && x <= quiet.right && y >= quiet.top && y <= quiet.bottom) continue;
         const nx = x / 105, ny = y / 85;
         const warp = noise(nx * .65 + time * .3, ny * .7 - time * .2);
         const field = noise(nx + time, ny - time * .8 + warp * 1.5) * .65

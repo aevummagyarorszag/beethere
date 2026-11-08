@@ -1,6 +1,6 @@
 .browser-brand,.browser-menu,.browser-install-float,.browser-promo { display:none; }
 .browser-landing { --browser-coral:#F0644B;--browser-eye:#F52F78;--browser-eye-gradient:linear-gradient(135deg,#FFCA43,#FF8B38 32%,#F52F78 64%,#8925D5); }
-.browser-landing #top { display:block !important;position:relative;isolation:isolate;min-height:0!important;background:transparent!important;border:0;overflow:clip;padding:16px 0 0; }
+.browser-landing #top { display:block !important;position:relative;isolation:isolate;min-height:0!important;background:transparent!important;border:0;overflow:clip;padding:44px 0 0; }
 .browser-motion {display:none;position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;}
 .browser-landing .browser-motion {display:block;}
 .browser-landing .hero-content {display:none;}
@@ -11,11 +11,9 @@
 .browser-date-caption {position:absolute;width:180px;height:99px;top:-46px;left:-108px;overflow:visible;fill:var(--browser-coral);font:20px Caveat,cursive;pointer-events:none;}
 .browser-caption-arrow {fill:none;stroke:var(--browser-coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 #browser-event-date {width:54px;height:54px;display:grid;place-items:center;background:transparent!important;border:3px solid var(--browser-eye);border-radius:15px;box-shadow:none!important;color:var(--browser-eye);font:600 28px/1 Inter,sans-serif;}
-.browser-tagline {position:relative;isolation:isolate;margin:-2px 0 0!important;color:var(--browser-coral)!important;font:600 clamp(13px,4vw,24px)/1.35 Inter,-apple-system,BlinkMacSystemFont,sans-serif!important;text-align:left;white-space:nowrap;}
-.browser-tagline::before {content:"";position:absolute;z-index:-1;inset:-8px -20px -9px -16px;background:#fff;pointer-events:none;clip-path:polygon(0 26%,3% 13%,9% 18%,14% 4%,22% 11%,30% 5%,38% 14%,47% 7%,57% 12%,65% 3%,75% 13%,85% 6%,95% 17%,100% 29%,99% 74%,94% 87%,84% 82%,75% 96%,64% 87%,55% 95%,44% 86%,33% 96%,24% 87%,15% 95%,6% 82%,0 75%);}
-.browser-landing .home-topic-toolbar {padding-right:54px;}
+.browser-tagline {margin:-2px 0 0!important;padding-left:4px;color:var(--browser-coral)!important;font:600 clamp(13px,4vw,24px)/1.35 Inter,-apple-system,BlinkMacSystemFont,sans-serif!important;text-align:left;white-space:nowrap;}
 .browser-landing .install-row,.browser-landing #bottom-navigation,.browser-landing #nearby-section,.browser-landing #viewed-section,.browser-landing #recommended-section,.browser-landing #today-section {display:none!important;}
-.browser-landing .browser-menu {display:block;position:fixed;z-index:900;right:var(--browser-menu-right,12px);top:calc(12px + env(safe-area-inset-top,0px));will-change:transform;width:44px;border-radius:22px;background:var(--surface,#fff);box-shadow:0 3px 8px rgb(15 23 42 / .13),0 1px 2px rgb(15 23 42 / .06);transition:width .26s ease,border-radius .26s ease;}
+.browser-landing .browser-menu {display:block;position:fixed;z-index:900;right:12px;top:calc(12px + env(safe-area-inset-top,0px));width:44px;border-radius:22px;background:var(--surface,#fff);box-shadow:0 3px 8px rgb(15 23 42 / .13),0 1px 2px rgb(15 23 42 / .06);transition:width .26s ease,border-radius .26s ease;}
 #browser-menu-toggle {display:grid;place-items:center;margin-left:auto;width:44px;min-width:44px;height:44px;min-height:44px;padding:11px;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--text);}
 #browser-menu-toggle:focus:not(:focus-visible) {outline:none;}
 #browser-menu-toggle:focus-visible {outline:2px solid var(--browser-coral);outline-offset:-4px;}
@@ -42,7 +40,7 @@
 .browser-promo-placeholder {flex:0 0 calc(50% - 6px);aspect-ratio:9/16;min-width:0;border:1px solid rgb(30 41 59 / .12);border-radius:18px;background:linear-gradient(150deg,#fff2ed,#eee8fa);scroll-snap-align:start;}
 @media(prefers-reduced-motion:reduce){.browser-menu,#browser-menu-links{transition:none!important;}}
 @media(prefers-reduced-motion:reduce){#browser-promo-install::before,.browser-install-float::before{animation:none;opacity:0;}}
-@media(min-width:760px){.browser-brand-row{justify-content:center;gap:90px;min-height:164px;}.browser-logo{width:320px;}.browser-promo{max-width:760px;margin-inline:auto!important;}}
+@media(min-width:760px){.browser-brand-row{gap:90px;min-height:164px;}.browser-logo{width:320px;}.browser-promo{max-width:760px;margin-inline:auto!important;}}
 
 .browser-landing #top[hidden] {display:none!important;}
 
