@@ -70,12 +70,14 @@ const { mkdirSync } = require('node:fs');
     });
     assert.equal(await page.locator('#install-gallery-preview').count(), 0, 'no separate preview button');
     await page.locator('#browser-floating-install').click();
-    assert.equal(await page.evaluate(() => window.promptCalls), 1, 'outer install button immediately invokes native confirmation');
-    assert.equal(await page.locator('#pwa-install-modal').evaluate(node=>node.open), false, 'no intermediate Android card');
+    assert.equal(await page.evaluate(() => window.promptCalls || 0), 0, 'outer install button opens platform guide first');
+    await page.waitForFunction(()=>document.querySelector('#pwa-install-modal').open);
+    await page.locator('pwa-install .install-dialog.chrome.available button.install:visible').click();
+    assert.equal(await page.evaluate(()=>window.promptCalls),1,'library install button invokes native confirmation');
     assert.equal(await page.locator('pwa-install pwa-gallery').count(), 0);
     await page.evaluate(() => dispatchEvent(new Event('appinstalled')));
     assert.equal(await page.locator('#install-app').isHidden(), true);
-    console.log('PASS Android: direct native prompt, no intermediate card or images, installed button hidden');
+    console.log('PASS Android: platform dialog, native confirmation from library button, no images, installed button hidden');
     await page.close();
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

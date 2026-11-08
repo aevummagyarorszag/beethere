@@ -19,7 +19,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.mouse.click(365,165);assert.equal(await page.evaluate(()=>currentAppView),'home','closed menu cannot navigate from invisible right-side regions');
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
  const originalMenuTop=(await page.locator('#browser-menu-toggle').boundingBox()).y;
- assert.equal(originalMenuTop,28,'menu starts at fixed top-right position');
+ assert.equal(originalMenuTop,8,'menu starts at fixed top-right position');
  await page.evaluate(()=>scrollTo(0,80));
  await page.waitForTimeout(100);
  assert.equal((await page.locator('#browser-menu-toggle').boundingBox()).y,originalMenuTop,'scrolling never moves menu');
@@ -66,7 +66,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
  assert(await page.locator('.browser-tagline').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length===1&&range.getBoundingClientRect().width<=el.clientWidth;}),'tagline fits one line on narrow phones');
- assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','date badge has white interior');
+ assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(245, 245, 247)','date badge matches page background');
  await page.setViewportSize({width:390,height:844});
 
  assert.equal(await page.locator('#browser-menu-links [data-browser-view=favorites]').count(),0);

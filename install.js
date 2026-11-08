@@ -83,11 +83,7 @@
     if (button.hidden || button.disabled) return;
     button.disabled = true;
     try {
-      if (installer.isAppleMobilePlatform || installer.isAppleDesktopPlatform) {
-        installer.showDialog(true);
-      } else {
-        await installer.install();
-      }
+      installer.showDialog(true);
       await installer.updateComplete;
       connectDialog();
       syncModal();
