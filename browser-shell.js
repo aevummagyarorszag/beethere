@@ -5,6 +5,18 @@
   const menu = document.getElementById('browser-menu');
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
+  const promoInfo = document.querySelector('.browser-promo-info');
+  const promoSubtitle = document.querySelector('.browser-promo-subtitle');
+  const measuringContext = document.createElement('canvas').getContext('2d');
+  function fitPromoSubtitle() {
+    if (!promoInfo.clientWidth || !measuringContext) return;
+    const style = getComputedStyle(promoSubtitle);
+    measuringContext.font = `${style.fontWeight} 14px ${style.fontFamily}`;
+    const width = measuringContext.measureText(promoSubtitle.textContent).width;
+    promoSubtitle.style.fontSize = `${Math.min(14, 14 * (promoInfo.clientWidth - 1) / width)}px`;
+  }
+  new ResizeObserver(fitPromoSubtitle).observe(promoInfo);
+  document.fonts?.ready.then(fitPromoSubtitle);
   let targetKey = '';
   function alignDateArrow() {
     const caption = document.getElementById('browser-date-caption');
