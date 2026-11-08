@@ -46,6 +46,7 @@
 
   function update() {
     const runningInstalled = installed || displayMode.matches || navigator.standalone === true;
+    document.body.classList.toggle('running-installed', displayMode.matches || navigator.standalone === true);
     button.hidden = runningInstalled;
     if (runningInstalled) closeGuide();
     connectDialog();
