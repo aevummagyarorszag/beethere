@@ -6,6 +6,17 @@
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
   let targetKey = '';
+  function alignDateArrow() {
+    const caption = document.getElementById('browser-date-caption');
+    const word = caption.textContent.toLocaleLowerCase('hu-HU').indexOf('események');
+    const index = word >= 0 ? word + 3 : Math.floor(caption.textContent.length / 2);
+    if (!caption.getNumberOfChars()) return;
+    const start = caption.getStartPositionOfChar(index);
+    const end = caption.getEndPositionOfChar(index);
+    const x = (start.x + end.x) / 2, y = (start.y + end.y) / 2 + 4;
+    document.querySelector('.browser-caption-arrow').setAttribute('d', `M${x} ${y} C${x - 6} ${y + 18} 95 48 113 66 M104 62l9 4-7 7`);
+  }
+  document.fonts?.ready.then(alignDateArrow);
   function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; }
   window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
   function syncMode() {
@@ -27,6 +38,7 @@
     button.disabled = !targetKey;
     button.setAttribute('aria-label', `${caption} ${date.toLocaleDateString('hu-HU')}`);
     document.getElementById('browser-date-caption').textContent = caption;
+    alignDateArrow();
   };
   toggle.addEventListener('click', () => {
     const open = !menu.classList.contains('is-open');

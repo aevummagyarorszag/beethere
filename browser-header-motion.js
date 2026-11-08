@@ -45,7 +45,7 @@
     if (!width || !height) return;
     context.clearRect(0, 0, width, height);
     const floating = state.canvas.id === 'browser-install-motion';
-    const cycle = (now % 5000) / 5000;
+    const cycle = (now % 3000) / 3000;
     if (floating && (reducedMotion.matches || cycle < .66)) return;
     const sweepCenter = floating ? width * (-.6 + (cycle - .66) / .34 * 2.2) : 0;
     const time = reducedMotion.matches ? 0 : now * .00016;
