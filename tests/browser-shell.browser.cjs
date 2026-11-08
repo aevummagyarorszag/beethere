@@ -90,9 +90,8 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#city-selector').click();assert.equal(await page.locator('#city-options [data-city]').count(),1);assert.equal(await page.locator('#city-options [data-city]').getAttribute('data-city'),'Székesfehérvár');assert.equal(await page.locator('#city-options #city-use-location svg.location-icon').count(),1);await page.locator('#city-dialog').screenshot({path:'outputs/browser-city-dialog.png'});await page.locator('#city-use-location').click();assert.equal(await page.evaluate(()=>window.geoCalls),1,'location is explicit');
  await page.screenshot({path:'outputs/browser-landing.png'});
  await page.locator('#browser-floating-install').click();
- await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')),false);assert(await page.locator('#bottom-navigation').isVisible());
- await page.evaluate(()=>{position={latitude:47.6875,longitude:17.6504};navigateToAppView('permanent');});await page.waitForFunction(()=>!document.querySelector('#events-grid').inert);await page.waitForFunction(()=>[...document.querySelectorAll('#events-grid > .recommendation-row')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').length===2);assert(await page.locator('#calendar-section').isVisible());
- await page.reload({waitUntil:'domcontentloaded'});assert.equal(await page.locator('.browser-brand').isVisible(),false,'installed preference survives reload');
+ await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')),true,'installation does not change browser layout');
+ await page.evaluate(()=>localStorage.setItem('bee-there-installed','true'));await page.reload({waitUntil:'domcontentloaded'});assert.equal(await page.locator('.browser-brand').isVisible(),true,'legacy installed preference must not hide browser landing');
  const standalone=await browser.newPage({viewport:{width:390,height:844}});
  await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
  await standalone.goto(`http://127.0.0.1:${server.address().port}/index.html`);

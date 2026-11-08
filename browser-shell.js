@@ -1,7 +1,5 @@
 (() => {
   const mode = matchMedia('(display-mode: standalone)');
-  let installed = false;
-  try { installed = localStorage.getItem('bee-there-installed') === 'true'; } catch {}
   const menu = document.getElementById('browser-menu');
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
@@ -56,12 +54,8 @@
   document.fonts?.ready.then(alignDateArrow);
   window.addEventListener('resize', alignDateArrow);
   function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; links.hidden = true; }
-  window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
+  window.isBeeBrowserLanding = () => !mode.matches && navigator.standalone !== true;
   function syncMode() {
-    if (mode.matches || navigator.standalone === true) {
-      installed = true;
-      try { localStorage.setItem('bee-there-installed', 'true'); } catch {}
-    }
     document.body.classList.toggle('browser-landing', window.isBeeBrowserLanding());
     closeMenu();
     renderEvents();
@@ -98,7 +92,7 @@
     closeCityDialog(); accountSettings.locationEnabled = true; position = null; requestGeolocation();
   });
   mode.addEventListener('change', syncMode);
-  window.addEventListener('appinstalled', () => { installed = true; try { localStorage.setItem('bee-there-installed', 'true'); } catch {} syncMode(); });
+  window.addEventListener('appinstalled', syncMode);
   let midnightTimer;
   const refreshHeaderDate = () => {
     clearTimeout(midnightTimer); window.updateBrowserHeader();
