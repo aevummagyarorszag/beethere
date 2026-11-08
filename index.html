@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261108-01">
-  <link rel="stylesheet" href="browser-shell.css?v=20261108-17">
+  <link rel="stylesheet" href="browser-shell.css?v=20261108-18">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
   <script defer src="install.js?v=20261108-01"></script>
@@ -194,7 +194,7 @@
       <label><span class="sr-only">Email*</span><input name="email" type="email" autocomplete="email" required placeholder="Email*"></label>
       <label><span class="sr-only">Telefonszám*</span><input name="phone" type="tel" autocomplete="tel" required placeholder="Telefonszám*"></label>
       <label><span class="sr-only">Céged neve*</span><input name="company" autocomplete="organization" required placeholder="Céged neve*"></label>
-      <label class="partners-city-field"><span class="sr-only">Település*</span><input name="city" id="partners-city" list="partners-cities" autocomplete="address-level2" placeholder="Válassz települést*" required><datalist id="partners-cities"></datalist></label>
+      <label class="partners-city-field"><span class="sr-only">Település*</span><select name="city" id="partners-city" autocomplete="address-level2" required><option value="Székesfehérvár" selected>Székesfehérvár</option></select></label>
       <label class="partners-decision"><input name="decisionMaker" type="checkbox" required><span>A cégben döntéshozó vagyok*</span></label>
       <button type="submit" disabled aria-describedby="partners-form-status">Beküldés</button><p id="partners-form-status" class="partners-form-status">A jelentkezés beküldése hamarosan elérhető.</p>
     </form>
@@ -345,10 +345,6 @@
       <p class="city-dialog-copy">Válassz egy várost, és a programokat ehhez a ponthoz rendezzük távolság szerint.</p>
       <div id="city-options" class="city-options" aria-label="Városok">
         <button id="city-use-location" class="city-option" type="button"><svg class="location-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s7-5.06 7-12a7 7 0 1 0-14 0c0 6.94 7 12 7 12Zm0-9.65a2.35 2.35 0 1 0 0-4.7 2.35 2.35 0 0 0 0 4.7Z"/></svg><span>Saját helyzetem használata</span></button>
-        <button class="city-option" type="button" data-city="Budapest">Budapest</button>
-        <button class="city-option" type="button" data-city="Debrecen">Debrecen</button>
-        <button class="city-option" type="button" data-city="Győr">Győr</button>
-        <button class="city-option" type="button" data-city="Pécs">Pécs</button>
         <button class="city-option" type="button" data-city="Székesfehérvár">Székesfehérvár</button>
       </div>
     </div>
@@ -439,7 +435,7 @@
     <p class="site-footer-copyright">Copyright © 2026 by Atmo</p>
   </footer>
   <script src="script.js?v=20261108-04"></script>
-  <script src="browser-shell.js?v=20261108-09"></script>
+  <script src="browser-shell.js?v=20261108-10"></script>
   <script src="browser-header-motion.js?v=20261108-11"></script>
   <script src="planner-calendar.js?v=20261108-01"></script>
     <script src="featured-carousel.js?v=20261010-6"></script>

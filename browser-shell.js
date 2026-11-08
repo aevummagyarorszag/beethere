@@ -5,8 +5,6 @@
   const menu = document.getElementById('browser-menu');
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
-  const partnerCities = document.getElementById('partners-cities');
-  CITIES.forEach(city => { const option = document.createElement('option'); option.value = city.name; partnerCities.append(option); });
   document.getElementById('partners-form').addEventListener('submit', event => event.preventDefault());
   let fadeFrame;
   function updateBrowserFade() {
