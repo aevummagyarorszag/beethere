@@ -12,6 +12,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert(await page.locator('.browser-brand').isVisible());assert.equal(await page.locator('#bottom-navigation').isVisible(),false);
  assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
+ await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view=partners]').click();assert(await page.locator('#partners-view').isVisible());assert((await page.locator('#partners-view').textContent()).includes('Összekötünk az élményeket kereső fiatalokkal.'));await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view=home]').click();
  assert.equal(await page.locator('#browser-menu-links [data-browser-view=profile]').count(),0);
  assert(await page.locator('#browser-menu-links').isHidden());
  await page.mouse.click(365,165);assert.equal(await page.evaluate(()=>currentAppView),'home','closed menu cannot navigate from invisible right-side regions');
@@ -56,7 +57,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('#browser-promo-install img').count(),0,'download button is text only');
  assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','reduced motion disables shine');
  await page.emulateMedia({reducedMotion:'no-preference'});
- assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'browser-install-shine');
+ assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none');
  assert.equal(await page.locator('#browser-floating-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','floating button uses dots instead of shine');
  await page.waitForFunction(()=>{const c=document.querySelector('#browser-install-motion');return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
  await page.emulateMedia({reducedMotion:'reduce'});

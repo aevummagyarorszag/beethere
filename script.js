@@ -1388,17 +1388,17 @@ function moveFavoritesToOwnView() {
 function appViewFromUrl() {
   const value = new URLSearchParams(window.location.search).get('view');
   if (value === 'send') return 'permanent';
-  return ['search', 'permanent', 'favorites', 'profile', 'settings'].includes(value) ? value : 'home';
+  return ['search', 'permanent', 'favorites', 'profile', 'settings', 'partners'].includes(value) ? value : 'home';
 }
 
 function applyAppView(view, { scroll = true } = {}) {
   hideSnackbar();
   cancelPendingSearch();
-  currentAppView = ['search', 'permanent', 'favorites', 'profile', 'settings'].includes(view) ? view : 'home';
+  currentAppView = ['search', 'permanent', 'favorites', 'profile', 'settings', 'partners'].includes(view) ? view : 'home';
   closePlannerEvent();
   const isHome = currentAppView === 'home' || currentAppView === 'permanent';
   homeContent.forEach(element => { if (element.hasAttribute('data-home-content')) element.hidden = !isHome; });
-  const views = { search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView };
+  const views = { search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView, partners: find('#partners-view') };
   Object.entries(views).forEach(([name, element]) => { if (element) element.hidden = name !== currentAppView; });
   const isSettings = currentAppView === 'settings';
   document.body.classList.toggle('has-settings-view', isSettings);
@@ -1435,11 +1435,11 @@ function animateAppViewChange(previousView) {
   appViewAnimations.forEach(animation => animation.cancel());
   appViewAnimations = [];
   if (previousView === currentAppView || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const order = ['home', 'permanent', 'favorites', 'search', 'profile'];
+  const order = ['home', 'permanent', 'favorites', 'search', 'profile', 'partners'];
   const offset = (order.indexOf(currentAppView) > order.indexOf(previousView) ? 1 : -1) * window.innerWidth;
   const visibleContent = currentAppView === 'home' || currentAppView === 'permanent'
     ? homeContent
-    : [{ search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView }[currentAppView]];
+    : [{ search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView, partners: find('#partners-view') }[currentAppView]];
   visibleContent.filter(element => element && !element.hidden && element.animate).forEach(element => {
     const animation = element.animate([
       { transform: `translateX(${offset}px)`, opacity: 1 },
@@ -1460,7 +1460,7 @@ function navigateToAppView(view, { animate = false } = {}) {
   history.pushState({}, '', url);
   if (animate && previousView !== view && document.startViewTransition
       && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const order = ['home', 'permanent', 'favorites', 'search', 'profile'];
+    const order = ['home', 'permanent', 'favorites', 'search', 'profile', 'partners'];
     document.documentElement.dataset.navigationDirection = order.indexOf(view) > order.indexOf(previousView) ? 'forward' : 'backward';
     const transition = document.startViewTransition(() => {
       applyAppView(view);

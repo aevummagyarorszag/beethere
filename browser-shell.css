@@ -32,9 +32,7 @@
 .browser-promo-info {min-width:0;flex:1;display:flex;flex-direction:column;align-items:flex-start;}
 .browser-promo-mascot {width:clamp(96px,28vw,128px);height:clamp(96px,28vw,128px);aspect-ratio:1;flex:none;object-fit:contain;padding:8px;border-radius:24px;background:#fff;}
 #browser-promo-install {position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;height:32px;padding:0 16px;margin-top:auto;border-radius:16px;background:#007AFF!important;border:0;box-shadow:none!important;color:white;font:700 14px Inter,sans-serif;}
-#browser-promo-install::before {content:"";position:absolute;z-index:-1;pointer-events:none;inset:-80% auto -80% 0;width:40%;background:linear-gradient(90deg,transparent,var(--browser-shine,rgb(255 255 255 / .65)),transparent);transform:translateX(-220%) skewX(-22deg);animation:browser-install-shine 7s ease-in-out infinite;}
 .browser-install-float .browser-motion {z-index:0;}
-@keyframes browser-install-shine {0%,76%{opacity:0;transform:translateX(-220%) skewX(-22deg);}79%{opacity:1;}94%,100%{opacity:0;transform:translateX(520%) skewX(-22deg);}}
 .browser-promo #browser-promo-title {margin:0 0 5px;padding:0;font:700 24px/1.2 Inter,sans-serif;}
 .browser-promo .browser-promo-subtitle {margin:0;color:var(--muted);font-size:14px;line-height:1.4;white-space:nowrap;color:#737780;}
 .browser-promo .browser-promo-version {margin:24px 0 6px;color:#737780;font-size:13px;line-height:1.4;}
@@ -42,7 +40,6 @@
 .browser-promo-rail {display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 0 10px;scrollbar-width:none;}
 .browser-promo-placeholder {flex:0 0 calc(50% - 6px);aspect-ratio:9/16;min-width:0;border:1px solid rgb(30 41 59 / .12);border-radius:18px;background:linear-gradient(150deg,#fff2ed,#eee8fa);scroll-snap-align:start;}
 @media(prefers-reduced-motion:reduce){.browser-menu,#browser-menu-links{transition:none!important;}}
-@media(prefers-reduced-motion:reduce){#browser-promo-install::before{animation:none;opacity:0;}}
 @media(min-width:760px){.browser-brand-row{gap:90px;min-height:164px;}.browser-logo{width:320px;}.browser-promo{max-width:760px;margin-inline:auto!important;}}
 
 .browser-landing #top[hidden] {display:none!important;}
@@ -59,3 +56,7 @@
 #browser-menu-links[hidden] {display:none!important;}
 
 .browser-landing.has-planner-event .browser-install-float {display:none!important;}
+
+.browser-partners {padding-top:96px;padding-bottom:40px;}
+.browser-partners h1 {margin:0 0 18px;font-size:28px;}
+.browser-partners p {margin:0;max-width:620px;font-size:clamp(22px,5vw,34px);line-height:1.4;color:#F0644B;}
