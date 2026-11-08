@@ -4207,7 +4207,7 @@ function setupCityChooser() {
   if (profileCityButton) profileCityButton.addEventListener('click', () => { vibrate(10); openCityDialog(); });
   if (cityDialogClose) cityDialogClose.addEventListener('click', closeCityDialog);
   if (cityDialog) cityDialog.addEventListener('click', event => { if (event.target === cityDialog) closeCityDialog(); });
-  findAll('.city-option').forEach(button => button.addEventListener('click', () => {
+  findAll('.city-option[data-city]').forEach(button => button.addEventListener('click', () => {
     const city = CITIES.find(item => item.name === button.dataset.city);
     triggerBounce(button);
     vibrate(14);

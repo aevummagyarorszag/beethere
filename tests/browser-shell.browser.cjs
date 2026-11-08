@@ -73,14 +73,14 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#browser-event-date').click();assert.equal(await page.evaluate(()=>calendarSelectedDate),'2026-11-12');
  await page.waitForFunction(()=>scrollY>0&&document.querySelector('#browser-menu-toggle').getBoundingClientRect().top<=29);
  assert((await page.locator('#calendar-section').boundingBox()).y<422,'date button scrolls to calendar');
- await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="search"]').click();assert(await page.locator('#search-view').isVisible());assert.equal(await page.locator('.browser-brand').isVisible(),false);
+ await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="search"]').click();assert(await page.locator('#search-view').isVisible());const filterBounds=await page.locator('#search-filter-button').boundingBox(),fixedMenuBounds=await page.locator('#browser-menu-toggle').boundingBox();assert(filterBounds.x+filterBounds.width<fixedMenuBounds.x,'search filter is clear of fixed menu');await page.screenshot({path:'outputs/browser-search-controls.png'});assert.equal(await page.locator('.browser-brand').isVisible(),false);
  await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="home"]').click();
  await page.waitForTimeout(7100);assert.equal(await page.evaluate(()=>window.geoCalls),0,'no automatic geolocation');
- await page.locator('#city-selector').click();await page.locator('#city-use-location').click();assert.equal(await page.evaluate(()=>window.geoCalls),1,'location is explicit');
+ await page.locator('#city-selector').click();assert.equal(await page.locator('#city-options #city-use-location svg.location-icon').count(),1);await page.locator('#city-dialog').screenshot({path:'outputs/browser-city-dialog.png'});await page.locator('#city-use-location').click();assert.equal(await page.evaluate(()=>window.geoCalls),1,'location is explicit');
  await page.screenshot({path:'outputs/browser-landing.png'});
  await page.locator('#browser-floating-install').click();
  await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')),false);assert(await page.locator('#bottom-navigation').isVisible());
- await page.reload();assert.equal(await page.locator('.browser-brand').isVisible(),false,'installed preference survives reload');
+ await page.reload({waitUntil:'domcontentloaded'});assert.equal(await page.locator('.browser-brand').isVisible(),false,'installed preference survives reload');
  const standalone=await browser.newPage({viewport:{width:390,height:844}});
  await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));
  await standalone.goto(`http://127.0.0.1:${server.address().port}/index.html`);

@@ -51,3 +51,7 @@
 #browser-event-date::before {content:"";position:absolute;inset:0;padding:3px;border-radius:inherit;background:var(--browser-eye-gradient);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
 #browser-event-date span {background:var(--browser-eye-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .browser-download-icon {width:.8em;height:.8em;flex:none;object-fit:contain;}
+
+#city-use-location {display:flex;align-items:center;gap:8px;}
+#city-use-location .location-icon {width:18px;height:18px;flex:none;fill:currentColor;}
+.browser-landing #search-view .event-search-field {width:calc(100% - 56px);margin-right:56px;}
