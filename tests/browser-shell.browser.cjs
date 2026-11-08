@@ -52,7 +52,9 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const icon=await page.locator('.browser-download-icon').boundingBox();assert(icon.height<22,'download arrow stays smaller than text size');
  assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','reduced motion disables shine');
  await page.emulateMedia({reducedMotion:'no-preference'});
- for(const id of ['browser-promo-install','browser-floating-install']) assert.equal(await page.locator('#'+id).evaluate(el=>getComputedStyle(el,'::before').animationName),'browser-install-shine');
+ assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'browser-install-shine');
+ assert.equal(await page.locator('#browser-floating-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','floating button uses dots instead of shine');
+ await page.waitForFunction(()=>{const c=document.querySelector('#browser-install-motion');return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.locator('#browser-floating-install').screenshot({path:'outputs/browser-atmo-floating.png'});
  await page.setViewportSize({width:320,height:780});

@@ -44,11 +44,15 @@
     const { context, width, height } = state;
     if (!width || !height) return;
     context.clearRect(0, 0, width, height);
+    const floating = state.canvas.id === 'browser-install-motion';
+    const cycle = (now % 9000) / 9000;
+    if (floating && (reducedMotion.matches || cycle < .66)) return;
+    const sweepCenter = floating ? width * (-.6 + (cycle - .66) / .34 * 2.2) : 0;
     const time = reducedMotion.matches ? 0 : now * .00016;
     // Both sections share the same moving dot field and warm brand palette.
     const spacing = width < 760 ? 5 : 6;
     for (let y = 3; y < height; y += spacing) {
-      if (state.quietArea && y + spacing * .36 > state.quietArea.bottom) break;
+      if (state.quietArea && y + spacing * .36 > state.quietArea.bottom + 12) break;
       for (let x = 3; x < width; x += spacing) {
         const quiet = state.quietArea;
         if (quiet) {
@@ -66,7 +70,8 @@
         const band = field + y / height * .16;
         if (band < .39 || (band < .45 && hash(x, y) > (band - .39) / .06)) continue;
         context.fillStyle = colors[Math.min(3, Math.floor(Math.max(0, band - .44) * 12))];
-        context.globalAlpha = .25 + field * .16;
+        const sweep = floating ? Math.max(0, 1 - Math.abs(x - sweepCenter) / (width * .5)) : 1;
+        context.globalAlpha = (.25 + field * .16) * sweep;
         context.beginPath(); context.arc(x, y, spacing * .36, 0, Math.PI * 2); context.fill();
       }
     }
