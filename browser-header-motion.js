@@ -31,8 +31,8 @@
       const range = document.createRange();
       range.selectNodeContents(text);
       const label = range.getBoundingClientRect();
-      state.quietArea = { left: label.left - bounds.left - 8, right: label.right - bounds.left + 8,
-        top: label.top - bounds.top - 5, bottom: label.bottom - bounds.top + 5 };
+      state.quietArea = { left: label.left - bounds.left, right: label.right - bounds.left,
+        top: label.top - bounds.top, bottom: label.bottom - bounds.top };
     }
     const scale = Math.min(devicePixelRatio || 1, 2);
     state.canvas.width = Math.round(state.width * scale);
@@ -50,7 +50,13 @@
     for (let y = 3; y < height; y += spacing) {
       for (let x = 3; x < width; x += spacing) {
         const quiet = state.quietArea;
-        if (quiet && x >= quiet.left && x <= quiet.right && y >= quiet.top && y <= quiet.bottom) continue;
+        if (quiet) {
+          const dx = Math.max(quiet.left - x, 0, x - quiet.right);
+          const dy = Math.max(quiet.top - y, 0, y - quiet.bottom);
+          // Keep the text clear, with a stable, irregular scatter around its edges.
+          const edge = 4 + noise(x / 23, y / 17) * 12 + hash(x, y) * 4;
+          if (Math.hypot(dx, dy) < edge) continue;
+        }
         const nx = x / 105, ny = y / 85;
         const warp = noise(nx * .65 + time * .3, ny * .7 - time * .2);
         const field = noise(nx + time, ny - time * .8 + warp * 1.5) * .65

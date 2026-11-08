@@ -7,10 +7,10 @@
 .browser-landing .browser-brand {display:block;border-bottom:1px solid rgb(30 41 59 / .12);padding-bottom:18px;}
 .browser-brand-row {display:flex;align-items:center;justify-content:space-between;min-height:128px;padding:28px 8px 0 0;gap:24px;}
 .browser-logo {display:block;width:min(68%,320px);height:auto;object-fit:contain;}
-.browser-date-wrap {position:relative;flex:0 0 54px;}
+.browser-date-wrap {position:relative;flex:0 0 48px;}
 .browser-date-caption {position:absolute;width:180px;height:99px;top:-46px;left:-108px;overflow:visible;fill:var(--browser-coral);font:20px Caveat,cursive;pointer-events:none;}
 .browser-caption-arrow {fill:none;stroke:var(--browser-coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-#browser-event-date {width:54px;height:54px;display:grid;place-items:center;background:transparent!important;border:3px solid var(--browser-eye);border-radius:15px;box-shadow:none!important;color:var(--browser-eye);font:600 28px/1 Inter,sans-serif;}
+#browser-event-date {width:48px;height:48px;display:grid;place-items:center;background:#fff!important;border:3px solid var(--browser-eye);border-radius:14px;box-shadow:none!important;color:var(--browser-eye);font:600 26px/1 Inter,sans-serif;}
 .browser-tagline {margin:-2px 0 0!important;padding-left:4px;color:var(--browser-coral)!important;font:600 clamp(13px,4vw,24px)/1.35 Inter,-apple-system,BlinkMacSystemFont,sans-serif!important;text-align:left;white-space:nowrap;}
 .browser-landing .install-row,.browser-landing #bottom-navigation,.browser-landing #nearby-section,.browser-landing #viewed-section,.browser-landing #recommended-section,.browser-landing #today-section {display:none!important;}
 .browser-landing .browser-menu {display:block;position:fixed;z-index:900;right:12px;top:calc(12px + env(safe-area-inset-top,0px));width:44px;border-radius:22px;background:var(--surface,#fff);box-shadow:0 3px 8px rgb(15 23 42 / .13),0 1px 2px rgb(15 23 42 / .06);transition:width .26s ease,border-radius .26s ease;}
@@ -44,7 +44,7 @@
 
 .browser-landing #top[hidden] {display:none!important;}
 
-.browser-landing #browser-event-date {position:relative;border:0;background:transparent!important;}
+.browser-landing #browser-event-date {position:relative;border:0;background:#fff!important;}
 #browser-event-date::before {content:"";position:absolute;inset:0;padding:3px;border-radius:inherit;background:var(--browser-eye-gradient);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
 #browser-event-date span {background:var(--browser-eye-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .browser-promo-mascot {width:76px;height:76px;}

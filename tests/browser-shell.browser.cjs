@@ -58,7 +58,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
  assert(await page.locator('.browser-tagline').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length===1&&range.getBoundingClientRect().width<=el.clientWidth;}),'tagline fits one line on narrow phones');
- assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','date badge leaves moving background visible');
+ assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','date badge has white interior');
  await page.setViewportSize({width:390,height:844});
 
  await page.evaluate(()=>{events=[];updateBrowserHeader();});assert(await page.locator('#browser-event-date').isDisabled());
