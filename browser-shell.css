@@ -84,3 +84,13 @@
 .partners-form button:disabled {opacity:.5;cursor:not-allowed;}
 .browser-partners .partners-form-status {font-size:14px;color:var(--muted);}
 @media(max-width:600px){.partners-benefits{grid-template-columns:1fr;}}
+
+/* The browser's permanent feed is a faded preview, followed directly by installation. */
+.browser-landing[data-app-view="permanent"] #events-grid {
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgb(0 0 0 / .75) 24%,rgb(0 0 0 / .3) 55%,transparent 94%);
+  mask-image:linear-gradient(to bottom,#000 0%,rgb(0 0 0 / .75) 24%,rgb(0 0 0 / .3) 55%,transparent 94%);
+  pointer-events:none;
+}
+.browser-landing[data-app-view="permanent"] #events-grid > .recommendation-row:not(:first-child),
+.browser-landing[data-app-view="permanent"] :is(#upcoming-section,#calendar-section,#clear-home-filters) {display:none!important;}
+.browser-landing[data-app-view="permanent"] .browser-promo {margin-top:0;}

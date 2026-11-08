@@ -11,7 +11,10 @@
   let fadeFrame;
   function updateBrowserFade() {
     fadeFrame = null;
-    if (!window.isBeeBrowserLanding?.()) return;
+    const grid = document.getElementById('events-grid');
+    const browserLanding = window.isBeeBrowserLanding?.();
+    grid.inert = Boolean(browserLanding && document.body.dataset.appView === 'permanent');
+    if (!browserLanding) return;
     const featured = document.getElementById('featured-section').getBoundingClientRect();
     const firstRow = document.querySelector('#events-grid .recommendation-row') || document.getElementById('events-grid');
     const start = featured.height ? featured.bottom + scrollY : document.getElementById('home-topic-toolbar').getBoundingClientRect().top + scrollY;
