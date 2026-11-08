@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261108-01">
-  <link rel="stylesheet" href="browser-shell.css?v=20261108-18">
+  <link rel="stylesheet" href="browser-shell.css?v=20261108-19">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
   <script defer src="install.js?v=20261108-01"></script>
@@ -194,7 +194,7 @@
       <label><span class="sr-only">Email*</span><input name="email" type="email" autocomplete="email" required placeholder="Email*"></label>
       <label><span class="sr-only">Telefonszám*</span><input name="phone" type="tel" autocomplete="tel" required placeholder="Telefonszám*"></label>
       <label><span class="sr-only">Céged neve*</span><input name="company" autocomplete="organization" required placeholder="Céged neve*"></label>
-      <label class="partners-city-field"><span class="sr-only">Település*</span><select name="city" id="partners-city" autocomplete="address-level2" required><option value="Székesfehérvár" selected>Székesfehérvár</option></select></label>
+      <label class="partners-city-field"><span class="sr-only">Település*</span><input name="city" id="partners-city" autocomplete="address-level2" value="Székesfehérvár" required></label>
       <label class="partners-decision"><input name="decisionMaker" type="checkbox" required><span>A cégben döntéshozó vagyok*</span></label>
       <button type="submit" disabled aria-describedby="partners-form-status">Beküldés</button><p id="partners-form-status" class="partners-form-status">A jelentkezés beküldése hamarosan elérhető.</p>
     </form>
@@ -204,7 +204,7 @@
       <article class="partners-benefit"><span class="partners-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></svg></span><h3>Vásárlók bevonzása</h3><p>A kihasználatlan kapacitásodból bevételt csinálunk. Új vásárlókat szerzünk.</p></article>
       <article class="partners-benefit"><span class="partners-icon partners-free" aria-hidden="true">free</span><h3>Kifizetődő együttműködés</h3><p>A platformra való regisztrálás ingyenes és nincs semmilyen költsége.</p></article>
     </div>
-    <h2>Kiket keresünk?</h2>
+    <h2 class="partners-types-heading">Kiket keresünk?</h2>
     <ul class="partners-types"><li>Koncerteket és fesztiválokat</li><li>Színházakat és mozikat</li><li>Kávézókat és éttermeket</li><li>Élményszolgáltatókat</li><li>Sporteseményeket</li></ul>
   </section>
 
@@ -427,7 +427,7 @@
   <footer id="site-footer" class="site-footer" aria-label="Atmo jogi információk">
     <img src="assets/brand/atmo-logo.svg" alt="Atmo" class="site-footer-logo" width="96" height="32">
     <nav class="site-footer-legal" aria-label="Jogi dokumentumok">
-      <span class="site-footer-legal-group"><span role="link" aria-disabled="true" title="Később lesz elérhető">Általános Szerződési Feltételek</span><span aria-hidden="true">|</span></span>
+      <span class="site-footer-legal-group"><span role="link" aria-disabled="true" title="Később lesz elérhető">ÁSZF</span><span aria-hidden="true">|</span></span>
       <span class="site-footer-legal-group"><span role="link" aria-disabled="true" title="Később lesz elérhető">Adatkezelési Tájékoztató</span><span aria-hidden="true">|</span></span>
       <span role="link" aria-disabled="true" title="Később lesz elérhető">Süti Tájékoztató</span>
     </nav>
