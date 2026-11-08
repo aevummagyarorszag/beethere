@@ -351,17 +351,17 @@ const weatherCache = new Map();
 
 const find = (selector, scope = document) => {
   if (!scope || typeof scope.querySelector !== 'function') {
-    console.warn(`[Bee There] Nem kereshető DOM-környezet: ${selector}`);
+    console.warn(`[Atmo] Nem kereshető DOM-környezet: ${selector}`);
     return null;
   }
   const element = scope.querySelector(selector);
-  if (!element) console.warn(`[Bee There] Hiányzó DOM-elem: ${selector}`);
+  if (!element) console.warn(`[Atmo] Hiányzó DOM-elem: ${selector}`);
   return element;
 };
 
 const findAll = (selector, scope = document) => {
   if (!scope || typeof scope.querySelectorAll !== 'function') {
-    console.warn(`[Bee There] Nem kereshető DOM-környezet: ${selector}`);
+    console.warn(`[Atmo] Nem kereshető DOM-környezet: ${selector}`);
     return [];
   }
   return [...scope.querySelectorAll(selector)];
@@ -880,7 +880,7 @@ async function fetchWeatherForEvent(latitude, longitude, eventDate) {
       const code = data.daily?.weather_code?.[0];
       if (Number.isFinite(temperature)) result = `${getWeatherEmoji(code)} ~${Math.round(temperature)}°C`;
     }
-  } catch (error) { console.warn('[Bee There] Időjárás hiba:', error); }
+  } catch (error) { console.warn('[Atmo] Időjárás hiba:', error); }
   weatherCache.set(cacheKey, result);
   return result;
 }
@@ -896,7 +896,7 @@ function updateQuickDate() {
 
 function initOutroMessage() {
   if (!outroMessage) return;
-  const message = 'A Bee There segít, hogy jól érezd magad bármikor, bárkivel.';
+  const message = 'A Atmo segít, hogy jól érezd magad bármikor, bárkivel.';
   outroMessage.replaceChildren();
   let letterIndex = 0;
   const parts = message.split(/(\s+)/);
@@ -926,7 +926,7 @@ function loadFavorites() {
     if (!Array.isArray(saved)) return new Set();
     return new Set(saved.filter(value => typeof value === 'string' && value.length <= 800).slice(0, MAX_FAVORITES));
   }
-  catch (error) { console.warn('[Bee There] A kedvencek nem olvashatók:', error); return new Set(); }
+  catch (error) { console.warn('[Atmo] A kedvencek nem olvashatók:', error); return new Set(); }
 }
 
 function saveFavorites() {
@@ -935,7 +935,7 @@ function saveFavorites() {
     favoriteIds = new Set(saved);
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(saved));
   }
-  catch (error) { console.warn('[Bee There] A kedvencek nem menthetők:', error); }
+  catch (error) { console.warn('[Atmo] A kedvencek nem menthetők:', error); }
 }
 
 function loadFavoriteNotes() {
@@ -947,7 +947,7 @@ function loadFavoriteNotes() {
       .slice(0, MAX_FAVORITES)
       .map(([key, value]) => [key, value.slice(0, 5000)]));
   } catch (error) {
-    console.warn('[Bee There] A kedvencek jegyzetei nem olvashatók:', error);
+    console.warn('[Atmo] A kedvencek jegyzetei nem olvashatók:', error);
     return {};
   }
 }
@@ -956,7 +956,7 @@ function saveFavoriteNotes() {
   try {
     localStorage.setItem(FAVORITE_NOTES_STORAGE_KEY, JSON.stringify(favoriteNotes));
   } catch (error) {
-    console.warn('[Bee There] A kedvencek jegyzetei nem menthetők:', error);
+    console.warn('[Atmo] A kedvencek jegyzetei nem menthetők:', error);
   }
 }
 
@@ -969,7 +969,7 @@ function loadEventRatings() {
       .slice(0, 300)
       .map(([key, value]) => [key, Number(value)]));
   } catch (error) {
-    console.warn('[Bee There] Az eseményértékelések nem olvashatók:', error);
+    console.warn('[Atmo] Az eseményértékelések nem olvashatók:', error);
     return {};
   }
 }
@@ -978,7 +978,7 @@ function saveEventRatings() {
   try {
     localStorage.setItem(EVENT_RATINGS_STORAGE_KEY, JSON.stringify(eventRatings));
   } catch (error) {
-    console.warn('[Bee There] Az eseményértékelés nem menthető:', error);
+    console.warn('[Atmo] Az eseményértékelés nem menthető:', error);
   }
 }
 
@@ -988,7 +988,7 @@ function loadPointAwards() {
     const validKeys = value => Array.isArray(value) ? value.filter(key => typeof key === 'string' && key.length <= 800).slice(0, 500) : [];
     return { pastFavorites: new Set(validKeys(saved.pastFavorites)), shares: new Set(validKeys(saved.shares)) };
   } catch (error) {
-    console.warn('[Bee There] A pontok nem olvashatók:', error);
+    console.warn('[Atmo] A pontok nem olvashatók:', error);
     return { pastFavorites: new Set(), shares: new Set() };
   }
 }
@@ -997,7 +997,7 @@ function savePointAwards() {
   try {
     localStorage.setItem(POINTS_STORAGE_KEY, JSON.stringify({ pastFavorites: [...pointAwards.pastFavorites], shares: [...pointAwards.shares] }));
   } catch (error) {
-    console.warn('[Bee There] A pontok nem menthetők:', error);
+    console.warn('[Atmo] A pontok nem menthetők:', error);
   }
 }
 
@@ -1070,7 +1070,7 @@ function loadNegativeFeedback() {
       .slice(0, 300)
       .map(([key, value]) => [key, Math.max(0, Math.min(20, Number(value)))]));
   } catch (error) {
-    console.warn('[Bee There] A negatív visszajelzések nem olvashatók:', error);
+    console.warn('[Atmo] A negatív visszajelzések nem olvashatók:', error);
     return {};
   }
 }
@@ -1081,7 +1081,7 @@ function recordNegativeFeedback(event) {
   try {
     localStorage.setItem(NEGATIVE_FEEDBACK_STORAGE_KEY, JSON.stringify(negativeFeedback));
   } catch (error) {
-    console.warn('[Bee There] A negatív visszajelzés nem menthető:', error);
+    console.warn('[Atmo] A negatív visszajelzés nem menthető:', error);
   }
 }
 
@@ -1094,7 +1094,7 @@ function loadDetailInterestWeights() {
       .slice(0, 300)
       .map(([trait, value]) => [trait, Math.max(0, Math.min(5, Number(value)))]));
   } catch (error) {
-    console.warn('[Bee There] A részletekből tanult beállítások nem olvashatók:', error);
+    console.warn('[Atmo] A részletekből tanult beállítások nem olvashatók:', error);
     return {};
   }
 }
@@ -1111,7 +1111,7 @@ function recordDetailInterest(event) {
   try {
     localStorage.setItem(DETAIL_INTEREST_STORAGE_KEY, JSON.stringify(detailInterestWeights));
   } catch (error) {
-    console.warn('[Bee There] A részletekből tanult beállítások nem menthetők:', error);
+    console.warn('[Atmo] A részletekből tanult beállítások nem menthetők:', error);
   }
 }
 
@@ -2514,7 +2514,7 @@ function setupCarousel(carousel) {
 }
 
 function scrollCarousel(carousel, direction) {
-  if (!carousel) { console.warn('[Bee There] A lapozható eseménysáv nem található.'); return; }
+  if (!carousel) { console.warn('[Atmo] A lapozható eseménysáv nem található.'); return; }
   if (carousel._stepPage) { carousel._stepPage(direction); return; }
   carousel.scrollBy({ left: direction * carousel.clientWidth * 0.82, behavior: 'smooth' });
 }
@@ -2735,7 +2735,7 @@ function openInlineDetails(card, event, button) {
 }
 
 function renderCard(event, target, { compact = false } = {}) {
-  if (!template || !template.content || !target) { console.warn('[Bee There] Az eseménykártya sablonja vagy célhelye hiányzik.'); return; }
+  if (!template || !template.content || !target) { console.warn('[Atmo] Az eseménykártya sablonja vagy célhelye hiányzik.'); return; }
   const fragment = template.content.cloneNode(true);
   const card = find('.event-card', fragment);
   const image = find('.event-image', fragment);
@@ -3768,7 +3768,7 @@ function createCalendarFilters() {
 }
 async function shareEvent(event) {
   const url = eventShareUrl(event);
-  const data = { title: event.Title || 'Bee There esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
+  const data = { title: event.Title || 'Atmo esemény', text: `${event.Title || 'Esemény'} – ${eventDateOnly(event)}`, url };
   try {
     if (navigator.share) {
       await navigator.share(data);
@@ -3787,7 +3787,7 @@ async function shareEvent(event) {
     } else throw new Error('Clipboard unavailable');
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      console.warn('[Bee There] A megosztás nem sikerült:', error);
+      console.warn('[Atmo] A megosztás nem sikerült:', error);
       showSnackbar('Nem sikerült a megosztás.', { actionLabel: 'Újra', action: () => shareEvent(event) });
     }
   }
@@ -4232,7 +4232,7 @@ function setupCityChooser() {
 function initPixelBlast() {
   if (!pixelBlast) return;
   const context = pixelBlast.getContext('2d');
-  if (!context) { console.warn('[Bee There] A PixelBlast háttér nem indítható.'); return; }
+  if (!context) { console.warn('[Atmo] A PixelBlast háttér nem indítható.'); return; }
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let width = 0;
   let height = 0;
@@ -4314,7 +4314,7 @@ function setupProfileSettings() {
     const savedTransport = localStorage.getItem(TRANSPORT_STORAGE_KEY);
     if (['car', 'walk', 'transit'].includes(savedTransport)) selectedTransport = savedTransport;
   } catch (error) {
-    console.warn('[Bee There] A közlekedési mód nem olvasható:', error);
+    console.warn('[Atmo] A közlekedési mód nem olvasható:', error);
   }
   const selectTransport = value => {
     buttons.forEach(button => button.setAttribute('aria-checked', String(button.dataset.transport === value)));
@@ -4330,7 +4330,7 @@ function setupProfileSettings() {
     try {
       localStorage.setItem(TRANSPORT_STORAGE_KEY, selectedTransport);
     } catch (error) {
-      console.warn('[Bee There] A közlekedési mód nem menthető:', error);
+      console.warn('[Atmo] A közlekedési mód nem menthető:', error);
     }
     renderEvents();
   }));
@@ -4354,7 +4354,7 @@ function setupProfileSettings() {
     const savedBudget = saved.budget === 'free' ? 1000 : saved.budget === 'any' ? 20000 : Number(saved.budget);
     profilePreferences.budget = Number.isFinite(savedBudget) && savedBudget >= 1000 && savedBudget <= 20000 ? savedBudget : 20000;
   } catch (error) {
-    console.warn('[Bee There] A személyes beállítások nem olvashatók:', error);
+    console.warn('[Atmo] A személyes beállítások nem olvashatók:', error);
   }
 
   const preferenceGroups = findAll('.preference-group');
@@ -4394,7 +4394,7 @@ function setupProfileSettings() {
     try {
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
     } catch (error) {
-      console.warn('[Bee There] A személyes beállítások nem menthetők:', error);
+      console.warn('[Atmo] A személyes beállítások nem menthetők:', error);
     }
     updateProfileFilterSummary();
     renderEvents();
@@ -4417,7 +4417,7 @@ function setupProfileSettings() {
       try {
         localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
       } catch (error) {
-        console.warn('[Bee There] A személyes beállítások nem menthetők:', error);
+        console.warn('[Atmo] A személyes beállítások nem menthetők:', error);
       }
       updateProfileFilterSummary();
       syncQuickCalendarShortcut();
@@ -4433,7 +4433,7 @@ function setupProfileSettings() {
     try {
       localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePreferences));
     } catch (error) {
-      console.warn('[Bee There] A személyes beállítások nem menthetők:', error);
+      console.warn('[Atmo] A személyes beállítások nem menthetők:', error);
     }
     renderEvents();
     triggerBounce(clearProfileFilters);
@@ -4457,7 +4457,7 @@ function loadAccountSettings() {
 }
 
 function saveAccountSettings() {
-  try { localStorage.setItem(ACCOUNT_SETTINGS_STORAGE_KEY, JSON.stringify(accountSettings)); } catch (error) { console.warn('[Bee There] A fiókbeállítások nem menthetők:', error); }
+  try { localStorage.setItem(ACCOUNT_SETTINGS_STORAGE_KEY, JSON.stringify(accountSettings)); } catch (error) { console.warn('[Atmo] A fiókbeállítások nem menthetők:', error); }
 }
 
 function applyTheme() {
@@ -4471,7 +4471,7 @@ function requestGeolocation() {
     const nearest = closestCity(coordsResult.coords);
     setCity({ latitude: coordsResult.coords.latitude, longitude: coordsResult.coords.longitude, name: nearest?.name || 'GPS-helyzet' });
   }, error => {
-    console.warn('[Bee There] Helymeghatározás nem elérhető:', error.message);
+    console.warn('[Atmo] Helymeghatározás nem elérhető:', error.message);
     if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';
     if (citySelectorLabel) citySelectorLabel.textContent = 'Válassz várost';
   }, { maximumAge: 300000, timeout: 10000 });
@@ -4568,7 +4568,7 @@ function initSideRays() {
   const canvas = find('#side-rays');
   if (!canvas) return;
   const context = canvas.getContext('2d');
-  if (!context) { console.warn('[Bee There] A Side Rays effekt nem indítható ezen a böngészőn.'); return; }
+  if (!context) { console.warn('[Atmo] A Side Rays effekt nem indítható ezen a böngészőn.'); return; }
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let width = 0;
   let height = 0;
@@ -4634,7 +4634,7 @@ async function loadEvents() {
     const sharedEvent = requestedEvent ? [...events, ...permanentEvents].find(event => eventSlug(event) === requestedEvent) : null;
     if (sharedEvent) window.setTimeout(() => openEventDetails(sharedEvent, null, { updateUrl: false }), 0);
   } catch (error) {
-    console.error('[Bee There] Eseménybetöltési hiba:', error);
+    console.error('[Atmo] Eseménybetöltési hiba:', error);
     if (permanentGrid) permanentGrid.textContent = 'A programok most nem tölthetők be. Kérjük, frissítsd az oldalt.';
     if (grid) grid.innerHTML = '<div class="location-empty">Az események betöltéséhez engedélyezd a lokációd vagy válassz várost!</div>';
   }

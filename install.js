@@ -74,10 +74,8 @@
     document.body.classList.remove('install-guide-open');
   });
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js', { scope: './' })
-        .catch(error => console.warn('[Bee There] Service worker regisztráció sikertelen:', error));
-    }, { once: true });
+    navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
+      .catch(error => console.warn('[Atmo] Service worker regisztráció sikertelen:', error));
   }
   button.addEventListener('click', async () => {
     if (button.hidden || button.disabled) return;

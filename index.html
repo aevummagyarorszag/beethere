@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Események, amelyekért érdemes elindulni.">
+  <meta name="description" content="Események egy helyen, neked rendezve!">
   <!-- GitHub Pages cannot set server headers. These browser-enforced policies
        still restrict the static app to its required resources. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; media-src 'self'; connect-src 'self' https://api.open-meteo.com https://archive-api.open-meteo.com; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), payment=(), usb=()">
-  <title>Bee There — Események</title>
-  <link rel="manifest" href="./manifest.webmanifest">
+  <title>Atmo — Események</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=atmo-1">
   <meta name="theme-color" content="#f5f5f7">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Bee There">
-  <link rel="apple-touch-icon" href="assets/icons/bee-there-180.png">
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" href="assets/beethere_navmark.png">
+  <meta name="apple-mobile-web-app-title" content="Atmo">
+  <link rel="apple-touch-icon" href="assets/icons/atmo-180.png">
+  <link rel="icon" href="favicon.ico?v=atmo-1" sizes="any">
+  <link rel="icon" type="image/png" href="assets/icons/atmo-32.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,11 +28,11 @@
   <link rel="stylesheet" href="browser-shell.css?v=20261108-19">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
-  <script defer src="install.js?v=20261108-01"></script>
+  <script defer src="install.js?v=20261108-02"></script>
 </head>
 <body>
   <div class="browser-menu" id="browser-menu"><button id="browser-menu-toggle" type="button" aria-label="Menü" aria-expanded="false" aria-controls="browser-menu-links"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><nav id="browser-menu-links" aria-label="Weboldal navigáció" hidden inert><button data-browser-view="home">Főoldal</button><button data-browser-view="permanent">Állandó</button><button data-browser-view="search">Keresés</button><button data-browser-view="partners">Partnereknek</button></nav></div>
-  <button id="browser-floating-install" class="browser-install-float" type="button" aria-label="Bee There telepítése"><canvas id="browser-install-motion" class="browser-motion" aria-hidden="true"></canvas><img src="assets/brand/atmo-mascot-peek.svg?v=20261108-03" alt=""></button>
+  <button id="browser-floating-install" class="browser-install-float" type="button" aria-label="Atmo telepítése"><canvas id="browser-install-motion" class="browser-motion" aria-hidden="true"></canvas><img src="assets/brand/atmo-mascot-peek.svg?v=20261108-03" alt=""></button>
 
   <header class="hero" id="top" data-home-content>
     <canvas id="browser-header-motion" class="browser-motion" aria-hidden="true"></canvas>
@@ -42,7 +42,7 @@
     </div>
 
     <div class="hero-content wrapper">
-      <h1 class="sr-only">Bee There – Események</h1>
+      <h1 class="sr-only">Atmo – Események</h1>
     </div>
   </header>
   <section class="quick-navigation wrapper" data-home-content aria-label="Gyors navigáció">
@@ -50,10 +50,10 @@
     <time id="quick-date" class="quick-date" aria-label="Mai dátum"></time>
   </section>
   <div class="wrapper install-row" data-home-content>
-    <button class="install-action" id="install-app" type="button" hidden><img src="assets/icons/bee-there-180.png" alt="">Bee There telepítése</button>
+    <button class="install-action" id="install-app" type="button" hidden><img src="assets/icons/atmo-180.png" alt="">Atmo telepítése</button>
   </div>
-  <dialog id="pwa-install-modal" aria-label="Bee There telepítése">
-    <pwa-install manual-apple manual-chrome disable-screenshots manifest-url="./manifest.webmanifest"></pwa-install>
+  <dialog id="pwa-install-modal" aria-label="Atmo telepítése">
+    <pwa-install manual-apple manual-chrome disable-screenshots manifest-url="./manifest.webmanifest?v=atmo-1"></pwa-install>
   </dialog>
   <div class="home-section-divider wrapper" data-home-content aria-hidden="true"></div>
 
@@ -149,7 +149,7 @@
       <article class="event-card">
         <div class="image-wrap">
           <img class="event-image" alt="" loading="lazy">
-          <div class="image-placeholder"><span>Bee There / esemény</span><strong class="placeholder-title"></strong></div>
+          <div class="image-placeholder"><span>Atmo / esemény</span><strong class="placeholder-title"></strong></div>
           <span class="distance-pill" aria-label="Távolság"><span class="distance-value">---</span></span>
           <button class="favorite-button" type="button" aria-label="Esemény kedvelése" aria-pressed="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
@@ -434,7 +434,7 @@
     <p class="site-footer-pending">A dokumentumok később lesznek elérhetők.</p>
     <p class="site-footer-copyright">Copyright © 2026 by Atmo</p>
   </footer>
-  <script src="script.js?v=20261108-04"></script>
+  <script src="script.js?v=20261108-05"></script>
   <script src="browser-shell.js?v=20261108-10"></script>
   <script src="browser-header-motion.js?v=20261108-11"></script>
   <script src="planner-calendar.js?v=20261108-01"></script>
