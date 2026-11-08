@@ -73,16 +73,26 @@
 .partners-icon svg {width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .partners-benefit h3 {font-size:18px;line-height:1.4;margin:0 0 12px;}
 .partners-types {padding-left:22px;margin:0 0 28px;font-size:16px;line-height:2;}
+.partners-application {max-width:760px;padding:28px 24px;margin:24px 0 32px;border-radius:24px;background:radial-gradient(circle,rgb(255 255 255 / .04) 1px,transparent 1.5px) 0 0 / 24px 24px,linear-gradient(130deg,#203f5c,#4079a7);}
+.browser-partners .partners-application .partners-notice {color:#add2ec;margin:0 0 28px;}
+.partners-free {font:700 18px Inter,sans-serif;}
 .partners-form {display:grid;gap:16px;max-width:620px;}
 .partners-form label {display:grid;gap:7px;font-size:14px;color:var(--text);}
 .partners-name-fields {display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;}
 .partners-name-fields label {min-width:0;}
-.partners-form :is(input:not([type="checkbox"]),select) {box-sizing:border-box;min-width:0;width:100%;min-height:48px;padding:10px 14px;border:1px solid #d6d9df;border-radius:16px;background:var(--surface,#fff);color:var(--text);font:400 16px Inter,sans-serif;}
-.partners-form .partners-decision {display:flex;align-items:center;gap:10px;min-height:44px;}
-.partners-decision input {width:20px;height:20px;accent-color:#F0644B;}
-.partners-form button {justify-self:start;min-height:44px;padding:0 24px;border:0;border-radius:22px;background:#007AFF;color:#fff;font:600 15px Inter,sans-serif;}
+.partners-form :is(input:not([type="checkbox"]),select) {box-sizing:border-box;min-width:0;width:100%;min-height:56px;padding:14px 16px;border:0;border-radius:20px;background:#edf0f4;color:#263344;font:400 16px Inter,sans-serif;}
+.partners-form input::placeholder {color:#8d96a4;opacity:1;}
+.partners-city-field {position:relative;}
+.partners-city-field input {padding-right:42px!important;}
+.partners-city-field::after {content:"";position:absolute;right:20px;top:22px;width:8px;height:8px;border:solid #8d96a4;border-width:0 2px 2px 0;transform:rotate(45deg);pointer-events:none;}
+.partners-form .partners-decision {display:flex;align-items:center;gap:10px;min-height:44px;color:#fff;font-size:16px;}
+.partners-decision input {appearance:none;flex:none;width:20px;height:20px;border:1.5px solid #fff;border-radius:50%;background:transparent;display:grid;place-items:center;}
+.partners-decision input:checked {background:#3e88d5;}
+.partners-decision input:checked::after {content:"✓";color:#fff;font-size:14px;}
+.partners-form input:focus-visible {outline:3px solid #a8d4ff;outline-offset:3px;}
+.partners-form button {justify-self:start;min-height:48px;padding:0 28px;border:0;border-radius:24px;background:#3e88d5;color:#fff;font:700 18px Inter,sans-serif;}
 .partners-form button:disabled {opacity:.5;cursor:not-allowed;}
-.browser-partners .partners-form-status {font-size:14px;color:var(--muted);}
+.browser-partners .partners-form-status {font-size:14px;color:#d4e8f5;}
 @media(max-width:600px){.partners-benefits{grid-template-columns:1fr;}}
 
 /* The browser's permanent feed is a faded preview, followed directly by installation. */
@@ -94,3 +104,5 @@
 .browser-landing[data-app-view="permanent"] #events-grid > .recommendation-row:not(:first-child),
 .browser-landing[data-app-view="permanent"] :is(#upcoming-section,#calendar-section,#clear-home-filters) {display:none!important;}
 .browser-landing[data-app-view="permanent"] .browser-promo {margin-top:0;}
+
+@media(max-width:360px){.partners-application{padding:24px 16px;}.partners-name-fields{gap:10px;}}

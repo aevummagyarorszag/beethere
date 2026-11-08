@@ -91,7 +91,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.screenshot({path:'outputs/browser-landing.png'});
  await page.locator('#browser-floating-install').click();
  await page.evaluate(()=>dispatchEvent(new Event('appinstalled')));assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('browser-landing')),false);assert(await page.locator('#bottom-navigation').isVisible());
- await page.evaluate(()=>{position={latitude:47.6875,longitude:17.6504};navigateToAppView('permanent');});await page.waitForFunction(()=>!document.querySelector('#events-grid').inert);await page.waitForFunction(()=>[...document.querySelectorAll('#events-grid > .recommendation-row')].filter(el=>el.getClientRects().length).length===2);assert.equal(await page.locator('#events-grid > .recommendation-row:visible').count(),2,'installed app retains all event rows');assert(await page.locator('#calendar-section').isVisible());
+ await page.evaluate(()=>{position={latitude:47.6875,longitude:17.6504};navigateToAppView('permanent');});await page.waitForFunction(()=>!document.querySelector('#events-grid').inert);await page.waitForFunction(()=>[...document.querySelectorAll('#events-grid > .recommendation-row')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden').length===2);assert(await page.locator('#calendar-section').isVisible());
  await page.reload({waitUntil:'domcontentloaded'});assert.equal(await page.locator('.browser-brand').isVisible(),false,'installed preference survives reload');
  const standalone=await browser.newPage({viewport:{width:390,height:844}});
  await standalone.addInitScript(()=>Object.defineProperty(navigator,'standalone',{value:true}));

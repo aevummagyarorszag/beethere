@@ -25,7 +25,7 @@
     <link rel="stylesheet" href="home-filters.css?v=20260930-05">
     <link rel="stylesheet" href="home-redesign.css?v=20261012-128">
     <link rel="stylesheet" href="featured-card.css?v=20261108-01">
-  <link rel="stylesheet" href="browser-shell.css?v=20261108-15">
+  <link rel="stylesheet" href="browser-shell.css?v=20261108-16">
   <link rel="stylesheet" href="install.css?v=20261105-06">
   <script defer src="assets/vendor/pwa-install-0.7.0/pwa-install.bundle.js?v=20261105-06"></script>
   <script defer src="install.js?v=20261108-01"></script>
@@ -187,23 +187,25 @@
   <section id="partners-view" class="app-view wrapper browser-partners" hidden aria-labelledby="partners-title">
     <h1 id="partners-title">Partnereknek</h1>
     <p class="partners-intro">Összekötünk az élményeket kereső fiatalokkal.</p>
+    <div class="partners-application">
     <p class="partners-notice">Ez az űrlap KIZÁRÓLAG csatlakozni kívánó partnerek számára van fenntartva. Ha partnert szeretnél ajánlani, azt kérlek egyéb elérhetőségeinken tedd meg. Az itt leadott ajánlásokat sajnos nincs módunkban figyelembe venni.</p>
-    <h2>Miért éri meg csatlakozni?</h2>
-    <div class="partners-benefits">
-      <article class="partners-benefit"><span class="partners-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></svg></span><h3>Vásárlók bevonzása</h3><p>A kihasználatlan kapacitásodból bevételt csinálunk. Új vásárlókat szerzünk.</p></article>
-      <article class="partners-benefit"><span class="partners-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="6"/><path d="M9 6v6M7 6h2M16 10a6 6 0 1 1-6 6M17 14v5"/></svg></span><h3>Kifizetődő együttműködés</h3><p>A platformra való regisztrálás ingyenes és csak a valódi vásárlások után kapunk jutalékot.</p></article>
-    </div>
-    <h2>Kiket keresünk?</h2>
-    <ul class="partners-types"><li>Koncerteket és fesztiválokat</li><li>Színházakat és mozikat</li><li>Kávézókat és éttermeket</li><li>Élményszolgáltatókat</li><li>Sporteseményeket</li></ul>
     <form id="partners-form" class="partners-form" aria-label="Partnerjelentkezés">
-      <div class="partners-name-fields"><label><span>Vezetéknév*</span><input name="lastName" autocomplete="family-name" required></label><label><span>Keresztnév*</span><input name="firstName" autocomplete="given-name" required></label></div>
-      <label><span>Email*</span><input name="email" type="email" autocomplete="email" required></label>
-      <label><span>Telefonszám*</span><input name="phone" type="tel" autocomplete="tel" required></label>
-      <label><span>Céged neve*</span><input name="company" autocomplete="organization" required></label>
-      <label><span>Település*</span><input name="city" id="partners-city" list="partners-cities" autocomplete="address-level2" placeholder="Válassz települést" required><datalist id="partners-cities"></datalist></label>
+      <div class="partners-name-fields"><label><span class="sr-only">Vezetéknév*</span><input name="lastName" autocomplete="family-name" required placeholder="Vezetéknév*"></label><label><span class="sr-only">Keresztnév*</span><input name="firstName" autocomplete="given-name" required placeholder="Keresztnév*"></label></div>
+      <label><span class="sr-only">Email*</span><input name="email" type="email" autocomplete="email" required placeholder="Email*"></label>
+      <label><span class="sr-only">Telefonszám*</span><input name="phone" type="tel" autocomplete="tel" required placeholder="Telefonszám*"></label>
+      <label><span class="sr-only">Céged neve*</span><input name="company" autocomplete="organization" required placeholder="Céged neve*"></label>
+      <label class="partners-city-field"><span class="sr-only">Település*</span><input name="city" id="partners-city" list="partners-cities" autocomplete="address-level2" placeholder="Válassz települést*" required><datalist id="partners-cities"></datalist></label>
       <label class="partners-decision"><input name="decisionMaker" type="checkbox" required><span>A cégben döntéshozó vagyok*</span></label>
       <button type="submit" disabled aria-describedby="partners-form-status">Beküldés</button><p id="partners-form-status" class="partners-form-status">A jelentkezés beküldése hamarosan elérhető.</p>
     </form>
+    </div>
+    <h2>Miért éri meg csatlakozni?</h2>
+    <div class="partners-benefits">
+      <article class="partners-benefit"><span class="partners-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></svg></span><h3>Vásárlók bevonzása</h3><p>A kihasználatlan kapacitásodból bevételt csinálunk. Új vásárlókat szerzünk.</p></article>
+      <article class="partners-benefit"><span class="partners-icon partners-free" aria-hidden="true">free</span><h3>Kifizetődő együttműködés</h3><p>A platformra való regisztrálás ingyenes és nincs semmilyen költsége.</p></article>
+    </div>
+    <h2>Kiket keresünk?</h2>
+    <ul class="partners-types"><li>Koncerteket és fesztiválokat</li><li>Színházakat és mozikat</li><li>Kávézókat és éttermeket</li><li>Élményszolgáltatókat</li><li>Sporteseményeket</li></ul>
   </section>
 
   <section id="search-view" class="app-view wrapper" hidden aria-label="Keresés">
