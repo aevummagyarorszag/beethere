@@ -12,6 +12,9 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert(await page.locator('.browser-brand').isVisible());assert.equal(await page.locator('#bottom-navigation').isVisible(),false);
  assert((await page.locator('#events-grid .event-card').count())>0,'public feed works without location');
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
+ assert.equal(await page.locator('#browser-menu-links [data-browser-view=profile]').count(),0);
+ assert(await page.locator('#browser-menu-links').isHidden());
+ await page.mouse.click(365,165);assert.equal(await page.evaluate(()=>currentAppView),'home','closed menu cannot navigate from invisible right-side regions');
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
  const originalMenuTop=(await page.locator('#browser-menu-toggle').boundingBox()).y;
  assert.equal(originalMenuTop,28,'menu starts at fixed top-right position');

@@ -35,7 +35,7 @@
   }
   document.fonts?.ready.then(alignDateArrow);
   window.addEventListener('resize', alignDateArrow);
-  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; }
+  function closeMenu() { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); links.inert = true; links.hidden = true; }
   window.isBeeBrowserLanding = () => !installed && !mode.matches && navigator.standalone !== true;
   function syncMode() {
     if (mode.matches || navigator.standalone === true) {
@@ -61,8 +61,9 @@
   toggle.addEventListener('click', () => {
     const open = !menu.classList.contains('is-open');
     menu.classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', String(open)); links.inert = !open;
+    links.hidden = !open;
   });
-  links.querySelectorAll('[data-browser-view]').forEach(button => button.addEventListener('click', () => { closeMenu(); navigateToAppView(button.dataset.browserView, { animate: true }); }));
+  links.querySelectorAll('[data-browser-view]').forEach(button => button.addEventListener('click', () => { if (!menu.classList.contains('is-open')) return; closeMenu(); navigateToAppView(button.dataset.browserView, { animate: true }); }));
   document.addEventListener('pointerdown', event => { if (!menu.contains(event.target)) closeMenu(); }, { capture: true });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && menu.classList.contains('is-open')) { closeMenu(); toggle.focus({ preventScroll: true }); } });
   for (const id of ['browser-floating-install', 'browser-promo-install']) document.getElementById(id).addEventListener('click', () => document.getElementById('install-app').click());

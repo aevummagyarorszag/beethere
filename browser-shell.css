@@ -18,11 +18,11 @@
 #browser-menu-toggle:focus:not(:focus-visible) {outline:none;}
 #browser-menu-toggle:focus-visible {outline:2px solid var(--browser-coral);outline-offset:-4px;}
 #browser-menu-toggle svg {width:22px;height:22px;stroke:currentColor;stroke-width:2;stroke-linecap:round;fill:none;}
-#browser-menu-links {display:grid;max-height:0;overflow:hidden;opacity:0;transform:translateY(-8px);transform-origin:top right;transition:max-height .3s ease,opacity .2s ease,transform .3s ease;}
+#browser-menu-links {display:grid;max-height:0;overflow:hidden;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-8px);transform-origin:top right;transition:max-height .3s ease,opacity .2s ease,transform .3s ease;}
 #browser-menu-links button {height:40px;min-height:40px;text-align:left;padding:10px 12px;border:0;background:transparent!important;box-shadow:none!important;color:var(--text);font:600 13px Inter,sans-serif;white-space:nowrap;}
 .browser-landing .browser-menu.is-open {width:144px;border-radius:18px;}
 .browser-menu.is-open #browser-menu-toggle {position:absolute;top:0;right:0;z-index:1;}
-.browser-menu.is-open #browser-menu-links {max-height:206px;opacity:1;transform:none;padding-bottom:6px;}
+.browser-menu.is-open #browser-menu-links {max-height:166px;opacity:1;visibility:visible;pointer-events:auto;transform:none;padding-bottom:6px;}
 .browser-menu.is-open #browser-menu-links button:first-child {padding-right:46px;}
 .browser-landing .browser-install-float {display:block;position:fixed;z-index:800;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border:0;border-radius:50%;background:var(--surface,#fff)!important;box-shadow:0 4px 12px rgb(30 41 59 / .22),0 10px 28px rgb(30 41 59 / .18)!important;padding:0;overflow:hidden;isolation:isolate;}
 .browser-install-float img {position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;}
@@ -31,7 +31,7 @@
 .browser-promo-action {display:flex;align-items:stretch;gap:16px;}
 .browser-promo-info {min-width:0;flex:1;display:flex;flex-direction:column;align-items:flex-start;}
 .browser-promo-mascot {width:clamp(96px,28vw,128px);height:clamp(96px,28vw,128px);aspect-ratio:1;flex:none;object-fit:contain;padding:8px;border-radius:24px;background:#fff;}
-#browser-promo-install {position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;margin-top:auto;border-radius:22px;background:#007AFF!important;border:0;box-shadow:none!important;color:white;font:700 15px Inter,sans-serif;}
+#browser-promo-install {position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;height:32px;padding:0 16px;margin-top:auto;border-radius:16px;background:#007AFF!important;border:0;box-shadow:none!important;color:white;font:700 14px Inter,sans-serif;}
 #browser-promo-install::before {content:"";position:absolute;z-index:-1;pointer-events:none;inset:-80% auto -80% 0;width:40%;background:linear-gradient(90deg,transparent,var(--browser-shine,rgb(255 255 255 / .65)),transparent);transform:translateX(-220%) skewX(-22deg);animation:browser-install-shine 7s ease-in-out infinite;}
 .browser-install-float .browser-motion {z-index:0;}
 @keyframes browser-install-shine {0%,76%{opacity:0;transform:translateX(-220%) skewX(-22deg);}79%{opacity:1;}94%,100%{opacity:0;transform:translateX(520%) skewX(-22deg);}}
@@ -55,3 +55,5 @@
 #city-use-location {display:flex;align-items:center;gap:8px;}
 #city-use-location .location-icon {width:18px;height:18px;flex:none;fill:currentColor;}
 .browser-landing #search-view .event-search-field {width:calc(100% - 56px);margin-right:56px;}
+
+#browser-menu-links[hidden] {display:none!important;}

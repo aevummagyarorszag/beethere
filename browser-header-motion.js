@@ -26,6 +26,12 @@
     const bounds = state.canvas.getBoundingClientRect();
     state.width = bounds.width; state.height = bounds.height;
     state.quietArea = null;
+    state.descriptionArea = null;
+    if (state.canvas.id === 'browser-promo-motion') {
+      const description = state.area.querySelector('.browser-promo-description').getBoundingClientRect();
+      state.descriptionArea = { left: description.left - bounds.left - 8, right: description.right - bounds.left + 8,
+        top: description.top - bounds.top - 8, bottom: description.bottom - bounds.top + 8 };
+    }
     if (state.canvas.id === 'browser-header-motion') {
       const text = state.area.querySelector('.browser-tagline');
       const range = document.createRange();
@@ -54,6 +60,9 @@
     for (let y = 3; y < height; y += spacing) {
       if (state.quietArea && y + spacing * .36 > state.quietArea.bottom + 24) break;
       for (let x = 3; x < width; x += spacing) {
+        const description = state.descriptionArea;
+        if (description && x >= description.left && x <= description.right && y >= description.top && y <= description.bottom
+          && noise(x / 60 + time * 1.8, y / 55 - time) > .32) continue;
         const quiet = state.quietArea;
         if (quiet && y > quiet.bottom + 10 && hash(x + 71, y + 19) > .65 - (y - quiet.bottom - 10) / 28) continue;
         if (quiet) {
