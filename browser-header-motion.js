@@ -54,7 +54,7 @@
           const dx = Math.max(quiet.left - x, 0, x - quiet.right);
           const dy = Math.max(quiet.top - y, 0, y - quiet.bottom);
           // Keep the text clear, with a stable, irregular scatter around its edges.
-          const edge = 4 + noise(x / 23, y / 17) * 12 + hash(x, y) * 4;
+          const edge = 2 + noise(x / 23, y / 17) * 6 + hash(x, y) ** 2 * 14;
           if (Math.hypot(dx, dy) < edge) continue;
         }
         const nx = x / 105, ny = y / 85;
