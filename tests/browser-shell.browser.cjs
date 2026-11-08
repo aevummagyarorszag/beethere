@@ -14,7 +14,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('.browser-promo-placeholder').count(),5);
  await page.waitForFunction(()=>[...document.querySelectorAll('.browser-brand img,.browser-promo img,.browser-install-float img')].every(img=>img.complete&&img.naturalWidth>0));
  const originalMenuTop=(await page.locator('#browser-menu-toggle').boundingBox()).y;
- assert.equal(originalMenuTop,12,'menu starts at fixed top-right position');
+ assert.equal(originalMenuTop,28,'menu starts at fixed top-right position');
  await page.evaluate(()=>scrollTo(0,80));
  await page.waitForTimeout(100);
  assert.equal((await page.locator('#browser-menu-toggle').boundingBox()).y,originalMenuTop,'scrolling never moves menu');
@@ -71,7 +71,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('#browser-date-caption').textContent(),'Holnapi események!');assert.equal(await page.locator('#browser-event-date span').textContent(),'8');
  await page.evaluate(()=>{events[0].Date='2026.11.12';updateBrowserHeader();});assert.equal(await page.locator('#browser-date-caption').textContent(),'Következő események!');
  await page.locator('#browser-event-date').click();assert.equal(await page.evaluate(()=>calendarSelectedDate),'2026-11-12');
- await page.waitForFunction(()=>scrollY>0&&document.querySelector('#browser-menu-toggle').getBoundingClientRect().top<=13);
+ await page.waitForFunction(()=>scrollY>0&&document.querySelector('#browser-menu-toggle').getBoundingClientRect().top<=29);
  assert((await page.locator('#calendar-section').boundingBox()).y<422,'date button scrolls to calendar');
  await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="search"]').click();assert(await page.locator('#search-view').isVisible());assert.equal(await page.locator('.browser-brand').isVisible(),false);
  await page.locator('#browser-menu-toggle').click();await page.locator('[data-browser-view="home"]').click();

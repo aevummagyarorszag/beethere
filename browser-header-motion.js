@@ -52,9 +52,10 @@
     // Both sections share the same moving dot field and warm brand palette.
     const spacing = width < 760 ? 5 : 6;
     for (let y = 3; y < height; y += spacing) {
-      if (state.quietArea && y + spacing * .36 > state.quietArea.bottom + 12) break;
+      if (state.quietArea && y + spacing * .36 > state.quietArea.bottom + 24) break;
       for (let x = 3; x < width; x += spacing) {
         const quiet = state.quietArea;
+        if (quiet && y > quiet.bottom + 10 && hash(x + 71, y + 19) > .65 - (y - quiet.bottom - 10) / 28) continue;
         if (quiet) {
           const dx = Math.max(quiet.left - x, 0, x - quiet.right);
           const dy = Math.max(quiet.top - y, 0, y - quiet.bottom);
