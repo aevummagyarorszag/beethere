@@ -30,6 +30,11 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#browser-menu-toggle').click();await page.locator('#browser-menu-links').screenshot({path:'outputs/browser-atmo-menu.png'});assert((await page.locator('#browser-menu').boundingBox()).width<=144);
  const menuBounds=await page.locator('#browser-menu').boundingBox(),firstLink=await page.locator('#browser-menu-links button').first().boundingBox();assert(firstLink.y-menuBounds.y<3,'first menu link starts at top');await page.locator('#browser-menu-toggle').click();
  await page.locator('.browser-promo').screenshot({path:'outputs/browser-atmo-footer.png'});
+ const backgroundBounds=await page.locator('#browser-promo-motion').boundingBox();
+ assert(Math.abs(backgroundBounds.x)<1&&Math.abs(backgroundBounds.width-390)<1,'promo background reaches both viewport edges');
+ assert.equal(await page.locator('.browser-promo').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
+ assert.equal(await page.locator('.browser-tagline').evaluate(el=>getComputedStyle(el).textAlign),'left');
+ await page.screenshot({path:'outputs/browser-atmo-footer-edges.png'});
  await page.emulateMedia({reducedMotion:'no-preference'});
  const promoFrame=await page.locator('#browser-promo-motion').evaluate(el=>el.toDataURL());
  await page.waitForFunction(first=>document.querySelector('#browser-promo-motion').toDataURL()!==first,promoFrame);
@@ -44,7 +49,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.locator('#browser-floating-install').screenshot({path:'outputs/browser-atmo-floating.png'});
  await page.setViewportSize({width:320,height:780});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no narrow-screen horizontal overflow');
- assert(await page.locator('.browser-tagline').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length===1&&el.scrollWidth<=el.clientWidth;}),'tagline fits one line on narrow phones');
+ assert(await page.locator('.browser-tagline').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length===1&&range.getBoundingClientRect().width<=el.clientWidth;}),'tagline fits one line on narrow phones');
  assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)','date badge leaves moving background visible');
  await page.setViewportSize({width:390,height:844});
 

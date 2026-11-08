@@ -19,7 +19,11 @@
     return (a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy;
   }
   function resize(state) {
-    const bounds = state.area.getBoundingClientRect();
+    if (state.canvas.id === 'browser-promo-motion') {
+      state.canvas.style.width = `${document.documentElement.clientWidth}px`;
+      state.canvas.style.left = `${-state.area.getBoundingClientRect().left}px`;
+    }
+    const bounds = state.canvas.getBoundingClientRect();
     state.width = bounds.width; state.height = bounds.height;
     const scale = Math.min(devicePixelRatio || 1, 2);
     state.canvas.width = Math.round(state.width * scale);
@@ -81,4 +85,5 @@
   new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('visibilitychange', sync);
   reducedMotion.addEventListener('change', sync);
+  window.addEventListener('resize', () => states.forEach(resize));
 })();

@@ -11,7 +11,8 @@
 .browser-date-caption {position:absolute;width:180px;height:99px;top:-46px;left:-108px;overflow:visible;fill:var(--browser-coral);font:20px Caveat,cursive;pointer-events:none;}
 .browser-caption-arrow {fill:none;stroke:var(--browser-coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 #browser-event-date {width:54px;height:54px;display:grid;place-items:center;background:transparent!important;border:3px solid var(--browser-eye);border-radius:15px;box-shadow:none!important;color:var(--browser-eye);font:600 28px/1 Inter,sans-serif;}
-.browser-tagline {margin:12px 0 0!important;color:var(--browser-coral)!important;font:600 clamp(13px,4vw,24px)/1.35 Inter,-apple-system,BlinkMacSystemFont,sans-serif!important;text-align:center;white-space:nowrap;}
+.browser-tagline {position:relative;isolation:isolate;margin:-2px 0 0!important;color:var(--browser-coral)!important;font:600 clamp(13px,4vw,24px)/1.35 Inter,-apple-system,BlinkMacSystemFont,sans-serif!important;text-align:left;white-space:nowrap;}
+.browser-tagline::before {content:"";position:absolute;z-index:-1;inset:-8px -20px -9px -16px;background:#fff;pointer-events:none;clip-path:polygon(0 26%,3% 13%,9% 18%,14% 4%,22% 11%,30% 5%,38% 14%,47% 7%,57% 12%,65% 3%,75% 13%,85% 6%,95% 17%,100% 29%,99% 74%,94% 87%,84% 82%,75% 96%,64% 87%,55% 95%,44% 86%,33% 96%,24% 87%,15% 95%,6% 82%,0 75%);}
 .browser-landing .home-topic-toolbar {padding-right:54px;}
 .browser-landing .install-row,.browser-landing #bottom-navigation,.browser-landing #nearby-section,.browser-landing #viewed-section,.browser-landing #recommended-section,.browser-landing #today-section {display:none!important;}
 .browser-landing .browser-menu {display:block;position:fixed;z-index:900;right:var(--browser-menu-right,12px);top:calc(12px + env(safe-area-inset-top,0px));will-change:transform;width:44px;border-radius:22px;background:var(--surface,#fff);box-shadow:0 3px 8px rgb(15 23 42 / .13),0 1px 2px rgb(15 23 42 / .06);transition:width .26s ease,border-radius .26s ease;}
@@ -27,7 +28,8 @@
 .browser-menu.is-open #browser-menu-links button:first-child {padding-right:46px;}
 .browser-landing .browser-install-float {display:block;position:fixed;z-index:800;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border:0;border-radius:50%;background:var(--surface,#fff)!important;box-shadow:0 6px 24px #1e293b26;padding:0;overflow:hidden;isolation:isolate;--browser-shine:rgb(255 202 67 / .5);}
 .browser-install-float img {position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;}
-.browser-landing .browser-promo {display:block;position:relative;isolation:isolate;margin:36px 0 60px;padding:24px 0;border-top:1px solid rgb(30 41 59 / .12);}
+.browser-landing .browser-promo {display:block;position:relative;isolation:isolate;margin:36px 0 60px;padding:24px 0;border-top:0;}
+#browser-promo-motion {left:calc(50% - 50vw);width:100vw;}
 .browser-promo-action {display:flex;align-items:center;gap:16px;}
 .browser-promo-mascot {width:64px;height:64px;object-fit:contain;}
 #browser-promo-install {position:relative;isolation:isolate;overflow:hidden;display:flex;flex:1;align-items:center;justify-content:center;gap:12px;height:64px;border-radius:32px;background:var(--browser-coral)!important;border:0;box-shadow:none!important;color:white;font:700 22px Inter,sans-serif;}
