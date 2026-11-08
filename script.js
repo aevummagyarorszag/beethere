@@ -335,6 +335,7 @@ const CITIES = [
   { name: 'Pécs', latitude: 46.0727, longitude: 18.2323 },
   { name: 'Székesfehérvár', latitude: 47.1860, longitude: 18.4221 }
 ];
+const CITY_STORAGE_KEY = 'bee-there-selected-city';
 const FAVORITES_STORAGE_KEY = 'bee-there-favorites';
 const FAVORITE_NOTES_STORAGE_KEY = 'bee-there-favorite-notes';
 const PINNED_EVENT_STORAGE_KEY = 'bee-there-pinned-event';
@@ -4199,6 +4200,7 @@ function setCity(city, isManual = false) {
   if (!city) return;
   position = { latitude: city.latitude, longitude: city.longitude };
   updateCityUI(city.name, isManual);
+  try { localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify({ name: city.name, ...position })); } catch { /* Keep the current city usable when storage is unavailable. */ }
   updateDistanceValues();
   renderEvents();
 }
@@ -4670,16 +4672,15 @@ function init() {
   updateQuickDate();
   updatePointsCounter();
   window.addEventListener('resize', positionAllDetailsButtons, { passive: true });
+  let initialCity = CITIES.find(city => city.name === 'Székesfehérvár');
+  try {
+    const saved = JSON.parse(localStorage.getItem(CITY_STORAGE_KEY) || 'null');
+    if (saved && typeof saved.name === 'string' && saved.name.trim() &&
+        Number.isFinite(saved.latitude) && Math.abs(saved.latitude) <= 90 &&
+        Number.isFinite(saved.longitude) && Math.abs(saved.longitude) <= 180) initialCity = saved;
+  } catch { /* Missing or invalid saved data falls back to Székesfehérvár. */ }
+  setCity(initialCity);
   loadEvents();
-  if (locationText) locationText.textContent = 'Válassz várost az események megtekintéséhez';
-  if (!navigator.geolocation) {
-    if (locationText) locationText.textContent = 'Helymeghatározás nem támogatott — válassz várost';
-    return;
-  }
-  if (!accountSettings.locationEnabled) {
-    if (locationText) locationText.textContent = 'A helymeghatározás ki van kapcsolva — válassz várost';
-    return;
-  }
   // Location is requested only by an explicit user action.
 }
 
