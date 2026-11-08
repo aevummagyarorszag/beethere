@@ -15,7 +15,7 @@
   let monthTimer;
   let midnightTimer;
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const source = () => [...events, ...permanentEvents].filter(event => pinnedEventKeys.has(eventKey(event)));
+  const source = () => [...events, ...permanentEvents].filter(event => pinnedEventKeys.has(eventKey(event)) || favoriteIds.has(eventKey(event)));
   const matchesDate = (event, key) => {
     if (!event.Permanent) return eventOccursOnDate(event, key);
     const [year, month, day] = key.split('-').map(Number);
@@ -35,7 +35,7 @@
     if (!items.length) {
       const empty = document.createElement('p');
       empty.className = 'calendar-empty';
-      empty.textContent = source().length ? 'Ebben a kategóriában még nincs „Megyek rá” eseményed.' : 'A „Megyek rá” gombbal felvett eseményeid itt jelennek meg.';
+      empty.textContent = source().length ? 'Ebben a kategóriában még nincs kedvelt vagy tervezett eseményed.' : 'A kedvelt és a „Megyek rá” eseményeid itt jelennek meg.';
       results.append(empty);
       return;
     }
@@ -79,16 +79,17 @@
     dates.forEach((key, index) => {
       const dayItems = items.filter(event => matchesDate(event, key));
       const liked = dayItems.some(event => favoriteIds.has(eventKey(event)));
+      const attending = dayItems.some(event => pinnedEventKeys.has(eventKey(event)));
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'calendar-day'; button.dataset.dateKey = key;
       button.setAttribute('role', 'gridcell');
-      button.classList.toggle('has-attendance', Boolean(dayItems.length));
+      button.classList.toggle('has-attendance', attending);
       button.classList.toggle('has-events', Boolean(dayItems.length));
       button.classList.toggle('has-favorite', liked);
       button.classList.toggle('today', key === todayKey());
       button.classList.toggle('selected', key === selected);
       button.setAttribute('aria-selected', String(key === selected));
-      button.setAttribute('aria-label', `${index + 1}. nap${dayItems.length ? ', Megyek rá eseménnyel' : ''}${liked ? ', kedvelt eseménnyel' : ''}`);
+      button.setAttribute('aria-label', `${index + 1}. nap${attending ? ', Megyek rá eseménnyel' : ''}${liked ? ', kedvelt eseménnyel' : ''}`);
       if (liked) {
         const heart = document.createElement('span'); heart.className = 'calendar-favorite-heart'; heart.setAttribute('aria-hidden', 'true'); heart.innerHTML = uiIconMarkup('heart'); button.append(heart);
       }

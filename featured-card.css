@@ -2436,20 +2436,10 @@ html[data-theme="dark"] #calendar-section #calendar-today { color: var(--dark-co
   font: 600 16px/1 var(--font-sans); font-variant-numeric: tabular-nums;
 }
 .planner-calendar .calendar-day.has-attendance,
-.planner-calendar .calendar-day.has-attendance.selected {
-  background: #fee2e2 !important; border-color: #fecaca !important;
-  color: #7f1d1d !important; animation: none !important;
-}
-.planner-calendar .calendar-day.has-favorite .calendar-favorite-heart {
-  top: 4px; right: 4px; left: auto; width: 11px; height: 11px;
-  transform: none; opacity: 1 !important; color: #dc2626 !important;
-}
-.planner-calendar .calendar-day.has-favorite .calendar-favorite-heart .ui-icon {
-  width: 11px !important; height: 11px !important;
-  opacity: 1 !important; filter: none !important;
-}
+.planner-calendar .calendar-day.has-attendance.selected,
 html[data-theme="dark"] .planner-calendar .calendar-day.has-attendance {
-  background: #492c32 !important; border-color: #80505a !important; color: #fecdd3 !important;
+  background: #F0644B !important; border-color: #F0644B !important;
+  color: #fff !important; animation: none !important;
 }
 html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-today-button) { color: var(--dark-control); }
 @media(max-width:360px) { .planner-calendar .calendar-month-label {font-size:18px;white-space:nowrap;} }

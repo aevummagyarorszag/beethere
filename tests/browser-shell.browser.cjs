@@ -67,6 +67,12 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('#browser-event-date').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','date badge has white interior');
  await page.setViewportSize({width:390,height:844});
 
+ assert.equal(await page.locator('#browser-menu-links [data-browser-view=favorites]').count(),0);
+ await page.evaluate(()=>openEventDetails(events[0],null));await page.locator('#event-details-ticket').click();
+ assert(await page.locator('#planner-event').isVisible());assert(await page.locator('#browser-floating-install').isHidden());
+ assert.equal(await page.evaluate(()=>favoriteIds.has(eventKey(events[0]))),false,'browser preview does not auto-save');
+ await page.locator('#planner-back').click();assert.equal(await page.evaluate(()=>currentAppView),'home');assert(await page.locator('#event-details-dialog').isVisible());
+ await page.evaluate(()=>closeEventDetails());
  await page.evaluate(()=>{events=[];updateBrowserHeader();});assert(await page.locator('#browser-event-date').isDisabled());
  await page.evaluate(()=>{events=[{Title:'Proba',Date:'2026.11.07',Type:'egyszeri',Category:'party',Location:'Győr'}];updateBrowserHeader();});
  assert.equal(await page.locator('#browser-date-caption').textContent(),'Mai események!');

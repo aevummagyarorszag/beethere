@@ -4,6 +4,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({channel:'msedge'});
  try{
  const page=await browser.newPage({viewport:{width:390,height:844},timezoneId:'Europe/Budapest',reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.clock.setFixedTime(new Date('2026-11-07T12:00:00+01:00'));
+ await page.addInitScript(()=>localStorage.setItem('bee-there-installed','true'));
  await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);await page.waitForFunction(()=>events.length>0 && typeof window.renderPlannerCalendar==='function');
  await page.evaluate(()=>{
   events=[{Title:'Mai party',Date:'2026.11.07',Category:'party'},{Title:'Holnapi kultúra',Date:'2026.11.08',Category:'kultúra'},{Title:'Csak kedvelt',Date:'2026.11.09',Category:'party'},{Title:'Többnapos program',Date:'2026.11.28-2026.12.02',Category:'party'}].map(e=>({...e,Type:'egyszeri',Time:'18:00',Location:'Győr',Description:'Naptárteszt'}));
@@ -17,11 +18,11 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  assert.equal(await page.locator('#planner-calendar-today-number').textContent(),'7');
  const day=n=>grid.locator(`[data-date-key="2026-11-${String(n).padStart(2,'0')}"]`);
  assert(await day(7).evaluate(el=>el.classList.contains('has-attendance')));assert.equal(await day(7).locator('.calendar-favorite-heart').count(),1);
- assert.equal(await day(7).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(254, 226, 226)');
- assert.equal(await day(7).locator('.calendar-favorite-heart').evaluate(el=>getComputedStyle(el).opacity),'1');
+ assert.equal(await day(7).evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 100, 75)');
+ assert.equal(await day(7).locator('.calendar-favorite-heart').evaluate(el=>getComputedStyle(el).opacity),'0.24');
  assert.equal(await day(8).locator('.calendar-favorite-heart').count(),0);
- assert.equal(await day(9).evaluate(el=>el.classList.contains('has-attendance')),false,'liked-only events are excluded');
- assert.equal(await day(9).locator('.calendar-favorite-heart').count(),0);
+ assert.equal(await day(9).evaluate(el=>el.classList.contains('has-attendance')),false,'liked-only events have no attendance background');
+ assert.equal(await day(9).locator('.calendar-favorite-heart').count(),1);
  await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Mai party'));
  await day(8).click();await page.waitForFunction(()=>document.querySelector('#planner-calendar-events').textContent.includes('Holnapi kultúra'));
  await page.locator('#planner-calendar-filters [data-category="party"]').click();
@@ -37,7 +38,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  const todayCell=grid.locator('.today');assert(await todayCell.evaluate(el=>el.getAnimations().some(a=>a.effect.getTiming().iterations===2)));
  await todayCell.evaluate(el=>Promise.all(el.getAnimations().map(a=>a.finished)));assert.equal(await todayCell.evaluate(el=>el.getAnimations().length),0);
  await page.emulateMedia({reducedMotion:'reduce'});
- await page.evaluate(()=>{pinnedEventKeys.clear();renderFavorites();});assert.equal(await grid.locator('.has-attendance').count(),0);assert((await results.textContent()).includes('„Megyek rá”'));
+ await page.evaluate(()=>{pinnedEventKeys.clear();renderFavorites();});assert.equal(await grid.locator('.has-attendance').count(),0);assert((await grid.locator('.calendar-favorite-heart').count())>0,'liked hearts remain after attendance is cleared');
  await page.evaluate(()=>{const recurring={Title:'Heti edzés',Date:'Minden hétfőn',Permanent:true,Type:'allando',Category:'sport',Location:'Győr',Description:'Heti program'};permanentEvents=[recurring];pinnedEventKeys.add(eventKey(recurring));favoriteIds.add(eventKey(recurring));renderFavorites();});
  await page.locator('#planner-calendar-filters [data-category="sport"]').click();
  assert(await day(9).evaluate(el=>el.classList.contains('has-attendance')),'recurring Monday appears on Monday');

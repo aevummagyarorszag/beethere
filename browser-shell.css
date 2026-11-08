@@ -57,3 +57,5 @@
 .browser-landing #search-view .event-search-field {width:calc(100% - 56px);margin-right:56px;}
 
 #browser-menu-links[hidden] {display:none!important;}
+
+.browser-landing.has-planner-event .browser-install-float {display:none!important;}

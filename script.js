@@ -1476,7 +1476,10 @@ function navigateToAppView(view, { animate = false } = {}) {
 
 }
 
+let browserPlannerReturnEvent = null;
+
 function closePlannerEvent() {
+  browserPlannerReturnEvent = null;
   if (plannerEvent) {
     plannerEvent.hidden = true;
     plannerEvent.classList.remove('toolbar-title-visible');
@@ -1555,7 +1558,8 @@ function setPinnedPlannerEvent(key) {
 function showPlannerEvent(event) {
   if (!plannerEvent || !favoritesView) return;
   const key = eventKey(event);
-  if (!favoriteIds.has(key) && !isPastEvent(event)) {
+  const browserPreview = window.isBeeBrowserLanding?.() === true;
+  if (!browserPreview && !favoriteIds.has(key) && !isPastEvent(event)) {
     favoriteIds.add(key);
     saveFavorites();
     updateFavoriteButtons();
@@ -1564,6 +1568,8 @@ function showPlannerEvent(event) {
 
   closeEventDetails();
   navigateToAppView('favorites');
+  browserPlannerReturnEvent = browserPreview ? event : null;
+  plannerBack?.setAttribute('aria-label', browserPreview ? 'Vissza az esemény részleteihez' : 'Vissza a tervezett eseményekhez');
   if (favoritesSection) favoritesSection.hidden = true;
   plannerEvent.hidden = false;
   plannerEvent.dataset.eventKey = key;
@@ -2075,7 +2081,13 @@ function renderSearchResults(query, { showSuggestions = true } = {}) {
 function setupAppNavigation() {
   moveFavoritesToOwnView();
   if (plannerBack) plannerBack.addEventListener('click', () => {
+    const returnEvent = browserPlannerReturnEvent;
     closePlannerEvent();
+    if (returnEvent && window.isBeeBrowserLanding?.()) {
+      navigateToAppView('home');
+      openEventDetails(returnEvent, null);
+      return;
+    }
     renderFavorites();
     window.scrollTo({ top: 0, behavior: 'auto' });
   });
