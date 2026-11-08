@@ -61,8 +61,13 @@
       if (state.quietArea && y + spacing * .36 > state.quietArea.bottom + 24) break;
       for (let x = 3; x < width; x += spacing) {
         const description = state.descriptionArea;
-        if (description && x >= description.left && x <= description.right && y >= description.top && y <= description.bottom
-          && noise(x / 60 + time * 1.8, y / 55 - time) > .32) continue;
+        if (description) {
+          const dx = Math.max(description.left - x, 0, x - description.right);
+          const dy = Math.max(description.top - y, 0, y - description.bottom);
+          const edgeWidth = 18 + noise(x / 27, y / 23) * 28;
+          const coverage = Math.max(0, 1 - Math.hypot(dx, dy) / edgeWidth);
+          if (noise(x / 60 + time * 1.8, y / 55 - time) > .32 && hash(x + 83, y - 41) < coverage) continue;
+        }
         const quiet = state.quietArea;
         if (quiet && y > quiet.bottom + 10 && hash(x + 71, y + 19) > .65 - (y - quiet.bottom - 10) / 28) continue;
         if (quiet) {

@@ -53,7 +53,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  await page.emulateMedia({reducedMotion:'reduce'});
  const promoBounds=await page.locator('.browser-promo-placeholder').first().boundingBox();
  assert(Math.abs(promoBounds.width/promoBounds.height-9/16)<.01,'portrait promo ratio matches store screenshots');
- const icon=await page.locator('.browser-download-icon').boundingBox();assert(icon.height<22,'download arrow stays smaller than text size');
+ assert.equal(await page.locator('#browser-promo-install img').count(),0,'download button is text only');
  assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'none','reduced motion disables shine');
  await page.emulateMedia({reducedMotion:'no-preference'});
  assert.equal(await page.locator('#browser-promo-install').evaluate(el=>getComputedStyle(el,'::before').animationName),'browser-install-shine');
