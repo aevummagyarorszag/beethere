@@ -48,6 +48,7 @@
     // Both sections share the same moving dot field and warm brand palette.
     const spacing = width < 760 ? 5 : 6;
     for (let y = 3; y < height; y += spacing) {
+      if (state.quietArea && y + spacing * .36 > state.quietArea.bottom) break;
       for (let x = 3; x < width; x += spacing) {
         const quiet = state.quietArea;
         if (quiet) {

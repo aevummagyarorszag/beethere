@@ -4,7 +4,7 @@
 .browser-motion {display:none;position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;}
 .browser-landing .browser-motion {display:block;}
 .browser-landing .hero-content {display:none;}
-.browser-landing .browser-brand {display:block;border-bottom:1px solid rgb(30 41 59 / .12);padding-bottom:18px;}
+.browser-landing .browser-brand {display:block;border-bottom:0;padding-bottom:18px;}
 .browser-brand-row {display:flex;align-items:center;justify-content:space-between;min-height:128px;padding:28px 8px 0 0;gap:24px;}
 .browser-logo {display:block;width:min(68%,320px);height:auto;object-fit:contain;}
 .browser-date-wrap {position:relative;flex:0 0 48px;}
