@@ -5,6 +5,25 @@
   const menu = document.getElementById('browser-menu');
   const toggle = document.getElementById('browser-menu-toggle');
   const links = document.getElementById('browser-menu-links');
+  const partnerCities = document.getElementById('partners-cities');
+  CITIES.forEach(city => { const option = document.createElement('option'); option.value = city.name; partnerCities.append(option); });
+  document.getElementById('partners-form').addEventListener('submit', event => event.preventDefault());
+  let fadeFrame;
+  function updateBrowserFade() {
+    fadeFrame = null;
+    if (!window.isBeeBrowserLanding?.()) return;
+    const featured = document.getElementById('featured-section').getBoundingClientRect();
+    const firstRow = document.querySelector('#events-grid .recommendation-row') || document.getElementById('events-grid');
+    const start = featured.height ? featured.bottom + scrollY : document.getElementById('home-topic-toolbar').getBoundingClientRect().top + scrollY;
+    const end = Math.max(start + 100, firstRow.getBoundingClientRect().bottom + scrollY);
+    document.body.style.setProperty('--browser-fade-start', `${start}px`);
+    document.body.style.setProperty('--browser-fade-end', `${end}px`);
+  }
+  const scheduleFade = () => { if (!fadeFrame) fadeFrame = requestAnimationFrame(updateBrowserFade); };
+  const fadeObserver = new ResizeObserver(scheduleFade);
+  ['featured-section','events-grid'].forEach(id => fadeObserver.observe(document.getElementById(id)));
+  new MutationObserver(scheduleFade).observe(document.body, { attributes: true, attributeFilter: ['data-app-view','class'] });
+  window.addEventListener('resize', scheduleFade);
   const promoInfo = document.querySelector('.browser-promo-info');
   const promoSubtitle = document.querySelector('.browser-promo-subtitle');
   const measuringContext = document.createElement('canvas').getContext('2d');

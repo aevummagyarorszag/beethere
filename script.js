@@ -1396,6 +1396,7 @@ function applyAppView(view, { scroll = true } = {}) {
   cancelPendingSearch();
   currentAppView = ['search', 'permanent', 'favorites', 'profile', 'settings', 'partners'].includes(view) ? view : 'home';
   closePlannerEvent();
+  document.body.dataset.appView = currentAppView;
   const isHome = currentAppView === 'home' || currentAppView === 'permanent';
   homeContent.forEach(element => { if (element.hasAttribute('data-home-content')) element.hidden = !isHome; });
   const views = { search: searchView, favorites: favoritesView, profile: profileView, settings: settingsView, partners: find('#partners-view') };

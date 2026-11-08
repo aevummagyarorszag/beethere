@@ -57,6 +57,30 @@
 
 .browser-landing.has-planner-event .browser-install-float {display:none!important;}
 
-.browser-partners {padding-top:96px;padding-bottom:40px;}
-.browser-partners h1 {margin:0 0 18px;font-size:28px;}
-.browser-partners p {margin:0;max-width:620px;font-size:clamp(22px,5vw,34px);line-height:1.4;color:#F0644B;}
+.browser-partners {padding-top:28px;padding-bottom:40px;}
+.browser-partners h1 {margin:0 60px 18px 0;font-size:24px;line-height:1.3;}
+.browser-partners p {margin:0;max-width:620px;font-size:16px;line-height:1.6;color:var(--text);}
+
+.browser-landing[data-app-view="permanent"] #top {display:none!important;}
+.browser-landing[data-app-view="partners"] .browser-install-float {display:none!important;}
+.browser-landing:is([data-app-view="home"],[data-app-view="permanent"]) {background:linear-gradient(to bottom,#f5f5f7 0px,#f5f5f7 var(--browser-fade-start,300px),#fff var(--browser-fade-end,800px),#fff 100%)!important;}
+.browser-partners .partners-intro {font-size:18px;color:#F0644B;margin-bottom:20px;}
+.browser-partners .partners-notice {color:var(--muted);margin-bottom:28px;}
+.browser-partners h2 {font-size:20px;line-height:1.3;margin:28px 0 18px;}
+.partners-benefits {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;}
+.partners-benefit {padding:24px;border-radius:24px;background:var(--surface,#fff);text-align:center;box-shadow:0 4px 18px #1e293b0a;}
+.partners-icon {display:grid;place-items:center;width:48px;height:48px;margin:0 auto 18px;border-radius:16px;background:#fff1ec;color:#F0644B;}
+.partners-icon svg {width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.partners-benefit h3 {font-size:18px;line-height:1.4;margin:0 0 12px;}
+.partners-types {padding-left:22px;margin:0 0 28px;font-size:16px;line-height:2;}
+.partners-form {display:grid;gap:16px;max-width:620px;}
+.partners-form label {display:grid;gap:7px;font-size:14px;color:var(--text);}
+.partners-name-fields {display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;}
+.partners-name-fields label {min-width:0;}
+.partners-form :is(input:not([type="checkbox"]),select) {box-sizing:border-box;min-width:0;width:100%;min-height:48px;padding:10px 14px;border:1px solid #d6d9df;border-radius:16px;background:var(--surface,#fff);color:var(--text);font:400 16px Inter,sans-serif;}
+.partners-form .partners-decision {display:flex;align-items:center;gap:10px;min-height:44px;}
+.partners-decision input {width:20px;height:20px;accent-color:#F0644B;}
+.partners-form button {justify-self:start;min-height:44px;padding:0 24px;border:0;border-radius:22px;background:#007AFF;color:#fff;font:600 15px Inter,sans-serif;}
+.partners-form button:disabled {opacity:.5;cursor:not-allowed;}
+.browser-partners .partners-form-status {font-size:14px;color:var(--muted);}
+@media(max-width:600px){.partners-benefits{grid-template-columns:1fr;}}
