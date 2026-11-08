@@ -47,7 +47,7 @@
     rail.tabIndex = 0;
     rail.setAttribute('aria-label', 'A kiválasztott napra tervezett eseményeid');
     results.append(rail);
-    renderCardsIncrementally(rail, selectedItems, { compact: true });
+    renderCardsIncrementally(rail, selectedItems, { compact: true, plannerAttendance: true });
     setupCarousel(rail);
     syncCarouselControls(rail);
   }

@@ -2735,7 +2735,7 @@ function openInlineDetails(card, event, button) {
   window.requestAnimationFrame(() => positionDetailsButton(card));
 }
 
-function renderCard(event, target, { compact = false } = {}) {
+function renderCard(event, target, { compact = false, plannerAttendance = false } = {}) {
   if (!template || !template.content || !target) { console.warn('[Atmo] Az eseménykártya sablonja vagy célhelye hiányzik.'); return; }
   const fragment = template.content.cloneNode(true);
   const card = find('.event-card', fragment);
@@ -2949,6 +2949,19 @@ function renderCard(event, target, { compact = false } = {}) {
     title.classList.toggle('is-single-line-title', lineCount <= 1);
   });
   window.requestAnimationFrame(() => refreshLocationOverflowCue(find('.inline-location-value', card)));
+  if (plannerAttendance && card) {
+    const pinButton = document.createElement('button');
+    pinButton.type = 'button';
+    pinButton.className = 'planner-card-pin';
+    pinButton.textContent = 'Megyek rá';
+    syncPlannerPinButton(pinButton, key);
+    pinButton.addEventListener('click', input => {
+      input.preventDefault();
+      input.stopImmediatePropagation();
+      if (setPinnedPlannerEvent(key) !== false) preservePageScroll(() => renderFavorites());
+    });
+    find('.image-wrap', card)?.append(pinButton);
+  }
   if (card) eventVisibilityObserver?.observe(card);
   window.requestAnimationFrame(() => positionDetailsButton(card));
 }
@@ -2997,7 +3010,7 @@ function syncSavedEventControls() {
   updateFavoriteButtons();
   refreshCalendarFavoriteMarkers();
   findAll('.planner-card-pin').forEach(button => {
-    syncPlannerPinButton(button, button.closest('.favorite-pair')?.dataset.eventKey);
+    syncPlannerPinButton(button, button.closest('.favorite-pair, .event-card')?.dataset.eventKey);
   });
   if (plannerPin && plannerEvent?.dataset.eventKey) syncPlannerPinButton(plannerPin, plannerEvent.dataset.eventKey);
   updateProfileSummary();
