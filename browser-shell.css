@@ -123,3 +123,5 @@ body {padding-bottom:0!important;}
 .browser-landing .browser-promo {margin-bottom:0;padding-bottom:12px;}
 .browser-landing #esemenyek {padding-bottom:0!important;}
 .browser-landing .site-footer {padding-bottom:12px;}
+
+body.has-planner-event #site-footer { display: none; }
