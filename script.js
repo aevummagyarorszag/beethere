@@ -3589,6 +3589,7 @@ function renderToday() {
 }
 
 function calendarEventsForSelection() {
+  if (calendarSelectedDate && calendarSelectedDate < todayKey()) return [];
   return events
     .filter(event => !isPastEvent(event))
     .filter(event => (!calendarCategory || eventCategories(event).includes(calendarCategory)))
@@ -3637,7 +3638,7 @@ function refreshCalendarFavoriteMarkers() {
     .filter(event => favoriteIds.has(eventKey(event)))
     .flatMap(eventDateKeys));
   findAll('.calendar-day[data-date-key]', calendarGrid).forEach(button => {
-    const hasFavorite = favoriteDates.has(button.dataset.dateKey);
+    const hasFavorite = button.dataset.dateKey >= todayKey() && favoriteDates.has(button.dataset.dateKey);
     button.classList.toggle('has-favorite', hasFavorite);
     let heart = button.querySelector('.calendar-favorite-heart');
     if (hasFavorite && !heart) {
@@ -3712,11 +3713,12 @@ function renderCalendar() {
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const categoryEvents = events.filter(event => !isPastEvent(event) && (!calendarCategory || eventCategories(event).includes(calendarCategory)));
-  const datesWithEvents = new Set(categoryEvents.flatMap(eventDateKeys));
+  const datesWithEvents = new Set(categoryEvents.flatMap(eventDateKeys).filter(key => key >= todayKey()));
   const datesWithFavorites = new Set(events
     .filter(event => favoriteIds.has(eventKey(event)))
-    .flatMap(eventDateKeys));
+    .flatMap(eventDateKeys).filter(key => key >= todayKey()));
   const today = todayKey();
+  if (calendarSelectedDate && calendarSelectedDate < today) calendarSelectedDate = '';
   const currentMonthIsVisible = year === new Date().getFullYear() && month === new Date().getMonth();
   if (!calendarSelectedDate && currentMonthIsVisible && datesWithEvents.has(today)) calendarSelectedDate = today;
   calendarMonthLabel.textContent = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long' }).format(calendarMonth);
@@ -3732,6 +3734,7 @@ function renderCalendar() {
     button.type = 'button';
     button.className = 'calendar-day';
     button.dataset.dateKey = key;
+    button.disabled = key < today;
     button.setAttribute('role', 'gridcell');
     const dayNumber = document.createElement('span');
     dayNumber.className = 'calendar-day-number';

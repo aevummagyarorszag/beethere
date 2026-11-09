@@ -17,6 +17,7 @@
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const source = () => [...events, ...permanentEvents].filter(event => pinnedEventKeys.has(eventKey(event)) || favoriteIds.has(eventKey(event)));
   const matchesDate = (event, key) => {
+    if (key < todayKey()) return false;
     if (!event.Permanent) return eventOccursOnDate(event, key);
     const [year, month, day] = key.split('-').map(Number);
     return permanentEventMatchesWeekday(event, (new Date(year, month - 1, day).getDay() + 6) % 7);
@@ -77,6 +78,7 @@
       const attending = dayItems.some(event => pinnedEventKeys.has(eventKey(event)));
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'calendar-day'; button.dataset.dateKey = key;
+      button.disabled = key < todayKey();
       button.setAttribute('role', 'gridcell');
       button.classList.toggle('has-attendance', attending);
       button.classList.toggle('has-events', Boolean(dayItems.length));

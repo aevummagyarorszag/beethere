@@ -125,5 +125,6 @@ body {padding-bottom:0!important;}
 .browser-landing .site-footer {padding-bottom:12px;}
 
 body.has-planner-event #site-footer,
+body[data-app-view="settings"] #site-footer,
 body[data-app-view="favorites"] #site-footer { display: none !important; }
 body.has-planner-event #browser-menu { display: none !important; }
