@@ -2450,3 +2450,5 @@ html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-t
 .favorite-button:disabled,
 .planner-card-pin:disabled,
 #planner-pin:disabled { opacity: .4; cursor: not-allowed; }
+
+.weather-credit { display:block; width:fit-content; margin-top:4px; font:400 12px/1.5 var(--font-sans); color:var(--muted); text-decoration:underline; text-underline-offset:2px; }

@@ -348,7 +348,7 @@ const PROFILE_STORAGE_KEY = 'bee-there-profile-preferences';
 const ACCOUNT_SETTINGS_STORAGE_KEY = 'bee-there-account-settings';
 const MAX_FAVORITES = 100;
 const MAX_EVENT_RESPONSE_BYTES = 3 * 1024 * 1024;
-const weatherCache = new Map();
+const weatherRenderTokens = new WeakMap();
 
 const find = (selector, scope = document) => {
   if (!scope || typeof scope.querySelector !== 'function') {
@@ -845,45 +845,41 @@ function permanentEventMatchesWeekday(event, dayIndex) {
 function setText(selector, value, scope) { const element = find(selector, scope); if (element) element.textContent = value; return element; }
 function vibrate(milliseconds = 16) { if ('vibrate' in navigator) navigator.vibrate(milliseconds); }
 
-function getWeatherEmoji(code) {
-  if (code === 0) return '☀️';
-  if (code === 1 || code === 2) return '⛅';
-  if (code === 3) return '☁️';
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return '🌧';
-  if (code >= 95 && code <= 99) return '🌩';
-  return '🌡️';
+function weatherCoordinate(value) { return value == null || String(value).trim() === '' ? NaN : Number(value); }
+
+function weatherCityForEvent(event) {
+  const explicit = String(event.City || event['Város'] || event['Település'] || '').trim();
+  if (explicit) return `${explicit}, ${event.Country || 'Hungary'}`;
+  const location = normalizeSearchText(event.Location || '');
+  const named = CITIES.find(city => location.includes(normalizeSearchText(city.name)));
+  if (named) return `${named.name}, Hungary`;
+  const latitude = weatherCoordinate(event.Latitude), longitude = weatherCoordinate(event.Longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return '';
+  const nearest = closestCity({latitude,longitude});
+  return nearest && nearest.distance <= 35 ? `${nearest.name}, Hungary` : '';
 }
 
-async function fetchWeatherForEvent(latitude, longitude, eventDate) {
-  const date = dateKey(eventDate);
-  if (!date || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return '🌡️ --°C';
-  const cacheKey = `${latitude.toFixed(3)},${longitude.toFixed(3)},${date}`;
-  if (weatherCache.has(cacheKey)) return weatherCache.get(cacheKey);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(`${date}T00:00:00`);
-  const diffDays = Math.round((target - today) / 86400000);
-  let result = '🌡️ --°C';
-  try {
-    if (diffDays >= 0 && diffDays <= 14) {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max&timezone=auto&start_date=${date}&end_date=${date}`;
-      const data = await (await fetch(url)).json();
-      const temperature = data.daily?.temperature_2m_max?.[0];
-      const code = data.daily?.weather_code?.[0];
-      if (Number.isFinite(temperature)) result = `${getWeatherEmoji(code)} ${Math.round(temperature)}°C`;
-    } else if (diffDays > 14) {
-      const pastDate = new Date(`${date}T00:00:00`);
-      pastDate.setFullYear(pastDate.getFullYear() - 1);
-      const past = pastDate.toISOString().slice(0, 10);
-      const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max&timezone=auto&start_date=${past}&end_date=${past}`;
-      const data = await (await fetch(url)).json();
-      const temperature = data.daily?.temperature_2m_max?.[0];
-      const code = data.daily?.weather_code?.[0];
-      if (Number.isFinite(temperature)) result = `${getWeatherEmoji(code)} ~${Math.round(temperature)}°C`;
-    }
-  } catch (error) { console.warn('[Atmo] Időjárás hiba:', error); }
-  weatherCache.set(cacheKey, result);
-  return result;
+async function updateEventWeather(element, event, { fresh = false } = {}) {
+  if (!element) return;
+  const token = {};
+  weatherRenderTokens.set(element, token);
+  element.hidden = Boolean(event.Permanent);
+  element.textContent = event.Permanent ? '' : 'Időjárás betöltése…';
+  if (event.Permanent) return;
+  const result = await window.AtmoWeather.forecast({
+    city: weatherCityForEvent(event), latitude: weatherCoordinate(event.Latitude), longitude: weatherCoordinate(event.Longitude),
+    date: dateKey(eventDateValue(event)), fresh
+  });
+  if (weatherRenderTokens.get(element) !== token || !element.isConnected) return;
+  element.replaceChildren(document.createTextNode(result.available ? `Várható időjárás: ${result.text}` : result.text));
+  if (result.available) {
+    const credit = document.createElement('a');
+    credit.className = 'weather-credit';
+    credit.href = 'https://www.visualcrossing.com/';
+    credit.target = '_blank'; credit.rel = 'noopener noreferrer';
+    credit.textContent = 'Időjárási adatok: Visual Crossing Weather';
+    element.append(credit);
+  }
 }
 
 function updateQuickDate() {
@@ -1601,6 +1597,7 @@ function showPlannerEvent(event) {
     window.requestAnimationFrame(() => refreshLocationOverflowCue(plannerLocationText));
   }
   setText('#planner-event-time', eventStartTimeText(event), plannerEvent);
+  void updateEventWeather(find('#planner-event-weather', plannerEvent), event, { fresh: true });
   setText('#planner-event-price', eventPriceLabel(event), plannerEvent);
   setText('#planner-event-description', event['Long Description'] || event['Long description'] || event.Description || 'További részletek hamarosan.', plannerEvent);
 
@@ -2643,9 +2640,7 @@ function openEventDetails(event, triggerButton, { updateUrl = true } = {}) {
   eventDetailsDialog.hidden = false;
   document.body.classList.add('has-open-dialog');
   positionSnackbar();
-  if (!event.Permanent) fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
-    if (eventDetailsWeather) eventDetailsWeather.textContent = `Várható időjárás: ${value}`;
-  });
+  void updateEventWeather(eventDetailsWeather, event);
   };
 
   if (canTransitionImage) {
@@ -2728,10 +2723,7 @@ function openInlineDetails(card, event, button) {
   button.textContent = 'Bezárás';
   button.setAttribute('aria-expanded', 'true');
   const weather = find('.inline-details-weather', card);
-  if (weather) weather.textContent = 'Időjárás betöltése…';
-  fetchWeatherForEvent(Number(event.Latitude), Number(event.Longitude), eventDateValue(event)).then(value => {
-    if (weather) weather.textContent = `Várható időjárás: ${value}`;
-  });
+  void updateEventWeather(weather, event);
   window.requestAnimationFrame(() => positionDetailsButton(card));
 }
 
