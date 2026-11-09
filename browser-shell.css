@@ -124,4 +124,6 @@ body {padding-bottom:0!important;}
 .browser-landing #esemenyek {padding-bottom:0!important;}
 .browser-landing .site-footer {padding-bottom:12px;}
 
-body.has-planner-event #site-footer { display: none; }
+body.has-planner-event #site-footer,
+body[data-app-view="favorites"] #site-footer { display: none !important; }
+body.has-planner-event #browser-menu { display: none !important; }
