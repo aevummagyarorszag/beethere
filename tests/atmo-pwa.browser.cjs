@@ -13,7 +13,7 @@ const path = require('node:path');
   assert.equal(manifest.display, 'standalone');
   assert.equal(manifest.screenshots, undefined);
   for (const icon of manifest.icons) {
-    const metadata = await sharp(path.join(root, icon.src)).metadata();
+    const metadata = await sharp(path.join(root, icon.src.split('?')[0])).metadata();
     assert.equal(`${metadata.width}x${metadata.height}`, icon.sizes);
   }
   assert(manifest.icons.some(icon => icon.purpose === 'maskable'));
@@ -39,7 +39,7 @@ const path = require('node:path');
     const base = `http://127.0.0.1:${server.address().port}/beethere/`;
     await page.goto(base, {waitUntil:'domcontentloaded'});
     assert.equal(await page.title(), 'Atmo — Események');
-    assert.equal(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href'), 'assets/icons/atmo-180.png');
+    assert.equal(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href'), 'assets/icons/atmo-180.png?v=2');
     const cdp = await context.newCDPSession(page);
     const parsed = await cdp.send('Page.getAppManifest');
     assert.equal(parsed.errors.length, 0, JSON.stringify(parsed.errors));

@@ -8,7 +8,7 @@ const interior = mascot.replace(/^.*?<svg[^>]*>/s, '').replace(/<\/svg>\s*$/, ''
 function icon(maskable = false, transparent = false) {
   const size = maskable ? 348 : 512;
   const inset = (512 - size) / 2;
-  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${transparent ? '' : '<rect width="512" height="512" fill="#f5f5f7"/>'}<svg x="${inset}" y="${inset}" width="${size}" height="${size}" viewBox="1490 0 800 800">${interior}</svg></svg>`);
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${transparent ? '' : '<rect width="512" height="512" fill="#f5f5f7"/>'}<svg x="${inset}" y="${inset}" width="${size}" height="${size}" viewBox="1570 55 660 660">${interior}</svg></svg>`);
 }
 (async () => {
   for (const size of [32, 48, 180, 192, 512]) {
