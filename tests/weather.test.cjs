@@ -26,5 +26,5 @@ test('429 Retry-After blocks further city and planner requests until backoff end
  const a=app({fetcher:async()=>({ok:false,status:429,headers:{get:()=> '120'}})});await a.forecast(city);await a.forecast({...city,fresh:true});assert.equal(a.calls.length,1);a.advance(120001);await a.forecast({...city,fresh:true});assert.equal(a.calls.length,2);
 });
 test('malformed saved cache and missing forecast day produce no invented weather',async()=>{
- const a=app({storage:new Map([['bee-there-city-weather-v1','invalid']])});assert((await a.forecast(city)).available);const value=await a.forecast({...city,date:'2026-11-12'});assert.equal(value.available,false);assert.equal(value.text,'Előrejelzés később');assert.equal(a.calls.length,1);
+ const a=app({storage:new Map([['bee-there-city-weather-v1','invalid']])});assert((await a.forecast(city)).available);const value=await a.forecast({...city,date:'2026-11-12'});assert.equal(value.available,false);assert.equal(value.text,'Időjárás: Előrejelzés később.');assert.equal(a.calls.length,1);
 });

@@ -23,7 +23,7 @@
   const emoji = icon => ({'clear-day':'☀️','clear-night':'🌙','partly-cloudy-day':'⛅','partly-cloudy-night':'☁️',cloudy:'☁️',rain:'🌧️',snow:'❄️',fog:'🌫️',wind:'💨','snow-showers-day':'🌨️','snow-showers-night':'🌨️','showers-day':'🌦️','showers-night':'🌧️',thunder:'⛈️','thunder-rain':'⛈️','thunder-showers-day':'⛈️','thunder-showers-night':'⛈️'})[icon] || '🌡️';
   function resultFor(data, date) {
     const day = data.days.find(day => day.datetime === date);
-    if (!day || !Number.isFinite(day.tempmax)) return {text:'Előrejelzés később',available:false};
+    if (!day || !Number.isFinite(day.tempmax)) return {text:'Időjárás: Előrejelzés később.',available:false};
     return {text:`${emoji(day.icon)} ${Math.round(day.tempmax)}°C`,available:true,fetchedAt:data.fetchedAt};
   }
   function save() {
@@ -51,7 +51,7 @@
   async function forecast({city, latitude, longitude, date, fresh = false}) {
     const difference = dayNumber(date) - dayNumber(localToday());
     if (!Number.isFinite(difference) || difference < 0) return unavailable();
-    if (difference > 14) return {text:'Előrejelzés később',available:false};
+    if (difference > 14) return {text:'Időjárás: Előrejelzés később.',available:false};
     try {
       if (fresh) {
         if (!Number.isFinite(latitude) || Math.abs(latitude)>90 || !Number.isFinite(longitude) || Math.abs(longitude)>180) return unavailable();
