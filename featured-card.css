@@ -2452,3 +2452,8 @@ html[data-theme="dark"] .planner-calendar :is(.calendar-month-label, .calendar-t
 #planner-pin:disabled { opacity: .4; cursor: not-allowed; }
 
 .weather-credit { display:block; width:fit-content; margin-top:4px; font:400 12px/1.5 var(--font-sans); color:var(--muted); text-decoration:underline; text-underline-offset:2px; }
+
+/* Keep the last liked card above the fixed app navigation without a footer. */
+body:not(.browser-landing):not(.has-planner-event) #favorites-view {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
