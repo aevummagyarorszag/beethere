@@ -10,6 +10,7 @@
   let month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let selected = '';
   let category = '';
+  let chooseSavedMonth = currentAppView === 'favorites';
   let flash;
   let flashTimer;
   let monthTimer;
@@ -54,6 +55,22 @@
   }
   function render({ selectFirst = false } = {}) {
     const now = new Date();
+    // Navigation can run before events.json arrives. Keep the request pending
+    // until saved events can be matched, rather than freezing an empty month.
+    if (chooseSavedMonth && (events.length || permanentEvents.length)) {
+      const dates = source().flatMap(event => {
+        if (!event.Permanent) return eventDateKeys(event).filter(key => key >= todayKey());
+        return Array.from({ length: 7 }, (_, offset) => {
+          const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }).filter(key => matchesDate(event, key));
+      }).sort();
+      if (dates.length) {
+        const [year, monthIndex] = dates[0].split('-').map(Number);
+        month = new Date(year, monthIndex - 1, 1);
+      }
+      chooseSavedMonth = false;
+    }
     section.querySelector('#planner-calendar-today-number').textContent = String(now.getDate());
     const fullDate = new Intl.DateTimeFormat('hu-HU', { dateStyle: 'long' }).format(now);
     todayButton.title = fullDate;
@@ -131,6 +148,13 @@
   const refreshDate = () => {
     clearTimeout(midnightTimer); render();
     const now = new Date(); midnightTimer = setTimeout(refreshDate, new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime() + 100);
+  };
+  window.preparePlannerCalendar = () => {
+    cancelFlash();
+    category = ''; selected = '';
+    month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    chooseSavedMonth = true;
+    syncTopicSelection(filters, '');
   };
   window.renderPlannerCalendar = render;
   window.addEventListener('pageshow', refreshDate);

@@ -1413,7 +1413,10 @@ function applyAppView(view, { scroll = true } = {}) {
     button.classList.toggle('is-active', active);
     button.setAttribute('aria-current', active ? 'page' : 'false');
   });
-  if (currentAppView === 'favorites') renderFavorites();
+  if (currentAppView === 'favorites') {
+    window.preparePlannerCalendar?.();
+    renderFavorites();
+  }
   if (currentAppView === 'search') renderSearchResults(searchInput?.value || '');
   if (isHome) {
     renderCalendar();
