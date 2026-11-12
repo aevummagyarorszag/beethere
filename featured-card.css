@@ -1552,8 +1552,8 @@ html[data-navigation-direction="backward"]::view-transition-new(root) { animatio
 }
 
 #profile-view .preference-options .filter-button[aria-pressed="true"] {
-  border-color: #2563eb !important;
-  color: #2563eb !important;
+  border-color: #F0644B !important;
+  color: #F0644B !important;
 }
 
 #profile-view .preference-options .filter-button[aria-pressed="true"] .ui-icon {
@@ -1569,10 +1569,10 @@ html[data-theme="dark"] #profile-view .preference-group {
 }
 
 #profile-view .transport-button[aria-checked="true"] {
-  border-color: #2563eb;
+  border-color: #F0644B;
   background: #fff;
-  color: #2563eb;
-  box-shadow: 0 0 0 1px #2563eb !important;
+  color: #F0644B;
+  box-shadow: 0 0 0 1px #F0644B !important;
 }
 
 #profile-view #budget-slider::-webkit-slider-runnable-track {
@@ -1593,8 +1593,8 @@ html[data-theme="dark"] #profile-view .preference-options .filter-button {
 }
 
 html[data-theme="dark"] #profile-view .preference-options .filter-button[aria-pressed="true"] {
-  border-color: #60a5fa !important;
-  color: #60a5fa !important;
+  border-color: #F0644B !important;
+  color: #F0644B !important;
 }
 
 #favorites-grid {
@@ -2239,8 +2239,8 @@ html[data-theme="dark"] #calendar-section :is(.calendar-day, .weekly-calendar-da
 }
 html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"] {
   background: var(--dark-control) !important;
-  color: #2563EB !important;
-  border: 2px solid #2563EB !important;
+  color: #F0644B !important;
+  border: 2px solid #F0644B !important;
   box-shadow: var(--control-shadow) !important;
 }
 html[data-theme="dark"] #profile-view .transport-button[aria-checked="false"] { color: var(--muted) !important; }
@@ -2291,9 +2291,9 @@ html[data-theme="dark"] #planner-event .planner-ticket-button:not(.is-free):not(
   color: #FFFFFF !important;
 }
 html[data-theme="dark"] #profile-view .transport-button[aria-checked="true"] {
-  border: 2px solid #2563EB !important;
+  border: 2px solid #F0644B !important;
   background: var(--dark-control) !important;
-  color: #2563EB !important;
+  color: #F0644B !important;
   box-shadow: var(--control-shadow) !important;
 }
 html[data-theme="dark"] #event-filter-dialog .event-filter-choice:has(input:checked) { border-color: var(--muted); }
