@@ -1576,15 +1576,15 @@ html[data-theme="dark"] #profile-view .preference-group {
 }
 
 #profile-view #budget-slider::-webkit-slider-runnable-track {
-  background: linear-gradient(90deg, #2563eb 0 var(--budget-progress), #e2e8f0 var(--budget-progress) 100%);
+  background: linear-gradient(90deg, #F0644B 0 var(--budget-progress), #e2e8f0 var(--budget-progress) 100%);
 }
 
 #profile-view #budget-slider::-moz-range-progress {
-  background: #2563eb;
+  background: #F0644B;
 }
 
 #profile-view #budget-slider-value {
-  color: #2563eb;
+  color: #F0644B;
 }
 
 html[data-theme="dark"] #profile-view .preference-options .filter-button {
@@ -2183,7 +2183,7 @@ html[data-theme="dark"] #planner-event .planner-note-copy {
   color: var(--text) !important;
 }
 html[data-theme="dark"] #profile-view #budget-slider::-webkit-slider-runnable-track {
-  background: linear-gradient(90deg, #2563eb 0 var(--budget-progress), var(--dark-control) var(--budget-progress) 100%);
+  background: linear-gradient(90deg, #F0644B 0 var(--budget-progress), var(--dark-control) var(--budget-progress) 100%);
 }
 html[data-theme="dark"] #profile-view #budget-slider::-moz-range-track { background: var(--dark-control); }
 html[data-theme="dark"] #profile-view #budget-slider::-webkit-slider-thumb { background: var(--dark-raised); border-color: var(--muted); }
