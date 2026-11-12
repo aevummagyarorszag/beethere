@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: google-sheets-events-update
+  cancel-in-progress: false
+
 jobs:
   run-updater:
     runs-on: ubuntu-latest
@@ -15,6 +19,9 @@ jobs:
       - name: Check out repository code
         # Pinned to the verified v4.2.2 commit to avoid a mutable action tag.
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
       - name: Set up Python
         # Pinned to the verified v5.6.0 commit to avoid a mutable action tag.
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -27,5 +34,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add events.json
-          git commit -m "Auto-update events.json from Google Sheets" || exit 0
-          git push
+          if git diff --cached --quiet; then
+            echo "The event data is already up to date."
+            exit 0
+          fi
+          git commit -m "Auto-update events.json from Google Sheets"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            # This commit contains only generated events.json. If another update
+            # changed it, prefer this freshly fetched Sheets data during replay.
+            git rebase -X theirs origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Could not publish updated events after three attempts."
+          exit 1
