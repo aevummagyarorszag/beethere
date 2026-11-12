@@ -108,11 +108,11 @@
 @media(max-width:360px){.partners-application{padding:24px 16px;}.partners-name-fields{gap:10px;}}
 
 .browser-landing[data-app-view="permanent"] .quick-navigation {padding-right:56px!important;box-sizing:border-box;}
-.site-footer {box-sizing:border-box;width:100%;margin:0;padding:16px 12px calc(76px + env(safe-area-inset-bottom,0px));border-top:1px solid rgb(30 41 59 / .15);text-align:center;color:var(--muted);}
-.site-footer-logo {display:block;width:96px;height:auto;margin:0 auto 10px;}
+.site-footer {display:none;box-sizing:border-box;width:100%;margin:0;padding:16px 12px calc(76px + env(safe-area-inset-bottom,0px));border-top:1px solid rgb(30 41 59 / .15);text-align:center;color:var(--muted);}
 .site-footer-legal {display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px;font-size:clamp(10px,2.9vw,12px);line-height:1.7;}
 .site-footer-legal-group {display:inline-flex;align-items:center;gap:6px;}
-.site-footer-legal [role="link"] {font-weight:600;color:var(--text);}
+.site-footer-legal a {font-weight:600;color:var(--text);text-decoration:none;}
+.site-footer-legal a:hover {text-decoration:underline;}
 .site-footer-pending {margin:10px 0 0;font-size:12px;line-height:1.5;}
 .site-footer-copyright {margin:10px 0 0;font-size:12px;line-height:1.5;}
 html[data-theme="dark"] .site-footer {border-top-color:rgb(255 255 255 / .15);}
@@ -122,9 +122,19 @@ html[data-theme="dark"] .site-footer {border-top-color:rgb(255 255 255 / .15);}
 body {padding-bottom:0!important;}
 .browser-landing .browser-promo {margin-bottom:0;padding-bottom:12px;}
 .browser-landing #esemenyek {padding-bottom:0!important;}
-.browser-landing .site-footer {padding-bottom:12px;}
+.browser-landing .site-footer {display:block;padding-bottom:12px;}
 
 body.has-planner-event #site-footer,
 body[data-app-view="settings"] #site-footer,
 body[data-app-view="favorites"] #site-footer { display: none !important; }
 body.has-planner-event #browser-menu { display: none !important; }
+
+/* Reserve room for app navigation even though the app has no legal footer. */
+body:not(.browser-landing):not(.has-planner-event):not(.has-settings-view) {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+}
+.partners-privacy-notice {margin:0 0 4px;font-size:13px;line-height:1.5;color:#fff;}
+.partners-privacy-notice a {color:inherit;text-decoration:underline;text-underline-offset:2px;}
+.settings-legal-entry {display:flex;align-items:center;gap:12px;min-height:48px;padding:12px 0;color:var(--text);font:600 16px/1.4 var(--font-sans);text-decoration:none;}
+.settings-legal-entry svg {width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.settings-legal-entry:focus-visible,.site-footer a:focus-visible {outline:2px solid #F0644B;outline-offset:4px;border-radius:4px;}
